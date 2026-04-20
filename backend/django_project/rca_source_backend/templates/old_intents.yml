@@ -1,0 +1,286 @@
+intents:
+
+# ------------------- LINK & PHYSICAL LAYER -------------------
+- id: link.down
+  description: "Physical/optical link down"
+  keywords: ["interface down", "link down", "port down", "los", "loss of signal"]
+  signals:
+    - { metric: "oper_status", op: "==", value: "down", weight: 0.7 }
+    - { metric: "admin_status", op: "==", value: "up", weight: 0.2 }
+
+- id: link.flap
+  description: "Interface flapping frequently"
+  keywords: ["flap", "bouncing", "up/down"]
+  signals:
+    - { metric: "flap_count", op: ">", value: 3, weight: 0.7 }
+    - { metric: "oper_changes_per_min", op: ">", value: 1, weight: 0.3 }
+
+- id: link.high_errors
+  description: "High input/output/CRC errors on interface"
+  keywords: ["crc", "input error", "output error", "frame error"]
+  signals:
+    - { metric: "crc_errors", op: ">", value: 100, weight: 0.5 }
+    - { metric: "input_errors", op: ">", value: 100, weight: 0.3 }
+    - { metric: "output_errors", op: ">", value: 100, weight: 0.2 }
+
+- id: link.mtu_mismatch
+  description: "MTU/path MTU problems causing fragmentation/drops"
+  keywords: ["mtu", "fragmentation", "ping mtu", "df-bit"]
+  signals:
+    - { metric: "icmp_frag_failed", op: ">", value: 0, weight: 0.6 }
+    - { metric: "tcp_retransmits", op: ">", value: 5, weight: 0.3 }
+
+- id: fiber.degrade
+  description: "Optical power degradation on fiber"
+  keywords: ["rx power", "tx power", "optical", "dBm"]
+  signals:
+    - { metric: "optical_rx_dbm", op: "<", value: -20, weight: 0.7 }
+    - { metric: "optical_tx_dbm", op: "<", value: -8, weight: 0.3 }
+
+# ------------------- PERFORMANCE / QOS -------------------
+- id: performance.congestion
+  description: "Sustained high utilization and queue drops (congestion)"
+  keywords: ["congestion", "queue", "tail drops", "buffer", "utilization"]
+  signals:
+    - { metric: "utilization", op: ">", value: 0.9, weight: 0.5 }
+    - { metric: "queue_drops", op: ">", value: 0, weight: 0.4 }
+    - { metric: "p95_util", op: ">", value: 0.85, weight: 0.2 }
+
+- id: performance.backup_induced_congestion
+  description: "Backups/replication saturating link (unmarked backup traffic)"
+  keywords: ["backup", "replication", "veeam", "netbackup", "rsync", "backup window"]
+  signals:
+    - { metric: "utilization", op: ">", value: 0.85, weight: 0.45 }
+    - { metric: "queue_drops", op: ">", value: 0, weight: 0.25 }
+    - { metric: "traffic_dscp0_percent", op: ">", value: 60, weight: 0.2 }
+    - { metric: "top_ports_share_445_2049", op: ">", value: 0.3, weight: 0.2 }
+    - { metric: "time_window", op: "in", value: ["00:00-06:00"], weight: 0.1 }
+
+- id: performance.microburst
+  description: "Short microbursts causing packet drops/latency but may be invisible at long poll intervals"
+  keywords: ["microburst", "egress queue spike", "burst"]
+  signals:
+    - { metric: "egress_queue_peak", op: ">", value: 0.4, weight: 0.5 }
+    - { metric: "packet_loss_short", op: ">", value: 0, weight: 0.3 }
+
+- id: performance.packet_loss
+  description: "Packet loss measurable at application level or path"
+  keywords: ["packet loss", "drops", "lost packets"]
+  signals:
+    - { metric: "loss_percent", op: ">", value: 1, weight: 0.6 }
+    - { metric: "retransmit_rate", op: ">", value: 0.02, weight: 0.3 }
+
+- id: performance.high_latency
+  description: "High latency on path or interface"
+  keywords: ["latency", "rtt", "delay"]
+  signals:
+    - { metric: "latency_ms", op: ">", value: 100, weight: 0.6 }
+    - { metric: "p95_rtt", op: ">", value: 80, weight: 0.3 }
+
+- id: performance.qos_misclassification
+  description: "Traffic incorrectly classified (DSCP remarking/misapplied policy)"
+  keywords: ["dscp", "remark", "qos", "class-map", "policy-map"]
+  signals:
+    - { metric: "dscp_map_changes", op: ">", value: 0, weight: 0.4 }
+    - { metric: "priority_drops", op: ">", value: 0, weight: 0.35 }
+    - { metric: "dscp0_percent", op: ">", value: 30, weight: 0.25 }
+
+- id: performance.tail_drop
+  description: "Tail drops observed in output queues"
+  keywords: ["tail drop", "taildrop", "queue tail"]
+  signals:
+    - { metric: "tail_drops", op: ">", value: 0, weight: 0.8 }
+    - { metric: "queue_length", op: ">", value: 0.5, weight: 0.2 }
+
+# ------------------- ROUTING & CONTROL PLANE -------------------
+- id: routing.bgp_down
+  description: "BGP neighbor down"
+  keywords: ["bgp", "neighbor down", "cease", "idle"]
+  signals:
+    - { metric: "bgp_session_state", op: "==", value: "down", weight: 0.8 }
+    - { metric: "bgp_prefix_withdraw_count", op: ">", value: 0, weight: 0.3 }
+
+- id: routing.bgp_flap
+  description: "Frequent BGP resets / flapping"
+  keywords: ["bgp flap", "reset", "session reset"]
+  signals:
+    - { metric: "bgp_reset_count", op: ">", value: 3, weight: 0.7 }
+
+- id: routing.ospf_adj_down
+  description: "OSPF adjacency lost"
+  keywords: ["ospf", "adjacency", "lsa", "ospf down"]
+  signals:
+    - { metric: "ospf_adj_state", op: "==", value: "down", weight: 0.8 }
+
+- id: routing.route_leak
+  description: "Routes being leaked/advertised incorrectly"
+  keywords: ["route leak", "advertise", "wrong as", "prefix leak"]
+  signals:
+    - { metric: "unexpected_prefixes", op: ">", value: 0, weight: 0.7 }
+    - { metric: "asn_change_detected", op: "==", value: true, weight: 0.4 }
+
+- id: routing.asymmetric_routing
+  description: "Forward and return path asymmetry causing issues"
+  keywords: ["asymmetric", "asymmetry", "reverse path"]
+  signals:
+    - { metric: "forward_path", op: "!=", value: "return_path", weight: 0.6 }
+    - { metric: "icmp_path_mismatch", op: ">", value: 0, weight: 0.3 }
+
+- id: routing.lsa_storm
+  description: "OSPF LSA storm/spike in SPF recalculations"
+  keywords: ["lsa storm", "spf", "lsa flood"]
+  signals:
+    - { metric: "lsa_rate", op: ">", value: 10, weight: 0.7 }
+    - { metric: "spf_recalc_count", op: ">", value: 3, weight: 0.3 }
+
+# ------------------- MPLS & VPN -------------------
+- id: mpls.label_exhaustion
+  description: "MPLS label table exhaustion or related issue"
+  keywords: ["mpls", "label", "ldp", "label table"]
+  signals:
+    - { metric: "mpls_label_util", op: ">", value: 0.9, weight: 0.6 }
+    - { metric: "ldp_adj_down", op: "==", value: true, weight: 0.3 }
+
+- id: vpn.vpn_misconfig
+  description: "VPN / VRF misconfiguration causing reachability issues"
+  keywords: ["vrf", "vpn", "route-target", "rd", "vrf-lite"]
+  signals:
+    - { metric: "vrf_routes_missing", op: ">", value: 0, weight: 0.6 }
+
+# ------------------- SYSTEM / DEVICE HEALTH -------------------
+- id: system.cpu_high
+  description: "High CPU on device (control plane or dataplane)"
+  keywords: ["cpu", "high load", "process stuck"]
+  signals:
+    - { metric: "cpu_usage", op: ">", value: 80, weight: 0.8 }
+
+- id: system.memory_high
+  description: "High memory usage"
+  keywords: ["memory", "out of memory"]
+  signals:
+    - { metric: "memory_usage", op: ">", value: 80, weight: 0.8 }
+
+- id: system.disk_full
+  description: "Disk or filesystem full"
+  keywords: ["disk full", "no space", "filesystem full"]
+  signals:
+    - { metric: "disk_usage", op: ">", value: 90, weight: 0.9 }
+
+- id: system.process_crash
+  description: "Critical process crashed/restarted"
+  keywords: ["process crash", "segfault", "restarted"]
+  signals:
+    - { metric: "process_restart_count", op: ">", value: 0, weight: 0.8 }
+
+- id: system.control_plane_policing
+  description: "Control plane policing (CoPP) drops affecting routing"
+  keywords: ["copp", "control-plane", "routing drop"]
+  signals:
+    - { metric: "copp_drops", op: ">", value: 0, weight: 0.7 }
+    - { metric: "bgp_session_drops", op: ">", value: 0, weight: 0.3 }
+
+# ------------------- CONFIG & CHANGE -------------------
+- id: config.unauthorized_change
+  description: "Configuration changed without approval"
+  keywords: ["config changed", "unauthorized", "cfg diff"]
+  signals:
+    - { metric: "config_change_detected", op: "==", value: true, weight: 0.9 }
+
+- id: config.misapplied_policy
+  description: "Policy (QoS/ACL) misapplied or missing on interface"
+  keywords: ["service-policy", "policy-map", "acl", "not applied"]
+  signals:
+    - { metric: "policy_attached", op: "==", value: false, weight: 0.6 }
+    - { metric: "expected_policy_mismatch", op: "==", value: true, weight: 0.4 }
+
+- id: config.rollback_needed
+  description: "Recent config change caused issues and needs rollback"
+  keywords: ["rollback", "recent change", "config push"]
+  signals:
+    - { metric: "config_change_time_delta_min", op: "<", value: 60, weight: 0.5 }
+    - { metric: "post_change_incidents", op: ">", value: 0, weight: 0.5 }
+
+# ------------------- SECURITY / ATTACK -------------------
+- id: security.ddos
+  description: "DDoS or volumetric attack"
+  keywords: ["ddos", "attack", "flood", "pps", "amplification"]
+  signals:
+    - { metric: "pps_rate", op: ">", value: 1000000, weight: 0.6 }
+    - { metric: "syn_rate", op: ">", value: 10000, weight: 0.3 }
+    - { metric: "ip_entropy_low", op: "<", value: 2.0, weight: 0.1 }
+
+- id: security.brute_force_login
+  description: "Brute-force login attempts detected"
+  keywords: ["failed login", "authentication failure", "invalid user"]
+  signals:
+    - { metric: "failed_auth_count", op: ">", value: 10, weight: 0.8 }
+
+- id: security.bgp_hijack_suspected
+  description: "Possible BGP hijack or unexpected ASN for prefix"
+  keywords: ["origin changed", "asn mismatch", "hijack"]
+  signals:
+    - { metric: "origin_as_change", op: "==", value: true, weight: 0.8 }
+
+# ------------------- MULTICAST / BROADCAST -------------------
+- id: multicast.storm
+  description: "Multicast storm or broadcast amplification"
+  keywords: ["multicast", "igmp", "mcast", "broadcast storm"]
+  signals:
+    - { metric: "multicast_pps", op: ">", value: 10000, weight: 0.6 }
+    - { metric: "broadcast_pct", op: ">", value: 20, weight: 0.4 }
+
+# ------------------- SERVICE / APPLICATION LAYER -------------------
+- id: service.dns_failure
+  description: "DNS service unreachable or responding slowly"
+  keywords: ["dns", "named", "dns timeout", "nxdomain"]
+  signals:
+    - { metric: "dns_error_rate", op: ">", value: 0.05, weight: 0.6 }
+    - { metric: "dns_latency_ms", op: ">", value: 200, weight: 0.4 }
+
+- id: service.dhcp_exhausted
+  description: "DHCP pool exhausted"
+  keywords: ["dhcp", "no address", "pool exhausted"]
+  signals:
+    - { metric: "dhcp_available_ips", op: "<=", value: 5, weight: 0.9 }
+
+- id: service.ntp_unsynced
+  description: "NTP unsynchronized or large drift"
+  keywords: ["ntp", "unsynced", "clock drift"]
+  signals:
+    - { metric: "ntp_offset_ms", op: ">", value: 100, weight: 0.8 }
+
+# ------------------- SPECIAL / ADVANCED CASES -------------------
+- id: special.backup_window_qos_bypass
+  description: "Backup traffic bypassing QoS or not marked properly during backup window"
+  keywords: ["backup", "veeam", "rsync", "unmarked backup"]
+  signals:
+    - { metric: "time_window", op: "in", value: ["00:00-06:00"], weight: 0.2 }
+    - { metric: "backup_protocol_share", op: ">", value: 0.25, weight: 0.4 }
+    - { metric: "traffic_dscp0_percent", op: ">", value: 60, weight: 0.4 }
+
+- id: special.as_path_limit
+  description: "AS path length or routing scale limit reached"
+  keywords: ["as path", "route scale", "prefix limit"]
+  signals:
+    - { metric: "as_path_len_avg", op: ">", value: 10, weight: 0.6 }
+    - { metric: "rib_size", op: ">", value: 0.95, weight: 0.3 }
+
+- id: special.mpls_ecmp_mismatch
+  description: "MPLS ECMP imbalance or label distribution issues"
+  keywords: ["mpls", "ecmp", "imbalance"]
+  signals:
+    - { metric: "ecmp_path_skew", op: ">", value: 0.2, weight: 0.6 }
+
+- id: special.vlan_flood
+  description: "VLAN flooding due to unknown unicast / STP issues"
+  keywords: ["stp", "mac flapping", "unknown unicast", "vlan flood"]
+  signals:
+    - { metric: "unknown_unicast_rate", op: ">", value: 0.1, weight: 0.6 }
+    - { metric: "mac_table_churn", op: ">", value: 0.05, weight: 0.4 }
+
+# ------------------- FALLBACK / AMBIGUOUS -------------------
+- id: unknown.low_confidence
+  description: "Low confidence / ambiguous case, escalate to human or LLM"
+  keywords: ["unknown", "ambiguous", "investigate"]
+  signals:
+    - { metric: "combined_score", op: "<", value: 0.6, weight: 1.0 }

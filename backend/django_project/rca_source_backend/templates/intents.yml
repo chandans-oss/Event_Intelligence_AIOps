@@ -1,0 +1,353 @@
+intents:
+# ------------------- LINK & PHYSICAL LAYER -------------------
+- id: link.down
+  template_id: "planner.link.down.v1"
+  description: "Physical/optical link down"
+  keywords: ["interface down", "link down", "port down", "los", "loss of signal"]
+  signals:
+    - { metric: "oper_status", op: "==", value: "down", weight: 0.7 }
+    - { metric: "admin_status", op: "==", value: "up", weight: 0.2 }
+  hypotheses:
+    - id: H_CABLE_UNPLUGGED
+      description: "Physical cable disconnected or optical signal lost"
+      signals:
+        - { metric: "oper_status", op: "==", value: "down", weight: 0.7 }
+        - { metric: "admin_status", op: "==", value: "up", weight: 0.2 }
+      log_patterns:
+        - { keyword: "loss of signal", weight: 0.3 }
+        - { keyword: "LOS", weight: 0.3 }
+
+    - id: H_TRANSCEIVER_FAILURE
+      description: "Optical module or SFP failure"
+      signals:
+        - { metric: "oper_status", op: "==", value: "down", weight: 0.6 }
+      log_patterns:
+        - { keyword: "transceiver", weight: 0.3 }
+        - { keyword: "module failure", weight: 0.3 }
+
+- id: link.flap
+  template_id: "planner.link.flap.v1"
+  description: "Interface flapping frequently"
+  keywords: ["flap", "bouncing", "up/down", "interface changed state"]
+  signals:
+    - { metric: "flap_count", op: ">", value: 3, weight: 0.7 }
+    - { metric: "oper_changes_per_min", op: ">", value: 1, weight: 0.3 }
+  hypotheses:
+    - id: H_LOOSE_CONNECTION
+      description: "Loose connection or faulty cable"
+      signals:
+        - { metric: "flap_count", op: ">", value: 3, weight: 0.7 }
+      log_patterns:
+        - { keyword: "changed state to down", weight: 0.3 }
+
+    - id: H_NEGOTIATION_ISSUE
+      description: "Speed/Duplex negotiation mismatch"
+      signals:
+        - { metric: "oper_changes_per_min", op: ">", value: 1, weight: 0.3 }
+      log_patterns:
+        - { keyword: "duplex", weight: 0.3 }
+        - { keyword: "speed mismatch", weight: 0.3 }
+
+- id: link.high_errors
+  template_id: "planner.link.high_errors.v1"
+  description: "High CRC/Input/Output errors"
+  keywords: ["crc", "input error", "output error", "frame error"]
+  signals:
+    - { metric: "in_errors", op: ">", value: 100, weight: 0.5 }
+    - { metric: "out_discards", op: ">", value: 100, weight: 0.3 }
+  hypotheses:
+    - id: H_CRC_ERRORS
+      description: "CRC or physical layer corruption"
+      signals:
+        - { metric: "in_errors", op: ">", value: 100, weight: 0.6 }
+      log_patterns:
+        - { keyword: "crc error", weight: 0.3 }
+
+    - id: H_BUFFER_OVERFLOW
+      description: "Packet drops due to output queue overflow"
+      signals:
+        - { metric: "out_discards", op: ">", value: 100, weight: 0.4 }
+      log_patterns:
+        - { keyword: "queue full", weight: 0.2 }
+        - { keyword: "tail drop", weight: 0.2 }
+
+# ------------------- PERFORMANCE / QOS -------------------
+- id: performance.congestion
+  template_id: "planner.performance.congestion.v1"
+  description: "Interface congestion"
+  keywords: ["congestion", "queue drop", "buffer full", "tail drop", "backup", "rsync"]
+  signals:
+    - { metric: "utilization_percent", op: ">", value: 90, weight: 0.5 }
+    - { metric: "out_discards", op: ">", value: 0, weight: 0.4 }
+  hypotheses:
+    - id: H_QOS_CONGESTION
+      description: "QOS_CONGESTION - High utilization and queue discards"
+      signals:
+        - { metric: "utilization_percent", op: ">", value: 90, weight: 0.5 }
+        - { metric: "out_discards", op: ">", value: 0, weight: 0.4 }
+      log_patterns:
+        - { keyword: "tail drop", weight: 0.3 }
+        - { keyword: "buffer full", weight: 0.3 }
+        - { keyword: "queue full", weight: 0.3 }
+
+    - id: H_PEAK_TRAFFIC
+      description: "Peak-hour usage causing congestion"
+      signals:
+        - { metric: "utilization_percent", op: ">", value: 85, weight: 0.4 }
+      log_patterns:
+        - { keyword: "traffic spike", weight: 0.2 }
+
+    - id: H_BACKUP_TRAFFIC
+      description: "Backup using default DSCP0 traffic"
+      signals:
+        - { metric: "traffic_dscp0_percent", op: ">", value: 50, weight: 0.4 }
+        - { metric: "utilization_percent", op: ">", value: 85, weight: 0.4 }
+      log_patterns:
+        - { keyword: "backup", weight: 0.3 }
+        - { keyword: "replication", weight: 0.3 }
+        - { keyword: "scheduled backup", weight: 0.2 }
+
+# ------------------- ROUTING -------------------
+- id: routing.bgp_down
+  template_id: "planner.routing.bgp_down.v1"
+  description: "BGP session down"
+  keywords: ["bgp", "neighbor down"]
+  signals:
+    - { metric: "bgp_session_state", op: "==", value: "down", weight: 0.8 }
+  hypotheses:
+    - id: H_BGP_NEIGHBOR_LOST
+      description: "BGP peer or transport failure"
+      signals:
+        - { metric: "bgp_session_state", op: "==", value: "down", weight: 0.8 }
+      log_patterns:
+        - { keyword: "BGP-5-ADJCHANGE", weight: 0.3 }
+        - { keyword: "neighbor down", weight: 0.3 }
+
+# ------------------- SYSTEM / DEVICE HEALTH -------------------
+- id: system.cpu_high
+  template_id: "planner.system.cpu_high.v1"
+  description: "High CPU on device"
+  keywords: ["cpu high", "high load"]
+  signals:
+    - { metric: "cpu_percent", op: ">", value: 80, weight: 0.8 }
+  hypotheses:
+    - id: H_CPU_SPIKE
+      description: "CPU nearing threshold causing impact"
+      signals:
+        - { metric: "cpu_percent", op: ">", value: 80, weight: 0.8 }
+      log_patterns:
+        - { keyword: "high cpu", weight: 0.3 }
+        - { keyword: "process", weight: 0.2 }
+
+- id: system.memory_high
+  template_id: "planner.system.memory_high.v1"
+  description: "High memory usage"
+  keywords: ["memory high", "ram usage"]
+  signals:
+    - { metric: "mem_percent", op: ">", value: 80, weight: 0.8 }
+  hypotheses:
+    - id: H_MEMORY_PRESSURE
+      description: "Memory nearing full capacity"
+      signals:
+        - { metric: "mem_percent", op: ">", value: 80, weight: 0.8 }
+      log_patterns:
+        - { keyword: "memory", weight: 0.3 }
+        - { keyword: "oom", weight: 0.3 }
+
+- id: system.device_overheat
+  template_id: "planner.system.device_overheat.v1"
+  description: "High chassis or CPU temperature"
+  keywords: ["overheat", "high temperature"]
+  signals:
+    - { metric: "temp_c", op: ">", value: 70, weight: 0.7 }
+  hypotheses:
+    - id: H_OVERHEATING
+      description: "Device overheating due to airflow or fan failure"
+      signals:
+        - { metric: "temp_c", op: ">", value: 70, weight: 0.7 }
+      log_patterns:
+        - { keyword: "temperature alarm", weight: 0.3 }
+        - { keyword: "fan failure", weight: 0.3 }
+
+# ------------------- SECURITY -------------------
+- id: security.ddos
+  template_id: "planner.security.ddos.v1"
+  description: "High PPS traffic – potential DDOS"
+  keywords: ["ddos", "attack", "flood"]
+  signals:
+    - { metric: "pps_rate", op: ">", value: 1000000, weight: 0.6 }
+  hypotheses:
+    - id: H_VOLUME_ATTACK
+      description: "High-volume packet flood attack"
+      signals:
+        - { metric: "pps_rate", op: ">", value: 1000000, weight: 0.6 }
+      log_patterns:
+        - { keyword: "attack", weight: 0.3 }
+        - { keyword: "flood", weight: 0.3 }
+
+# ------------------- FALLBACK -------------------
+- id: unknown.low_confidence
+  template_id: "planner.unknown.low_confidence.v1"
+  description: "No confident match"
+  keywords: ["unknown", "investigate"]
+  signals:
+    - { metric: "combined_score", op: "<", value: 0.6, weight: 1.0 }
+  hypotheses:
+    - id: H_MANUAL_INVESTIGATION
+      description: "Not enough evidence – manual analysis required"
+      signals:
+        - { metric: "combined_score", op: "<", value: 0.6, weight: 1.0 }
+      log_patterns:
+        - { keyword: "unknown", weight: 0.2 }
+
+        
+#--cooling--
+- id: thermal.device_temperature_high
+  template_id: "planner.thermal.device_temperature_high.v1"
+  description: "Device temperature high."
+  keywords:
+    [
+      "overheating",
+      "thermal load",
+      "cooling failure",
+      "airflow reduced",
+      "Router temperature",
+      "CRAC failure",
+      "fan RPM unstable",
+      "environmental high temp",
+      "cooling degradation",
+      "temperature increase"
+    ]
+
+  signals:
+    - { metric: "temp_c", op: ">", value: 45, weight: 0.2}
+    - { metric: "cpu_percent", op: ">", value: 50, weight: 0.1}
+    - { metric: "fan_speed", op: ">", value: 3500, weight: 0.1}
+    - { metric: "fan_speed", op: "<", value: 500, weight: 0.2}
+    - { metric: "power_watt", op: ">", value: 50, weight: 0.1}
+    - { metric: "power_watt", op: "<", value: 20, weight: 0.15}
+
+  hypotheses:
+
+    - id: H_COOLING_DEGRADED
+      description: "Cooling efficiency decreased (airflow reduced, fan speed abnormal)"
+      signals:
+        - { metric: "temp_c", op: ">", value: 45, weight: 0.2 }
+        - { metric: "latency_ms", op: ">", value: 10, weight: 0.1}
+      log_patterns:
+        - { keyword: "Critical thermal alarm", weight: 0.3 }
+        - { keyword: "fan speed", weight: 0.2 }
+        - { keyword: "environment temperature rise", weight: 0.2 }
+        - { keyword: "cooling degradation", weight: 0.2 }
+
+    - id: H_CRAC_FAILURE
+      description: "CRAC / cooling unit failure causing environment temperature spike"
+      signals:
+        - { metric: "temp_c", op: ">", value: 50, weight: 0.3 }
+      log_patterns:
+        - { keyword: "Fan RPM unstable", weight: 0.1 }
+        - { keyword: "Severe RPM drop", weight: 0.2 }
+        - { keyword: "airflow insufficient", weight: 0.3 }
+
+    - id: H_ROUTER_OVERHEAT
+      description: "Device temperature exceeded thermal threshold, causing instability"
+      signals:
+        - { metric: "temp_c", op: ">", value: 50, weight: 0.3 }
+        - { metric: "cpu_percent", op: ">", value: 52, weight: 0.1 }
+        - { metric: "latency_ms", op: ">", value: 15, weight: 0.07 }
+      log_patterns:
+        - { keyword: "high-load thermal", weight: 0.1 }
+        - { keyword: "chassis temperature", weight: 0.2 }
+        - { keyword: "fan instability", weight: 0.2 }
+
+    - id: H_ROOM_TEMP_RISE
+      description: "Room / zone temperature increase due to cooling inefficiency"
+      signals:
+        - { metric: "temp_c", op: ">", value: 47, weight: 0.2 }
+      log_patterns:
+        - { keyword: "room temperature rise", weight: 0.3 }
+        - { keyword: "environment temp high", weight: 0.3 }
+
+    - id: H_CPU_THROTTLE
+      description: "CPU thermal throttling triggered by high internal temperature"
+      signals:
+        - { metric: "cpu_percent", op: ">", value: 50, weight: 0.3 }
+      log_patterns:
+        - { keyword: "CPU throttling", weight: 0.3 }
+        - { keyword: "discards climbing", weight: 0.3 }
+
+    - id: H_DOWNSTREAM_IMPACT
+      description: "Overheated router causing downstream packet drops, latency, and retransmissions"
+      signals:
+        - { metric: "latency_ms", op: ">", value: 15, weight: 0.3 }
+        - { metric: "packet_loss_percent", op: ">", value: 2, weight: 0.3 }
+      log_patterns:
+        - { keyword: "packet drop", weight: 0.3 }
+        - { keyword: "queue buildup", weight: 0.2 }
+        - { keyword: "flow retries", weight: 0.2 }
+
+- id: thermal.early_thermal_risk
+  template_id: "planner.thermal.early_warning.v1"
+  description: "Early-stage temperature rise indicating potential future overheating"
+  keywords:
+    [
+      "temperature rise",
+      "thermal trend",
+      "heat buildup",
+      "cooling warning",
+      "early thermal risk",
+      "temp drifting upward"
+    ]
+
+  signals:
+    - { metric: "temp_c", op: ">", value: 38, weight: 0.3 }
+    - { metric: "temp_trend_rate", op: ">", value: 5, weight: 0.3 }
+    - { metric: "fan_speed", op: ">", value: 3000, weight: 0.1 }
+
+  hypotheses:
+    - id: H_GRADUAL_HEAT_BUILDUP
+      description: "Slow, consistent rise in internal device temperature over time"
+      signals:
+        - { metric: "temp_trend_rate", op: ">", value: 4, weight: 0.3 }
+      log_patterns:
+        - { keyword: "temperature rising", weight: 0.3 }
+
+    - id: H_COOLING_WARN
+      description: "Cooling system showing early signs of inefficiency"
+      signals:
+        - { metric: "fan_speed", op: ">", value: 3200, weight: 0.1 }
+      log_patterns:
+        - { keyword: "fan warning", weight: 0.2 }
+
+- id: thermal.environmental_heat_anomaly
+  template_id: "planner.thermal.room_temp_spike.v1"
+  description: "Abnormal room or rack temperature increase affecting device thermal conditions"
+  keywords:
+    [
+      "room temperature spike",
+      "rack overheating",
+      "environmental heat",
+      "inlet temperature high",
+      "CRAC air temperature",
+      "cooling airflow low"
+    ]
+
+  signals:
+    - { metric: "inlet_temp_c", op: ">", value: 35, weight: 0.4 }
+    - { metric: "temp_c", op: ">", value: 40, weight: 0.2 }
+    - { metric: "humidity_percent", op: "<", value: 30, weight: 0.1 }
+
+  hypotheses:
+    - id: H_RACK_HOTSPOT
+      description: "Localized heat hotspot in rack impacting device"
+      signals:
+        - { metric: "inlet_temp_c", op: ">", value: 36, weight: 0.3 }
+      log_patterns:
+        - { keyword: "rack temperature high", weight: 0.3 }
+
+    - id: H_CRAC_AIR_TEMP_ANOMALY
+      description: "Cooling system supply air temperature higher than expected"
+      signals:
+        - { metric: "inlet_temp_c", op: ">", value: 38, weight: 0.4 }
+      log_patterns:
+        - { keyword: "CRAC warm air", weight: 0.3 }

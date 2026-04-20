@@ -1,0 +1,15 @@
+[36mvite v5.4.19 [32mbuilding for production...[36m[39m
+transforming...
+Browserslist: browsers data (caniuse-lite) is 9 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[32m✓[39m 7 modules transformed.
+[31mx[39m Build failed in 3.85s
+[31merror during build:
+[31m[vite:load-fallback] Could not load D:\Rnd files\event-analytics-main\src/features/events/pages/PredictedEventsPage (imported by src/App.tsx): ENOENT: no such file or directory, open 'D:\Rnd files\event-analytics-main\src\features\events\pages\PredictedEventsPage'[31m
+    at async open (node:internal/fs/promises:637:25)
+    at async Object.readFile (node:internal/fs/promises:1269:14)
+    at async Object.load (file:///D:/Rnd%20files/event-analytics-main/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:65341:25)
+    at async PluginDriver.hookFirstAndGetPlugin (file:///D:/Rnd%20files/event-analytics-main/node_modules/rollup/dist/es/shared/node-entry.js:22430:28)
+    at async file:///D:/Rnd%20files/event-analytics-main/node_modules/rollup/dist/es/shared/node-entry.js:21422:33
+    at async Queue.work (file:///D:/Rnd%20files/event-analytics-main/node_modules/rollup/dist/es/shared/node-entry.js:22658:32)[39m

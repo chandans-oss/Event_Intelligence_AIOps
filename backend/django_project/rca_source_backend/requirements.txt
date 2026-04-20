@@ -1,0 +1,13 @@
+streamlit
+pandas
+scikit-learn
+xgboost
+lightgbm
+matplotlib
+seaborn
+networkx
+pgmpy
+openpyxl
+psycopg2-binary
+sentence-transformers
+streamlit-javascript

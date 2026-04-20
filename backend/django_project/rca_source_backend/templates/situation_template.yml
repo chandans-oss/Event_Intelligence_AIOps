@@ -1,0 +1,83 @@
+situation_template:
+# ------------------- LINK & PHYSICAL LAYER -------------------
+- template_id: "planner.link.down.v1"
+  situation_text: >
+    Link/Interface {interface} on device {device} is down. Operational status is {oper_status}, while administrative status is {admin_status}.
+    Top hypothesis: {top_hypothesis} (score={prior}).
+
+
+- template_id: "planner.link.flap.v1"
+  situation_text: >
+    Interface {resoure_name} on {device} is flapping frequently ({flap_count} flaps, {oper_changes_per_min} state changes per minute).
+    Top hypothesis: {top_hypothesis} (score={prior}).
+
+
+- template_id: "planner.link.high_errors.v1"
+  situation_text: >
+    Interface {resoure_name} on {device} is experiencing high error rates  {in_errors} input errors, {out_discards} output discards.
+    Top hypothesis: {top_hypothesis} (score={prior}).
+
+
+# ------------------- PERFORMANCE / QOS -------------------
+- template_id: "planner.performance.congestion.v1"
+  situation_text: >
+    Interface {resoure_name} on {device} shows high utilization ({utilization_percent}%), with {out_discards} queue drops.
+    Top hypothesis: {top_hypothesis} (score={prior}).
+
+
+- template_id: "planner.performance.backup_congestion.v1"
+  situation_text: >
+    Backup traffic detected on {device} through link, with {utilization_percent}% utilization and {traffic_dscp0_percent}% DSCP0 share.
+    Top hypothesis: {top_hypothesis} (score={prior}).
+
+- template_id: "planner.performance.high_latency.v1"
+  situation_text: >
+    Device {device} or path shows high latency of {latency_ms} ms.
+    Top hypothesis: {top_hypothesis} (score={prior}).
+
+- template_id: "planner.performance.packet_loss.v1"
+  situation_text: >
+    Packet loss observed on {device}->{peer}, loss rate = {packet_loss_percent}%.
+    Top hypothesis: {top_hypothesis} (score={prior}).
+
+# ------------------- ROUTING -------------------
+- template_id: "planner.routing.bgp_down.v1"
+  situation_text: >
+    BGP session between {device} and neighbor {peer} is down (state={bgp_session_state}).
+    Top hypothesis: {top_hypothesis} (score={prior}).
+
+# ------------------- SYSTEM / DEVICE HEALTH -------------------
+- template_id: "planner.system.cpu_high.v1"
+  situation_text: >
+    Device {device} CPU utilization is high ({cpu_percent}%).
+    Top hypothesis: {top_hypothesis} (score={prior}).
+
+- template_id: "planner.system.memory_high.v1"
+  situation_text: >
+    Device {device} memory utilization is high ({mem_percent}%).
+    Top hypothesis: {top_hypothesis} (score={prior}).
+
+- template_id: "planner.system.device_overheat.v1"
+  situation_text: >
+    Device {device} temperature is high ({temp_c}°C).
+    Top hypothesis: {top_hypothesis} (score={prior}).
+
+# ------------------- SECURITY -------------------
+- template_id: "planner.security.ddos.v1"
+  situation_text: >
+    Device {device} is experiencing unusually high packet rate ({pps_rate} PPS) indicating possible DDOS.
+    Top hypothesis: {top_hypothesis} (score={prior}).
+
+# ------------------- FALLBACK -------------------
+- template_id: "planner.unknown.low_confidence.v1"
+  situation_text: >
+    No clear pattern detected for {device}. Combined score = {combined_score}.
+    Top hypothesis: {top_hypothesis} (score={prior}).
+
+
+#--cooling / Temperature high--
+- template_id: "planner.thermal.device_temperature_high.v1"
+  situation_text: >
+    Device {device} temperature has increased sharply to {temp_c}°C causing thermal impact on it performance.
+    Top hypothesis: 
+    {top_hypothesis} (score={prior})

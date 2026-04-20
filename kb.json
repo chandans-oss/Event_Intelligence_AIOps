@@ -1,0 +1,913 @@
+[
+  {
+    "Category": "Connectivity",
+    "Subcategory": "Reachability",
+    "FAQ (Symptom/Question)": "Why is a device showing 'Host Down' in NMS?",
+    "Likely Causes": "- SNMP or ICMP blocked\n- Device/Interface down\n- ACL/Firewall drop\n- Routing not present\n- VRF mismatch\n- Power/Hardware issue",
+    "Observability Signals (What to Check)": "- Ping/ICMP status\n- SNMP poll result & sysUpTime\n- Interface status (admin/oper)\n- ARP/ND entries\n- Routing table path to device",
+    "CLI/Commands": "ping <ip>\ntraceroute <ip>\nshow ip route <ip>\nshow interface status\nshow access-lists | include <src/dst>",
+    "RCA Steps (Decision Path)": "1) Verify management IP & VRF\n2) ICMP/SNMP reachability from poller\n3) Check link/neighbor state\n4) Validate routing path/ACLs\n5) Hardware/power checks",
+    "Resolution / Workaround": "Restore upstream route/ACL; enable ICMP/SNMP to poller; bring up interface; replace faulty hardware/PSU.",
+    "Preventive Action": "Standardize management VRF; allow-lists for NMS; dual power; path redundancy.",
+    "Related Tools": "Ping, Traceroute, SNMP, Syslog",
+    "Priority/Severity Hint": "P1 if core/critical device; P2 otherwise",
+    "Tags": "host-down, snmp, icmp, vrf",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Connectivity",
+    "Subcategory": "Packet Loss",
+    "FAQ (Symptom/Question)": "Users report intermittent packet loss to a site\u2014what should I check?",
+    "Likely Causes": "- Link errors (CRC, drops)\n- Duplex/Speed mismatch\n- Congestion/Queue drops\n- RF interference (Wi\u2011Fi)\n- ISP/WAN degradation",
+    "Observability Signals (What to Check)": "- Interface error counters\n- QoS queue drops\n- Latency/Jitter trends\n- NetFlow/sFlow loss indicators",
+    "CLI/Commands": "show interface counters errors\nshow platform hardware qfp drops\nshow policy-map interface\nmtr <dst>",
+    "RCA Steps (Decision Path)": "1) Baseline ping/mtr\n2) Inspect interface errors\n3) Check QoS & queue depths\n4) Validate duplex/speed\n5) Engage ISP if WAN",
+    "Resolution / Workaround": "Fix cabling/SFP; correct duplex/speed; tune QoS; open ISP ticket with evidence (latency/loss graphs).",
+    "Preventive Action": "Use error-threshold alerting; pre\u2011mark critical traffic; SLA probes on WAN.",
+    "Related Tools": "NetFlow/sFlow, IPSLA/TWAMP, SNMP, Wireshark",
+    "Priority/Severity Hint": "P1 if site-wide; P2 for segment",
+    "Tags": "packet-loss, qos, wan, crc",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Services",
+    "Subcategory": "DNS",
+    "FAQ (Symptom/Question)": "Clients see 'DNS server not responding'\u2014how to triage?",
+    "Likely Causes": "- DNS server down/restart\n- Firewall blocks 53/UDP\n- Anycast health failover\n- Split-horizon misconfig",
+    "Observability Signals (What to Check)": "- UDP 53 reachability\n- Server CPU/mem\n- Query success rate, NXDOMAIN spikes",
+    "CLI/Commands": "nslookup <name> <dns>\ndig +trace <name>\ntelnet <dns> 53\nshow access-lists | inc 53",
+    "RCA Steps (Decision Path)": "1) Check DNS reachability\n2) Validate server health\n3) Confirm views/split-horizon\n4) Inspect recent changes",
+    "Resolution / Workaround": "Restore service; open 53/UDP; correct view/zone data; rollback bad changes.",
+    "Preventive Action": "Health probes for Anycast; change control; capacity headroom.",
+    "Related Tools": "DNS logs, Packet capture, Syslog",
+    "Priority/Severity Hint": "P1 if org-wide resolution fails",
+    "Tags": "dns, anycast, firewall",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Services",
+    "Subcategory": "DHCP",
+    "FAQ (Symptom/Question)": "Why are clients failing to obtain IPs (DHCP timeouts)?",
+    "Likely Causes": "- Scope exhaustion\n- Relay (ip helper) broken\n- VLAN trunk issue\n- ACL blocking UDP 67/68",
+    "Observability Signals (What to Check)": "- Pool utilization\n- Relay counters/logs\n- VLAN STP/Trunk state",
+    "CLI/Commands": "show ip dhcp binding\nshow ip dhcp pool\nshow ip helper\nshow vlan / show interfaces trunk",
+    "RCA Steps (Decision Path)": "1) Verify VLAN reaches relay\n2) Check scope utilization\n3) Inspect ACLs\n4) Confirm server status",
+    "Resolution / Workaround": "Expand scope; fix relay; correct VLAN tags; open ports 67/68.",
+    "Preventive Action": "Capacity planning; IPAM alerts for pool thresholds.",
+    "Related Tools": "DHCP logs, NMS traps",
+    "Priority/Severity Hint": "P1 for large user outage",
+    "Tags": "dhcp, ip-helper, vlan",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Routing",
+    "Subcategory": "BGP",
+    "FAQ (Symptom/Question)": "BGP session flapping with ISP\u2014what causes and fixes?",
+    "Likely Causes": "- Physical link issues\n- Mismatched timers/MD5\n- Route churn/Max-prefix hit\n- MTU mismatch causing TCP resets",
+    "Observability Signals (What to Check)": "- BGP neighbor log\n- Hold/timer counters\n- Max-prefix alarms\n- Interface errors",
+    "CLI/Commands": "show bgp summary\nshow ip bgp neighbors\nshow interface counters\nshow logging | inc BGP",
+    "RCA Steps (Decision Path)": "1) Confirm physical stability\n2) Validate auth/timers/MTU\n3) Check max\u2011prefix & route leaks\n4) Coordinate with ISP",
+    "Resolution / Workaround": "Fix optics/cable; align timers/MD5; increase max\u2011prefix with safeguards; correct MTU.",
+    "Preventive Action": "BFD for fast detection; route-policy sanity; prefix-limit alerting.",
+    "Related Tools": "BGP logs, BFD, NetFlow",
+    "Priority/Severity Hint": "P1 for core/edge impact",
+    "Tags": "bgp, max-prefix, mtu, md5",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Routing",
+    "Subcategory": "OSPF",
+    "FAQ (Symptom/Question)": "OSPF neighbor stuck in EXSTART/EXCHANGE\u2014what to check?",
+    "Likely Causes": "- MTU mismatch\n- Duplicate router IDs\n- Network type mismatch\n- ACL blocking multicast",
+    "Observability Signals (What to Check)": "- OSPF neighbor state timeline\n- Interface MTU\n- RID uniqueness",
+    "CLI/Commands": "show ip ospf neighbor\nshow interface | inc MTU\nshow ip ospf interface",
+    "RCA Steps (Decision Path)": "1) Verify MTU & adjust or set ip ospf mtu-ignore\n2) Ensure unique RIDs\n3) Check network type & multicast reachability",
+    "Resolution / Workaround": "Align MTU; fix RID; correct network type/ACLs.",
+    "Preventive Action": "Pre\u2011deploy templates; health checks.",
+    "Related Tools": "OSPF logs",
+    "Priority/Severity Hint": "P2 unless causing outage",
+    "Tags": "ospf, mtu, rid",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Switching",
+    "Subcategory": "STP",
+    "FAQ (Symptom/Question)": "Random access outages\u2014could this be STP?",
+    "Likely Causes": "- Root bridge change\n- Portfast missing \u2192 TCN floods\n- Loop due to cabling\n- BPDU guard shutdown",
+    "Observability Signals (What to Check)": "- STP topology change count\n- Root bridge identity\n- BPDU guard logs",
+    "CLI/Commands": "show spanning-tree detail\nshow spanning-tree root\nshow log | inc STP|BPDU",
+    "RCA Steps (Decision Path)": "1) Verify root placement\n2) Check TCN spikes\n3) Inspect access loops & err\u2011disable\n4) Enable loop guard/BPDU guard",
+    "Resolution / Workaround": "Set deterministic roots; enable Portfast+BPDU guard; fix loops.",
+    "Preventive Action": "Design standards; LLDP audits.",
+    "Related Tools": "STP logs, LLDP",
+    "Priority/Severity Hint": "P1 if broadcast storm",
+    "Tags": "stp, tcn, loop-guard, bpdu",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Switching",
+    "Subcategory": "VLAN/Trunk",
+    "FAQ (Symptom/Question)": "Hosts in VLAN cannot reach gateway\u2014why?",
+    "Likely Causes": "- Trunk missing VLAN tag\n- SVI down/admin down\n- HSRP/VRRP failover issue",
+    "Observability Signals (What to Check)": "- Trunk allowed list\n- SVI line-protocol\n- ARP table for gateway",
+    "CLI/Commands": "show interfaces trunk\nshow vlan brief\nshow standby / show vrrp",
+    "RCA Steps (Decision Path)": "1) Validate VLAN allowed on trunks\n2) Confirm SVI up\n3) Verify HSRP/VRRP state & ARP",
+    "Resolution / Workaround": "Permit VLAN on trunks; bring up SVI; fix FHRP priorities/preempt.",
+    "Preventive Action": "Change control on trunk changes; monitoring for SVI down.",
+    "Related Tools": "Syslog, SNMP, ARP",
+    "Priority/Severity Hint": "P2/P1 if large segment",
+    "Tags": "vlan, trunk, svi, hsrp",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Interfaces",
+    "Subcategory": "Errors",
+    "FAQ (Symptom/Question)": "CRC errors increasing on uplink\u2014what now?",
+    "Likely Causes": "- Bad cable/SFP\n- Duplex/speed mismatch\n- EMI interference",
+    "Observability Signals (What to Check)": "- CRC/giants/drops counters\n- Autoneg status\n- Optical levels",
+    "CLI/Commands": "show interface counters errors\nddm interface <port>",
+    "RCA Steps (Decision Path)": "1) Swap patch/SFP\n2) Lock duplex/speed appropriately\n3) Test on alternate path/port",
+    "Resolution / Workaround": "Replace faulty components; correct autoneg; reroute temporarily.",
+    "Preventive Action": "Use certified optics/cables; keep spares.",
+    "Related Tools": "SNMP interface stats",
+    "Priority/Severity Hint": "P2 unless causing P1 impact",
+    "Tags": "crc, autoneg, sfp",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Interfaces",
+    "Subcategory": "Flaps",
+    "FAQ (Symptom/Question)": "Why does an access port keep going up/down frequently?",
+    "Likely Causes": "- Loose cable\n- Power-saving NIC\n- Loop detection\n- PoE power issues",
+    "Observability Signals (What to Check)": "- Link up/down logs\n- PoE power draw\n- Errdisable reasons",
+    "CLI/Commands": "show log | inc link\nshow power inline <port>",
+    "RCA Steps (Decision Path)": "1) Inspect cabling & NIC power settings\n2) Check PoE budget & negotiate\n3) Review errdisable recovery",
+    "Resolution / Workaround": "Replace cable/NIC; adjust PoE allocation; disable aggressive power-save.",
+    "Preventive Action": "Cable management; NIC driver updates.",
+    "Related Tools": "Syslog, SNMP traps",
+    "Priority/Severity Hint": "P3/P2",
+    "Tags": "flap, poe, errdisable",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Performance",
+    "Subcategory": "Latency/Jitter",
+    "FAQ (Symptom/Question)": "What causes high jitter on VoIP?",
+    "Likely Causes": "- Queue congestion\n- Wrong DSCP marking\n- WAN shaping mismatch\n- Clocking issues",
+    "Observability Signals (What to Check)": "- IPSLA MOS & jitter\n- Queue depth & drops\n- DSCP stats",
+    "CLI/Commands": "show policy-map interface\nip sla statistics\niperf3 -u -b ...",
+    "RCA Steps (Decision Path)": "1) Verify end-to-end QoS trust/marking\n2) Ensure bandwidth/shape alignment\n3) Prioritize EF in queues",
+    "Resolution / Workaround": "Fix policy, adjust shaping/bandwidth, enable LLQ.",
+    "Preventive Action": "Baseline QoS verification; synthetic probes.",
+    "Related Tools": "IPSLA/TWAMP, NetFlow",
+    "Priority/Severity Hint": "P1 for voice outages",
+    "Tags": "qos, voip, jitter",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Security",
+    "Subcategory": "ACL/Firewall",
+    "FAQ (Symptom/Question)": "Application reachable over Internet but API calls fail\u2014why?",
+    "Likely Causes": "- ACL missing ephemeral return path\n- NAT misconfig\n- TLS inspection break",
+    "Observability Signals (What to Check)": "- Firewall deny logs\n- NAT table utilization\n- TLS handshake errors",
+    "CLI/Commands": "show access-group\nshow conn | i <src>\nshow xlate | i <ip>",
+    "RCA Steps (Decision Path)": "1) Reproduce and capture\n2) Check NAT & ACL symmetry\n3) Bypass inspection to validate",
+    "Resolution / Workaround": "Add return rules; fix NAT; adjust inspection policy.",
+    "Preventive Action": "Change review for firewall pushes; preflight tests.",
+    "Related Tools": "Firewall logs, PCAP",
+    "Priority/Severity Hint": "P2/P1 if prod outage",
+    "Tags": "acl, nat, tls",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "VPN",
+    "Subcategory": "IPsec",
+    "FAQ (Symptom/Question)": "Why does IPsec tunnel come up but traffic drops?",
+    "Likely Causes": "- Proxy-ID/Interesting traffic mismatch\n- MTU/MSS issues\n- Phase 2 lifetime mismatch",
+    "Observability Signals (What to Check)": "- SPI counters & rekeys\n- Drop/deny logs\n- Path MTU discovery",
+    "CLI/Commands": "show crypto isakmp/ikev2 sa\nshow crypto ipsec sa\nping df-bit size <n>",
+    "RCA Steps (Decision Path)": "1) Validate proxy ACLs both sides\n2) Adjust MSS/MTU\n3) Align lifetimes and ciphers",
+    "Resolution / Workaround": "Correct selectors; set TCP MSS clamp; coordinate timers/ciphers.",
+    "Preventive Action": "Predefined templates; PMTU testing.",
+    "Related Tools": "Firewall/VPN logs",
+    "Priority/Severity Hint": "P1 for site connectivity",
+    "Tags": "ipsec, mtu, proxy-id",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Monitoring",
+    "Subcategory": "SNMP",
+    "FAQ (Symptom/Question)": "SNMP polling failing intermittently\u2014how to debug?",
+    "Likely Causes": "- EngineID changes (v3)\n- ACL/CoPP rate limit\n- Device CPU high\n- VRF/path flap",
+    "Observability Signals (What to Check)": "- Ping vs SNMP success ratio\n- SNMP error codes/timeouts\n- Device CPU/mem spikes",
+    "CLI/Commands": "snmpwalk -v2c -c <c> <ip> 1.3.6.1.2.1.1\nshow snmp engineid\nshow control-plane statistics",
+    "RCA Steps (Decision Path)": "1) Compare ICMP vs SNMP reachability\n2) Check CoPP/ACLs to poller\n3) Validate creds/EngineID after RMA",
+    "Resolution / Workaround": "Fix CoPP policy; update creds/EngineID; reduce poll frequency on busy devices.",
+    "Preventive Action": "SNMP allow-lists; staggered polling; distributed pollers.",
+    "Related Tools": "NMS logs, Syslog",
+    "Priority/Severity Hint": "P2",
+    "Tags": "snmp, copp, v3",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Monitoring",
+    "Subcategory": "Trap/Alert Storm",
+    "FAQ (Symptom/Question)": "We received thousands of traps in minutes\u2014what should we do?",
+    "Likely Causes": "- Flapping event source\n- Misconfigured trap destination\n- Firmware bug\n- Broadcast/loop events",
+    "Observability Signals (What to Check)": "- Trap volume rate/min\n- Top talkers by source\n- Recent change logs",
+    "CLI/Commands": "tcpdump udp port 162\nshow logging last 100\nshow spanning-tree detail",
+    "RCA Steps (Decision Path)": "1) Identify noisy source\n2) Quarantine via ACL/Rate-limit\n3) Fix root cause (loop, flaps)\n4) Patch firmware",
+    "Resolution / Workaround": "Apply trap dampening; correct configs; vendor bugfix.",
+    "Preventive Action": "Pre-prod trap tests; enable storm control.",
+    "Related Tools": "Syslog, Packet capture",
+    "Priority/Severity Hint": "P2/P1 if platform impact",
+    "Tags": "trap-storm, loop, bug",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Monitoring",
+    "Subcategory": "Clock/NTP",
+    "FAQ (Symptom/Question)": "Graphs misaligned and logs out of order\u2014time skew suspected. Next steps?",
+    "Likely Causes": "- NTP peer down\n- Wrong timezone/DST\n- Virtualization clock drift",
+    "Observability Signals (What to Check)": "- NTP sync state & offset\n- Device clock vs NMS\n- Log timestamps consistency",
+    "CLI/Commands": "show ntp associations\nshow clock detail\nntpq -p",
+    "RCA Steps (Decision Path)": "1) Verify upstream NTP\n2) Fix ACLs to NTP servers\n3) Force sync and monitor offset",
+    "Resolution / Workaround": "Restore NTP; standardize TZ; enable HA NTP.",
+    "Preventive Action": "Multiple NTP sources; alerts on offset>100ms.",
+    "Related Tools": "NTP logs",
+    "Priority/Severity Hint": "P2 (can cause RCA errors)",
+    "Tags": "ntp, time-skew",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Wireless",
+    "Subcategory": "WLAN",
+    "FAQ (Symptom/Question)": "Why do clients get frequent Wi\u2011Fi disconnects?",
+    "Likely Causes": "- Low SNR/Channel overlap\n- 2.4GHz congestion\n- Sticky clients/roaming issues\n- AP power imbalance",
+    "Observability Signals (What to Check)": "- SNR/RSSI heatmaps\n- Channel utilization\n- Client roam events",
+    "CLI/Commands": "show wlan client detail\nshow ap auto-rf\niw dev wlan0 link",
+    "RCA Steps (Decision Path)": "1) Survey RF; set proper channels\n2) Enable band-steering & 802.11k/v/r\n3) Tune power and RRM",
+    "Resolution / Workaround": "Reassign channels; enable fast roam; adjust AP power.",
+    "Preventive Action": "Regular RF surveys; capacity planning.",
+    "Related Tools": "WLC logs, RF tools",
+    "Priority/Severity Hint": "P2/P3",
+    "Tags": "wifi, rf, roaming",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "WAN",
+    "Subcategory": "SD-WAN",
+    "FAQ (Symptom/Question)": "App performance poor on one path only\u2014how to isolate?",
+    "Likely Causes": "- SLA violation on underlay\n- DPI misclassification\n- Asymmetric routing",
+    "Observability Signals (What to Check)": "- Per-path loss/latency\n- App-ID mapping\n- Path health events",
+    "CLI/Commands": "show app-route stats\nshow sla-class\ntraceroute --as-path-lookups",
+    "RCA Steps (Decision Path)": "1) Compare path KPIs\n2) Validate App-ID and policy\n3) Force pin to good path and observe",
+    "Resolution / Workaround": "Fix underlay with ISP; correct DPI signatures; adjust policy.",
+    "Preventive Action": "Continuous path probes; anomaly alerts.",
+    "Related Tools": "Controller logs, NetFlow",
+    "Priority/Severity Hint": "P2/P1 for critical apps",
+    "Tags": "sd-wan, sla, dpi",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Device",
+    "Subcategory": "CPU/Memory",
+    "FAQ (Symptom/Question)": "NMS shows high CPU on core switch\u2014what to check?",
+    "Likely Causes": "- Control-plane attack or burst\n- Process leak/bug\n- Netflow/sFlow export overload",
+    "Observability Signals (What to Check)": "- CPU per process timeline\n- CoPP drops\n- SNMP poll rate",
+    "CLI/Commands": "show processes cpu sorted\nshow control-plane host open-ports\nshow flow exporter statistics",
+    "RCA Steps (Decision Path)": "1) Identify top processes\n2) Rate-limit offenders/enable CoPP\n3) Patch or reload during window",
+    "Resolution / Workaround": "Mitigate traffic; upgrade firmware; tune telemetry rates.",
+    "Preventive Action": "Capacity tests post-upgrade; monitor trendline.",
+    "Related Tools": "Syslog, SNMP, NetFlow",
+    "Priority/Severity Hint": "P1 if routing control affected",
+    "Tags": "cpu, copp",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Performance",
+    "Subcategory": "Internet/SaaS",
+    "FAQ (Symptom/Question)": "Latency spike to SaaS (Teams/Zoom)\u2014what checks isolate the issue?",
+    "Likely Causes": "- Peering congestion\n- Middlebox inspection\n- Wrong DNS egress",
+    "Observability Signals (What to Check)": "- Loss/Latency to SaaS POP\n- TLS handshake times\n- DNS egress IP vs geo",
+    "CLI/Commands": "Use standard ping/traceroute; device interface counters; NetFlow to SaaS prefixes.",
+    "RCA Steps (Decision Path)": "1) Compare multiple egress paths\n2) Check middleboxes/inspection\n3) Validate DNS egress mapping",
+    "Resolution / Workaround": "Compare loss/latency by egress; bypass inspection; test alternate DNS/egress.",
+    "Preventive Action": "Set direct egress for SaaS; split\u2011tunnel VPN; monitor SaaS status.",
+    "Related Tools": "IPSLA/TWAMP, NetFlow, Packet capture",
+    "Priority/Severity Hint": "P2/P1",
+    "Tags": "saas, latency, vpn",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Interfaces",
+    "Subcategory": "Uplink",
+    "FAQ (Symptom/Question)": "Interface down on access switch uplink\u2014what checks isolate the issue?",
+    "Likely Causes": "- Bad SFP/patch\n- Errdisable from BPDU guard/UDLD\n- Power loss upstream",
+    "Observability Signals (What to Check)": "- Link state logs\n- UDLD status\n- Optics light levels",
+    "CLI/Commands": "Use standard ping/traceroute; device interface counters; NetFlow to SaaS prefixes.",
+    "RCA Steps (Decision Path)": "1) Compare multiple egress paths\n2) Check middleboxes/inspection\n3) Validate DNS egress mapping",
+    "Resolution / Workaround": "Replace SFP/cable; clear errdisable; restore power/UPLink.",
+    "Preventive Action": "Spare optics; BPDU guard with intent.",
+    "Related Tools": "IPSLA/TWAMP, NetFlow, Packet capture",
+    "Priority/Severity Hint": "P1",
+    "Tags": "uplink, errdisable, udld",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Connectivity",
+    "Subcategory": "ARP v1",
+    "FAQ (Symptom/Question)": "ARP table shows incomplete/failed entries\u2014Hosts can't reach gateway. (Case #1)",
+    "Likely Causes": "- ARP suppression/Proxy ARP issue\n- Duplicate IP/MAC conflict\n- VLAN mismatch",
+    "Observability Signals (What to Check)": "- ARP cache entries & age\n- Gratuitous ARP events",
+    "CLI/Commands": "arp -a\nshow ip arp\nshow mac address-table",
+    "RCA Steps (Decision Path)": "1) Confirm VLAN & gateway reachability\n2) Check IP conflicts\n3) Validate ARP suppression/Proxy",
+    "Resolution / Workaround": "Resolve IP conflict; fix VLAN; disable faulty features.",
+    "Preventive Action": "IPAM governance; DHCP reservations.",
+    "Related Tools": "Packet capture, ARP logs",
+    "Priority/Severity Hint": "P2",
+    "Tags": "arp, ip-conflict, vlan",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Security",
+    "Subcategory": "ACL v1",
+    "FAQ (Symptom/Question)": "New app blocked after change window\u2014how to quickly verify? (Case #1)",
+    "Likely Causes": "- Missing rule or wrong order\n- Object-group not updated\n- Zone mismatch",
+    "Observability Signals (What to Check)": "- Hit counters per rule\n- Deny logs with 5\u2011tuple",
+    "CLI/Commands": "show access-list | i <app>\nshow run object-group\npacket-tracer",
+    "RCA Steps (Decision Path)": "1) Reproduce and capture denies\n2) Adjust rule order/object-group\n3) Change control review",
+    "Resolution / Workaround": "Insert/modify rule carefully; rollback if needed.",
+    "Preventive Action": "Staged pushes; shadow policies.",
+    "Related Tools": "Firewall logs",
+    "Priority/Severity Hint": "P2/P1",
+    "Tags": "acl, change",
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Connectivity",
+    "Subcategory": "Reachability",
+    "Issue": "Why is a device showing 'Host Down' in NMS?",
+    "Possible_Causes": [
+      "SNMP or ICMP blocked",
+      "Device or Interface down",
+      "ACL or Firewall drop",
+      "Routing not present",
+      "VRF mismatch",
+      "Power or Hardware issue"
+    ],
+    "Key_Indicators": [
+      "Ping/ICMP status",
+      "SNMP poll result and sysUpTime",
+      "Interface status (admin/oper)",
+      "ARP/ND entries",
+      "Routing table path to device"
+    ],
+    "Commands": [
+      "ping <ip>",
+      "traceroute <ip>",
+      "show ip route <ip>",
+      "show interface status",
+      "show access-lists | include <src/dst>"
+    ],
+    "Troubleshooting_Steps": [
+      "Verify management IP and VRF",
+      "Check ICMP/SNMP reachability from poller",
+      "Check link and neighbor state",
+      "Validate routing path and ACLs",
+      "Perform hardware/power checks"
+    ],
+    "Remediation": "Restore upstream route/ACL; enable ICMP/SNMP to poller; bring up interface; replace faulty hardware/PSU.",
+    "Preventive_Actions": "Standardize management VRF; allow-lists for NMS; dual power; path redundancy.",
+    "Monitoring_Tools": [
+      "Ping",
+      "Traceroute",
+      "SNMP",
+      "Syslog"
+    ],
+    "Priority": "P1 if core/critical device; P2 otherwise",
+    "Tags": [
+      "host-down",
+      "snmp",
+      "icmp",
+      "vrf"
+    ],
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Connectivity",
+    "Subcategory": "Packet Loss",
+    "Issue": "Users report intermittent packet loss to a site\u2014what should I check?",
+    "Possible_Causes": [
+      "Link errors (CRC, drops)",
+      "Duplex/Speed mismatch",
+      "Congestion or Queue drops",
+      "RF interference (Wi-Fi)",
+      "ISP or WAN degradation"
+    ],
+    "Key_Indicators": [
+      "Interface error counters",
+      "QoS queue drops",
+      "Latency/Jitter trends",
+      "NetFlow/sFlow loss indicators"
+    ],
+    "Commands": [
+      "show interface counters errors",
+      "show platform hardware qfp drops",
+      "show policy-map interface",
+      "mtr <dst>"
+    ],
+    "Troubleshooting_Steps": [
+      "Baseline ping/mtr",
+      "Inspect interface errors",
+      "Check QoS and queue depths",
+      "Validate duplex/speed",
+      "Engage ISP if WAN issue"
+    ],
+    "Remediation": "Fix cabling/SFP; correct duplex/speed; tune QoS; open ISP ticket with evidence (latency/loss graphs).",
+    "Preventive_Actions": "Use error-threshold alerting; pre-mark critical traffic; SLA probes on WAN.",
+    "Monitoring_Tools": [
+      "NetFlow",
+      "sFlow",
+      "IPSLA/TWAMP",
+      "Wireshark"
+    ],
+    "Priority": "P1 if site-wide; P2 for segment",
+    "Tags": [
+      "packet-loss",
+      "qos",
+      "wan",
+      "crc"
+    ],
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Services",
+    "Subcategory": "DNS",
+    "Issue": "Clients see 'DNS server not responding'\u2014how to triage?",
+    "Possible_Causes": [
+      "DNS server down/restart",
+      "Firewall blocks 53/UDP",
+      "Anycast health failover",
+      "Split-horizon misconfiguration"
+    ],
+    "Key_Indicators": [
+      "UDP 53 reachability",
+      "Server CPU/memory",
+      "Query success rate",
+      "NXDOMAIN spikes"
+    ],
+    "Commands": [
+      "nslookup <name> <dns>",
+      "dig +trace <name>",
+      "telnet <dns> 53",
+      "show access-lists | inc 53"
+    ],
+    "Troubleshooting_Steps": [
+      "Check DNS reachability",
+      "Validate server health",
+      "Confirm views/split-horizon",
+      "Inspect recent configuration changes"
+    ],
+    "Remediation": "Restore service; open 53/UDP; correct view/zone data; rollback bad changes.",
+    "Preventive_Actions": "Health probes for Anycast; change control; capacity headroom.",
+    "Monitoring_Tools": [
+      "DNS logs",
+      "Packet capture",
+      "Syslog"
+    ],
+    "Priority": "P1 if org-wide resolution fails",
+    "Tags": [
+      "dns",
+      "anycast",
+      "firewall"
+    ],
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Routing",
+    "Subcategory": "BGP",
+    "Issue": "BGP session flapping with ISP\u2014what causes and fixes?",
+    "Possible_Causes": [
+      "Physical link issues",
+      "Mismatched timers or MD5 authentication",
+      "Route churn or Max-prefix limit hit",
+      "MTU mismatch causing TCP resets"
+    ],
+    "Key_Indicators": [
+      "BGP neighbor log",
+      "Hold/timer counters",
+      "Max-prefix alarms",
+      "Interface errors"
+    ],
+    "Commands": [
+      "show bgp summary",
+      "show ip bgp neighbors",
+      "show interface counters",
+      "show logging | inc BGP"
+    ],
+    "Troubleshooting_Steps": [
+      "Confirm physical stability",
+      "Validate auth/timers/MTU",
+      "Check max-prefix and route leaks",
+      "Coordinate with ISP"
+    ],
+    "Remediation": "Fix optics/cable; align timers/MD5; increase max-prefix with safeguards; correct MTU.",
+    "Preventive_Actions": "Enable BFD for fast detection; route-policy sanity; prefix-limit alerting.",
+    "Monitoring_Tools": [
+      "BGP logs",
+      "BFD",
+      "NetFlow"
+    ],
+    "Priority": "P1 for core/edge impact",
+    "Tags": [
+      "bgp",
+      "max-prefix",
+      "mtu",
+      "md5"
+    ],
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Interfaces",
+    "Subcategory": "Errors",
+    "Issue": "CRC errors increasing on uplink\u2014what now?",
+    "Possible_Causes": [
+      "Bad cable/SFP",
+      "Duplex/speed mismatch",
+      "EMI interference"
+    ],
+    "Key_Indicators": [
+      "CRC/giants/drops counters",
+      "Autoneg status",
+      "Optical levels"
+    ],
+    "Commands": [
+      "show interface counters errors",
+      "ddm interface <port>"
+    ],
+    "Troubleshooting_Steps": [
+      "Swap patch/SFP",
+      "Lock duplex/speed appropriately",
+      "Test on alternate path/port"
+    ],
+    "Remediation": "Replace faulty components; correct autoneg; reroute temporarily.",
+    "Preventive_Actions": "Use certified optics/cables; keep spares.",
+    "Monitoring_Tools": [
+      "SNMP interface stats"
+    ],
+    "Priority": "P2 unless causing P1 impact",
+    "Tags": [
+      "crc",
+      "autoneg",
+      "sfp"
+    ],
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Monitoring",
+    "Subcategory": "SNMP",
+    "Issue": "SNMP polling failing intermittently\u2014how to debug?",
+    "Possible_Causes": [
+      "EngineID changes (v3)",
+      "ACL/CoPP rate limit",
+      "Device CPU high",
+      "VRF/path flap"
+    ],
+    "Key_Indicators": [
+      "Ping vs SNMP success ratio",
+      "SNMP error codes/timeouts",
+      "Device CPU/mem spikes"
+    ],
+    "Commands": [
+      "snmpwalk -v2c -c <c> <ip> 1.3.6.1.2.1.1",
+      "show snmp engineid",
+      "show control-plane statistics"
+    ],
+    "Troubleshooting_Steps": [
+      "Compare ICMP vs SNMP reachability",
+      "Check CoPP/ACLs to poller",
+      "Validate creds/EngineID after RMA"
+    ],
+    "Remediation": "Fix CoPP policy; update creds/EngineID; reduce poll frequency on busy devices.",
+    "Preventive_Actions": "SNMP allow-lists; staggered polling; distributed pollers.",
+    "Monitoring_Tools": [
+      "NMS logs",
+      "Syslog"
+    ],
+    "Priority": "P2",
+    "Tags": [
+      "snmp",
+      "copp",
+      "v3"
+    ],
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Performance",
+    "Subcategory": "High Latency",
+    "Issue": "Users experience high latency between sites or applications\u2014what could be the reason?",
+    "Possible_Causes": [
+      "Congested WAN/ISP path",
+      "Queuing delay due to QoS misclassification",
+      "Routing suboptimal path or asymmetric routing",
+      "Interface errors or retransmissions",
+      "Middlebox (firewall, proxy) inspection delay"
+    ],
+    "Key_Indicators": [
+      "Ping RTT and jitter",
+      "NetFlow latency percentile",
+      "QoS queue utilization",
+      "Traceroute hop latency distribution"
+    ],
+    "Commands": [
+      "ping <dst> repeat 100",
+      "traceroute <dst>",
+      "show policy-map interface",
+      "show interface counters",
+      "show ip route <dst>"
+    ],
+    "Troubleshooting_Steps": [
+      "Baseline latency across multiple hops",
+      "Identify the congested or lossy hop",
+      "Check QoS classification and queues",
+      "Compare ISP/WAN paths and verify routing symmetry"
+    ],
+    "Remediation": "Optimize routing path; adjust QoS marking; request ISP reroute; disable deep inspection on latency-sensitive traffic.",
+    "Preventive_Actions": "Deploy IPSLA probes; enable QoS monitoring dashboards; use multiple ISPs or SD-WAN dynamic path selection.",
+    "Monitoring_Tools": [
+      "IPSLA",
+      "TWAMP",
+      "NetFlow",
+      "Ping",
+      "Traceroute"
+    ],
+    "Priority": "P1 for business-critical apps; P2 otherwise",
+    "Tags": [
+      "latency",
+      "qos",
+      "wan",
+      "routing"
+    ],
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Configuration",
+    "Subcategory": "Config Drift",
+    "Issue": "Configuration drift detected between production and baseline\u2014why does this occur?",
+    "Possible_Causes": [
+      "Manual CLI changes without change control",
+      "Failed or partial automation job",
+      "Rollback not applied post-maintenance",
+      "Unauthorized access or miscommit"
+    ],
+    "Key_Indicators": [
+      "Baseline vs running config diff",
+      "GitOps or NCCM version mismatch",
+      "Recent user login history",
+      "Device config checksum alert"
+    ],
+    "Commands": [
+      "show running-config | diff saved-config",
+      "show archive config differences",
+      "show users",
+      "git diff <branch>"
+    ],
+    "Troubleshooting_Steps": [
+      "Compare current config with golden baseline",
+      "Identify unauthorized or untracked changes",
+      "Validate automation pipeline logs",
+      "Rollback to last known good configuration"
+    ],
+    "Remediation": "Revert to baseline; restore via NCCM; correct automation pipeline; enforce config locks.",
+    "Preventive_Actions": "Implement config compliance checks; enable GitOps workflow; automated drift detection with approval gate.",
+    "Monitoring_Tools": [
+      "NCCM",
+      "Git",
+      "Syslog",
+      "TACACS"
+    ],
+    "Priority": "P1 if causes outage; P2 otherwise",
+    "Tags": [
+      "config-drift",
+      "nccm",
+      "gitops",
+      "baseline"
+    ],
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Performance",
+    "Subcategory": "Memory Leak",
+    "Issue": "Router or application showing gradual memory increase leading to crash or reload.",
+    "Possible_Causes": [
+      "Firmware or software memory leak bug",
+      "Logging/debug buffer overflow",
+      "High SNMP/telemetry polling rate",
+      "Unreleased session/connection handles"
+    ],
+    "Key_Indicators": [
+      "Memory usage trendline (increasing over time)",
+      "Process-level memory stats",
+      "System logs with malloc failures",
+      "Frequent restarts/reboots"
+    ],
+    "Commands": [
+      "show processes memory sorted",
+      "show system resources",
+      "dir crashinfo:",
+      "show logging | inc memory"
+    ],
+    "Troubleshooting_Steps": [
+      "Identify top memory-consuming process",
+      "Check for firmware bugs or patches",
+      "Reduce SNMP/telemetry frequency",
+      "Reboot device during maintenance window if exhausted"
+    ],
+    "Remediation": "Upgrade to fixed firmware; clean up debug/log settings; adjust polling intervals; apply vendor bug patch.",
+    "Preventive_Actions": "Monitor memory trendlines; enable auto-restart policies; maintain software currency.",
+    "Monitoring_Tools": [
+      "SNMP",
+      "Syslog",
+      "Crashinfo",
+      "Telemetry"
+    ],
+    "Priority": "P1 if device reloads; P2 otherwise",
+    "Tags": [
+      "memory-leak",
+      "firmware",
+      "telemetry",
+      "snmp"
+    ],
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Services",
+    "Subcategory": "DNS Failure",
+    "Issue": "Applications failing due to DNS lookup errors or high response time.",
+    "Possible_Causes": [
+      "Primary DNS unreachable",
+      "Misconfigured resolver or search domain",
+      "Recursive query timeout",
+      "Firewall or inspection blocking UDP 53",
+      "Anycast DNS health degradation"
+    ],
+    "Key_Indicators": [
+      "DNS response time metrics",
+      "NXDOMAIN and SERVFAIL rates",
+      "Resolver logs showing timeout/errors",
+      "Packet capture showing dropped UDP/53"
+    ],
+    "Commands": [
+      "nslookup <fqdn>",
+      "dig +trace <fqdn>",
+      "tcpdump -n udp port 53",
+      "show access-lists | inc 53"
+    ],
+    "Troubleshooting_Steps": [
+      "Test DNS from alternate resolver",
+      "Validate forwarder and cache settings",
+      "Check packet flow for DNS traffic",
+      "Review firewall ACLs or inspection policy"
+    ],
+    "Remediation": "Restore DNS reachability; correct DNS configuration; disable faulty inspection; failover to secondary resolver.",
+    "Preventive_Actions": "Deploy redundant DNS servers; enable DNS SLA probes; automate Anycast health checks.",
+    "Monitoring_Tools": [
+      "DNS logs",
+      "Packet capture",
+      "Syslog",
+      "IPSLA"
+    ],
+    "Priority": "P1 if org-wide resolution fails",
+    "Tags": [
+      "dns-failure",
+      "anycast",
+      "resolver",
+      "udp53"
+    ],
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Routing",
+    "Subcategory": "BGP Flag",
+    "Issue": "BGP neighbor shows 'Idle', 'Active', or 'Connect' state with route instability.",
+    "Possible_Causes": [
+      "Incorrect neighbor IP or VRF mismatch",
+      "Authentication (MD5) mismatch",
+      "TCP port 179 blocked by firewall",
+      "Route reflector loop or dampening",
+      "Flapping link causing session reset"
+    ],
+    "Key_Indicators": [
+      "BGP neighbor state transitions",
+      "BGP error code messages (FSM log)",
+      "TCP 179 connection failure",
+      "Interface flap logs"
+    ],
+    "Commands": [
+      "show bgp summary",
+      "show ip bgp neighbors",
+      "show tcp brief | inc 179",
+      "show log | inc BGP"
+    ],
+    "Troubleshooting_Steps": [
+      "Check BGP neighbor configuration",
+      "Validate MD5 authentication keys",
+      "Verify reachability of TCP 179",
+      "Check link and route stability"
+    ],
+    "Remediation": "Fix neighbor IP/VRF; correct MD5; open TCP 179; stabilize link; coordinate with ISP.",
+    "Preventive_Actions": "Enable BFD for fast detection; periodic session stability checks; alert on BGP FSM changes.",
+    "Monitoring_Tools": [
+      "BGP logs",
+      "Syslog",
+      "BFD",
+      "NetFlow"
+    ],
+    "Priority": "P1 for edge/core routes",
+    "Tags": [
+      "bgp-flag",
+      "fsm",
+      "tcp179",
+      "vrf"
+    ],
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Infrastructure",
+    "Subcategory": "CPU/Process Spike",
+    "Issue": "Device CPU spiked to 100%, affecting control-plane responsiveness.",
+    "Possible_Causes": [
+      "Control-plane attack (ICMP/ARP flood)",
+      "Bug causing runaway process",
+      "Telemetry or SNMP overload",
+      "High NetFlow export rate"
+    ],
+    "Key_Indicators": [
+      "CPU per process",
+      "CoPP drop counters",
+      "NetFlow export rate",
+      "Process restart frequency"
+    ],
+    "Commands": [
+      "show processes cpu sorted",
+      "show control-plane statistics",
+      "show flow exporter statistics",
+      "show log | inc CPU"
+    ],
+    "Troubleshooting_Steps": [
+      "Identify top CPU-consuming process",
+      "Check for attack or burst traffic",
+      "Reduce telemetry/export rates",
+      "Upgrade or patch firmware"
+    ],
+    "Remediation": "Rate-limit control-plane; disable unnecessary processes; reboot during maintenance; apply firmware patch.",
+    "Preventive_Actions": "Enable CoPP policies; monitor CPU trends; load test before upgrades.",
+    "Monitoring_Tools": [
+      "SNMP",
+      "Syslog",
+      "CoPP",
+      "Telemetry"
+    ],
+    "Priority": "P1 if control-plane impacted",
+    "Tags": [
+      "cpu",
+      "process",
+      "copp",
+      "telemetry"
+    ],
+    "Created_At": "2025-10-14 11:57:46"
+  },
+  {
+    "Category": "Uncategorized",
+    "Subcategory": "General",
+    "Issue": "link loss",
+    "Possible_Causes": [
+      "physical disconnection",
+      "packet loss",
+      "use of low-quality materials"
+    ],
+    "Key_Indicators": [
+      "link is not active more than some time",
+      "sudden disconnection"
+    ],
+    "Commands": [
+      "ping<ip>"
+    ],
+    "Troubleshooting_Steps": [
+      "test for speed test",
+      "tape or cover exposed part",
+      "exchange for new"
+    ],
+    "Remediation": "test for speed test, tape or cover exposed part, exchange for new",
+    "Preventive_Actions": "frequent check of physical cables, and regular speed check",
+    "Monitoring_Tools": [
+      "ping"
+    ],
+    "Priority": "P1",
+    "Tags": [
+      "link"
+    ],
+    "Created_At": "2025-10-14 11:57:46"
+  }
+]

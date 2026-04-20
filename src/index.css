@@ -1,0 +1,281 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Intelligent Event Processor & RCA Platform - Dark Enterprise Theme */
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 210 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 210 100% 50%;
+
+    --radius: 0.75rem;
+
+    /* Severity Colors */
+    --severity-critical: 0 84% 60%;
+    --severity-high: 25 95% 53%;
+    --severity-medium: 48 96% 53%;
+    --severity-low: 217 91% 60%;
+    --severity-info: 220 9% 46%;
+
+    /* Status Colors */
+    --status-success: 142 76% 36%;
+    --status-warning: 25 95% 53%;
+    --status-error: 0 84% 60%;
+    --status-pending: 217 91% 60%;
+
+    /* Glassmorphism */
+    --glass-bg: 0 0% 100% / 0.8;
+    --glass-border: 220 13% 91% / 0.5;
+
+    /* Sidebar */
+    --sidebar-background: 220 14% 96%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 210 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 210 100% 50%;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 13%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 15%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 100% 50%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 210 40% 90%;
+    
+    --accent: 217 33% 25%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 30%;
+    --input: 217 33% 30%;
+    --ring: 210 100% 50%;
+
+    /* Severity Colors */
+    --severity-critical: 0 84% 60%;
+    --severity-high: 25 95% 53%;
+    --severity-medium: 48 96% 53%;
+    --severity-low: 217 91% 60%;
+    --severity-info: 210 40% 90%;
+
+    /* Status Colors */
+    --status-success: 142 76% 36%;
+    --status-warning: 25 95% 53%;
+    --status-error: 0 84% 60%;
+    --status-pending: 217 91% 60%;
+
+    /* Glassmorphism */
+    --glass-bg: 222 47% 11% / 0.8;
+    --glass-border: 217 33% 30% / 0.5;
+    
+    --sidebar-background: 222 47% 9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 100% 50%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 210 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+}
+
+@layer components {
+  /* Glassmorphism Card */
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 shadow-xl;
+  }
+
+  /* Severity Badge Styles */
+  .severity-critical {
+    @apply bg-[hsl(var(--severity-critical))] text-foreground;
+  }
+  .severity-high {
+    @apply bg-[hsl(var(--severity-high))] text-foreground;
+  }
+  .severity-medium {
+    @apply bg-[hsl(var(--severity-medium))] text-background;
+  }
+  .severity-low {
+    @apply bg-[hsl(var(--severity-low))] text-foreground;
+  }
+  .severity-info {
+    @apply bg-[hsl(var(--severity-info))] text-foreground;
+  }
+
+  /* Gradient backgrounds */
+  .gradient-primary {
+    @apply bg-gradient-to-r from-primary to-[hsl(217_91%_60%)];
+  }
+
+  .gradient-card {
+    @apply bg-gradient-to-br from-card to-secondary;
+  }
+
+  /* Glow effects */
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  }
+
+  .glow-critical {
+    box-shadow: 0 0 20px hsl(var(--severity-critical) / 0.4);
+  }
+
+  /* Hover animations */
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-300;
+  }
+  .hover-glow:hover {
+    box-shadow: 0 0 30px hsl(var(--primary) / 0.2);
+  }
+
+  /* Sidebar slide animation */
+  .slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  /* Pulse animation for active states */
+  .pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% {
+      box-shadow: 0 0 5px hsl(var(--primary) / 0.4);
+    }
+    50% {
+      box-shadow: 0 0 20px hsl(var(--primary) / 0.6);
+    }
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    @apply animate-pulse bg-muted rounded;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-background;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground;
+  }
+  /* Flow animation for topology lines */
+  .animate-flow {
+    animation: flow 2s linear infinite;
+  }
+
+  @keyframes flow {
+    from {
+      stroke-dashoffset: 32;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* Pulse glow for critical states */
+  .animate-pulse-glow {
+    animation: pulseGlowLarge 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseGlowLarge {
+    0%, 100% {
+      box-shadow: 0 0 10px hsl(var(--severity-critical) / 0.3), inset 0 0 5px hsl(var(--severity-critical) / 0.2);
+      border-color: hsl(var(--severity-critical) / 0.5);
+    }
+    50% {
+      box-shadow: 0 0 30px hsl(var(--severity-critical) / 0.6), inset 0 0 15px hsl(var(--severity-critical) / 0.4);
+      border-color: hsl(var(--severity-critical) / 1);
+    }
+  }
+
+  .scrollbar-horiz::-webkit-scrollbar {
+    height: 4px;
+    background: transparent;
+  }
+  .scrollbar-horiz::-webkit-scrollbar-thumb {
+    @apply bg-blue-500/30 rounded-full;
+  }
+  .scrollbar-horiz:hover::-webkit-scrollbar-thumb {
+    @apply bg-blue-500/50;
+  }
+}

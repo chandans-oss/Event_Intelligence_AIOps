@@ -1,0 +1,119 @@
+[
+  {
+    "timestamp": "2025-10-28T14:10:00Z",
+    "device": "core-router-dc1",
+    "resource_name": "Gi0/1/0",
+    "resource_type": "Interface",
+    "event_type": "Utilization",
+    "severity": "Minor",
+    "event_msg": "Interface Gi0/1/0 utilization at 30%."
+  },
+  {
+    "timestamp": "2025-10-28T14:15:00Z",
+    "device": "core-router-dc1",
+    "resource_name": "Gi0/1/0",
+    "resource_type": "Interface",
+    "event_type": "Utilization",
+    "severity": "Major",
+    "event_msg": "Interface Gi0/1/0 utilization reached 45%."
+  },
+  {
+    "timestamp": "2025-10-28T14:20:00Z",
+    "device": "core-router-dc1",
+    "resource_name": "Gi0/1/0",
+    "resource_type": "Interface",
+    "event_type": "Packet Drops",
+    "severity": "Major",
+    "event_msg": "Input packet drops observed on Gi0/1/0."
+  },
+  {
+    "timestamp": "2025-10-28T14:20:00Z",
+    "device": "core-router-dc1",
+    "resource_name": "CPU",
+    "resource_type": "Processor",
+    "event_type": "CPU Utilization",
+    "severity": "Minor",
+    "event_msg": "CPU usage at 65%."
+  },
+  {
+    "timestamp": "2025-10-28T14:25:00Z",
+    "device": "core-router-dc1",
+    "resource_name": "Gi0/1/0",
+    "resource_type": "Interface",
+    "event_type": "Utilization",
+    "severity": "Major",
+    "event_msg": "Interface Gi0/1/0 utilization exceeded 80%."
+  },
+  {
+    "timestamp": "2025-10-28T14:25:00Z",
+    "device": "core-router-dc1",
+    "resource_name": "Gi0/1/0",
+    "resource_type": "Interface",
+    "event_type": "Latency",
+    "severity": "Major",
+    "event_msg": "Latency increased to 300 ms."
+  },
+  {
+    "timestamp": "2025-10-28T14:26:00Z",
+    "device": "core-router-dc1",
+    "resource_name": "Gi0/1/0",
+    "resource_type": "Interface",
+    "event_type": "Input Errors",
+    "severity": "Minor",
+    "event_msg": "CRC errors detected on Gi0/1/0."
+  },
+  {
+    "timestamp": "2025-10-28T14:27:00Z",
+    "device": "core-router-dc1",
+    "resource_name": "CPU",
+    "resource_type": "Processor",
+    "event_type": "CPU Utilization",
+    "severity": "Major",
+    "event_msg": "CPU usage reached 85%."
+  },
+  {
+    "timestamp": "2025-10-28T14:30:00Z",
+    "device": "core-router-dc1",
+    "resource_name": "Gi0/1/0",
+    "resource_type": "Interface",
+    "event_type": "Discard Packets",
+    "severity": "Critical",
+    "event_msg": "Output packet discards on Gi0/1/0."
+  },
+  {
+    "timestamp": "2025-10-28T14:30:00Z",
+    "device": "core-router-dc1",
+    "resource_name": "Gi0/1/0",
+    "resource_type": "Interface",
+    "event_type": "Utilization",
+    "severity": "Critical",
+    "event_msg": "Interface Gi0/1/0 utilization at 96%."
+  },
+  {
+    "timestamp": "2025-10-28T14:31:00Z",
+    "device": "core-router-dc1",
+    "resource_name": "Ping Monitor",
+    "resource_type": "System",
+    "event_type": "Latency",
+    "severity": "Critical",
+    "event_msg": "Latency to peer router 500 ms."
+  },
+  {
+    "timestamp": "2025-10-28T14:35:00Z",
+    "device": "core-router-dc1",
+    "resource_name": "Gi0/1/0",
+    "resource_type": "Interface",
+    "event_type": "Utilization",
+    "severity": "Minor",
+    "event_msg": "Interface Gi0/1/0 utilization normalized to 65%."
+  },
+  {
+    "timestamp": "2025-10-28T14:35:00Z",
+    "device": "core-router-dc1",
+    "resource_name": "CPU",
+    "resource_type": "Processor",
+    "event_type": "CPU Utilization",
+    "severity": "Minor",
+    "event_msg": "CPU load reduced to 40%."
+  }
+]

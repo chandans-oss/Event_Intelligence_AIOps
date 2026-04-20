@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useTheme as useNextTheme } from 'next-themes';
-import { FileUpload } from '../components/rca/FileUpload';
-import { TimelineFlow } from '../components/rca/TimelineFlow';
-import { StepCard } from '../components/rca/StepCard';
-import { runRcaFlow } from '../api/rcaApi';
+import { FileUpload } from '@/components/rca/FileUpload';
+import { TimelineFlow } from '@/components/rca/TimelineFlow';
+import { StepCard } from '@/components/rca/StepCard';
+import { runRcaFlow } from '@/api/rcaApi';
 import { Typography, Box, Container, CircularProgress, Button, Paper, Tabs, Tab, ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { LayoutDashboard, RotateCcw } from 'lucide-react';
 import { toast } from "sonner";

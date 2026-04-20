@@ -24,6 +24,7 @@ import { MainLayout } from '@/shared/components/layout/MainLayout';
 import { RCASidebar } from '@/features/rca/components/RcaSidebar';
 import { ImpactSidebar } from '@/features/impact/components/ImpactSidebar';
 import { ProbableCauseSidebar } from '@/features/rca/components/ProbableCauseSidebar';
+import { RemediationSidebar } from '@/features/rca/components/RemediationSidebar';
 import { SeverityIcon } from '@/shared/components/common/SeverityIcon';
 import { sampleNetworkEvents, getEventStats, NetworkEvent } from '@/features/events/data/eventsData';
 import { mockClusters } from '@/data/mock/mockData';
@@ -562,7 +563,13 @@ export default function Events() {
             />
           )}
 
-
+          {activeSidebar === 'remediation' && currentCluster && (
+            <RemediationSidebar
+              cluster={currentCluster}
+              onClose={closeSidebar}
+              onBack={backToRCA}
+            />
+          )}
 
           {activeSidebar === 'probable-cause' && currentCluster && (
             <ProbableCauseSidebar

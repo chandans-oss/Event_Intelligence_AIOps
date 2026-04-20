@@ -18,6 +18,7 @@ import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 import { RCASidebar } from '@/features/rca/components/RcaSidebar';
+import { RemediationSidebar } from '@/features/rca/components/RemediationSidebar';
 import { mockClusters } from '@/data/mock/mockData';
 import { Cluster } from '@/shared/types';
 
@@ -69,7 +70,7 @@ const baseOptions = {
 export default function AnalyticsDashboard() {
   const assetGaugeRef = useRef<HTMLCanvasElement>(null);
   const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null);
-  const [activeSidebar, setActiveSidebar] = useState<'rca' | null>(null);
+  const [activeSidebar, setActiveSidebar] = useState<'rca' | 'remediation' | null>(null);
 
   // Map Root Cause Insights directly from mockClusters to display real data
   const rcaInsightsData = useMemo(() => {
@@ -657,6 +658,15 @@ export default function AnalyticsDashboard() {
             <RCASidebar
               onClose={() => { setActiveSidebar(null); setSelectedCluster(null); }}
               cluster={selectedCluster as any}
+              onOpenRemediation={() => setActiveSidebar('remediation')}
+            />
+          )}
+
+          {activeSidebar === 'remediation' && (
+            <RemediationSidebar
+              cluster={selectedCluster as any}
+              onClose={() => { setActiveSidebar(null); setSelectedCluster(null); }}
+              onBack={() => setActiveSidebar('rca')}
             />
           )}
 

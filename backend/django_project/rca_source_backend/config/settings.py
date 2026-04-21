@@ -12,8 +12,9 @@ REQUIRED_SHEETS = {
     "NMS_Trigger_Events": True
 }
 
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "hf.co/unsloth/Qwen3-0.6B-GGUF:Q6_K"
+OLLAMA_API_URL = "http://10.0.5.80:11434/api/generate"
+OLLAMA_MODEL = "llama3.2:1b"
+# "hf.co/unsloth/Qwen3-0.6B-GGUF:Q6_K"
 
 # Resolve paths relative to the current script location (or project root)
 BASE_DIR = Path(__file__).resolve().parent.parent 

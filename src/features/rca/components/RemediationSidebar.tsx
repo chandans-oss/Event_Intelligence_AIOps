@@ -40,12 +40,13 @@ const TIMELINE_DATA = [
 
 interface RemediationSidebarProps {
   cluster: Cluster;
+  causeId?: string;
   onClose: () => void;
   onBack?: () => void;
 }
 
-export function RemediationSidebar({ cluster, onClose, onBack }: RemediationSidebarProps) {
-  const clusterData = getClusterData(cluster.id);
+export function RemediationSidebar({ cluster, causeId, onClose, onBack }: RemediationSidebarProps) {
+  const clusterData = getClusterData(causeId || cluster.id) || getClusterData(cluster.id);
 
   const [viewMode, setViewMode] = useState<'execution' | 'verification' | 'history'>('execution');
   const [activeStepIndex, setActiveStepIndex] = useState(0);

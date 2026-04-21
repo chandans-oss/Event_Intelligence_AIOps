@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { MainLayout } from '@/shared/components/layout/MainLayout';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
@@ -219,6 +219,8 @@ function MetadataStepContent({ details }: { details: any }) {
 export default function RCADetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+    const fromState = (location.state as any) || {}; // { fromCauseIndex, fromTab, fromClusterId } from ProbableCauseSidebar
     const { theme: appTheme, systemTheme } = useNextTheme();
     const isDark = appTheme === 'dark' || (appTheme === 'system' && systemTheme === 'dark');
 
@@ -233,7 +235,7 @@ export default function RCADetailPage() {
             },
             divider: isDark ? '#2a3354' : '#e2e8f0'
         },
-        typography: { fontFamily: '"Outfit", "Inter", "Roboto", "Helvetica", "Arial", sans-serif' },
+        typography: { fontFamily: '"Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif' },
         components: {
             MuiPaper: { styleOverrides: { root: { backgroundImage: 'none', borderColor: isDark ? '#2a3354' : '#e2e8f0' } } }
         }
@@ -280,7 +282,14 @@ export default function RCADetailPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <Button
                                 variant="ghost" size="icon" className="h-7 w-7"
-                                onClick={() => navigate(`/events?cluster=${id}&openSidebar=rca`)}
+                                onClick={() => navigate('/events', {
+                                    state: {
+                                        openSidebar: 'probable-cause',
+                                        clusterId: fromState.fromClusterId || id,
+                                        causeIndex: fromState.fromCauseIndex ?? 0,
+                                        activeTab: fromState.fromTab ?? 'summary',
+                                    }
+                                })}
                             >
                                 <ArrowLeft className="h-3.5 w-3.5" />
                             </Button>

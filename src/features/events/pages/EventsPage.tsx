@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Search, Filter, X, AlertCircle, Eye, BarChart3, Wrench, Info, Target, GitBranch, Copy, BellOff, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button';
@@ -72,6 +72,7 @@ const AVAILABLE_CORRELATIONS = [
 
 export default function Events() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [labelFilter, setLabelFilter] = useState<string>('all');
@@ -99,19 +100,40 @@ export default function Events() {
     });
   };
 
+  // Restore sidebar state when navigating back from detail pages (uses location.state, NOT searchParams)
+  useEffect(() => {
+    const state = location.state as {
+      openSidebar?: SidebarType;
+      clusterId?: string;
+      causeIndex?: number;
+      activeTab?: string;
+    } | null;
+    if (state?.clusterId && state?.openSidebar) {
+      const rootEvent = sampleNetworkEvents.find(e => e.clusterId === state.clusterId && e.label === 'Root');
+      if (rootEvent) {
+        setSelectedEvent(rootEvent);
+        setActiveSidebar(state.openSidebar);
+      }
+      // Clear location state (but preserve causeIndex + activeTab so ProbableCauseSidebar can read them via its own location.state init)
+      navigate(location.pathname, {
+        replace: true,
+        state: { causeIndex: state.causeIndex ?? 0, activeTab: state.activeTab ?? 'summary' }
+      });
+    }
+  }, [location.state]);
+
+  // Legacy: also handle URL params for any existing links/bookmarks
   useEffect(() => {
     const clusterId = searchParams.get('cluster');
     const sidebarToOpen = searchParams.get('openSidebar') as SidebarType;
-
-    if (clusterId) {
-      // Find the root event for this cluster
+    if (clusterId && sidebarToOpen) {
       const rootEvent = sampleNetworkEvents.find(e => e.clusterId === clusterId && e.label === 'Root');
       if (rootEvent) {
         setSelectedEvent(rootEvent);
-        if (sidebarToOpen) {
-          setActiveSidebar(sidebarToOpen);
-        }
+        setActiveSidebar(sidebarToOpen);
       }
+      // Always clear URL params to avoid event list filtering
+      setSearchParams({}, { replace: true });
     }
   }, [searchParams]);
 
@@ -202,8 +224,8 @@ export default function Events() {
     return () => document.removeEventListener('open-remediation', handleOpenRemediation);
   }, []);
 
-  const backToRCA = () => {
-    setActiveSidebar('rca');
+  const backToProbableCause = () => {
+    setActiveSidebar('probable-cause');
   };
 
   const clearClusterFilter = () => {
@@ -566,8 +588,9 @@ export default function Events() {
           {activeSidebar === 'remediation' && currentCluster && (
             <RemediationSidebar
               cluster={currentCluster}
+              causeId={selectedCauseId || undefined}
               onClose={closeSidebar}
-              onBack={backToRCA}
+              onBack={backToProbableCause}
             />
           )}
 
@@ -575,9 +598,9 @@ export default function Events() {
             <ProbableCauseSidebar
               cluster={currentCluster}
               onClose={closeSidebar}
-              onSelectCause={(causeId) => {
+              onOpenRemediation={(causeId) => {
                 setSelectedCauseId(causeId);
-                setActiveSidebar('rca');
+                setActiveSidebar('remediation');
               }}
             />
           )}

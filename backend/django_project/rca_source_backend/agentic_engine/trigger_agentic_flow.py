@@ -20,19 +20,26 @@ load_dotenv(find_dotenv(usecwd=True))
 # Load environment variables
 try:
     from django.conf import settings
-    POSTGRES_HOST = getattr(settings, 'POSTGRES_HOST', os.environ.get("POSTGRES_HOST", "10.0.4.89"))
+    POSTGRES_HOST = getattr(settings, 'POSTGRES_HOST', None)
     POSTGRES_PORT = getattr(settings, 'POSTGRES_PORT', os.environ.get("POSTGRES_PORT", "5432"))
-    POSTGRES_DB = getattr(settings, 'POSTGRES_DB', os.environ.get("POSTGRES_DB", "infraondb"))
-    POSTGRES_USER = getattr(settings, 'POSTGRES_USER', os.environ.get("POSTGRES_USER", "postgres"))
-    POSTGRES_PASSWORD = getattr(settings, 'POSTGRES_PASSWORD', os.environ.get("POSTGRES_PASSWORD", ""))
+    POSTGRES_DB = getattr(settings, 'POSTGRES_DB', None)
+    POSTGRES_USER = getattr(settings, 'POSTGRES_USER', None)
+    POSTGRES_PASSWORD = getattr(settings, 'POSTGRES_PASSWORD', None)
     EMBEDING_MODEL = getattr(settings, 'EMBEDING_MODEL', os.environ.get("EMBEDING_MODEL", "intfloat/e5-base-v2"))
 except (ImportError, Exception):
-    POSTGRES_HOST = os.environ.get("POSTGRES_HOST", "10.0.4.89")
+    POSTGRES_HOST = os.environ.get("POSTGRES_HOST", None)
     POSTGRES_PORT = os.environ.get("POSTGRES_PORT", "5432")
-    POSTGRES_DB = os.environ.get("POSTGRES_DB", "infraondb")
-    POSTGRES_USER = os.environ.get("POSTGRES_USER", "postgres")
-    POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "")
+    POSTGRES_DB = os.environ.get("POSTGRES_DB", None)
+    POSTGRES_USER = os.environ.get("POSTGRES_USER", None)
+    POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD", None)
     EMBEDING_MODEL = os.environ.get("EMBEDING_MODEL", "intfloat/e5-base-v2")
+
+# Validate that required PostgreSQL credentials are set
+if not all([POSTGRES_HOST, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD]):
+    raise ValueError(
+        "PostgreSQL credentials must be set in .env file: "
+        "POSTGRES_HOST, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD"
+    )
 
 # ----------------------- Load Intents -----------------------
 def load_intents(file_path):

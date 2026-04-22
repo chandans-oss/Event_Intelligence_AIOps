@@ -8,10 +8,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env_path = BASE_DIR.parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
-SECRET_KEY = 'django-insecure-test-key-do-not-use-in-prod'
-DEBUG = True
+# Security - MUST be set in .env, never hardcode in code
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError(
+        "DJANGO_SECRET_KEY environment variable must be set. "
+        "Copy .env.example to .env and set a secure SECRET_KEY."
+    )
 
-ALLOWED_HOSTS = ['*']
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
+ENVIRONMENT = os.environ.get('DJANGO_ENVIRONMENT', 'development')
+
+# Allowed hosts from environment
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -71,12 +80,26 @@ USE_TZ = True
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS Configuration - Load from environment
+CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False').lower() == 'true'
+if not CORS_ALLOW_ALL_ORIGINS:
+    # Load allowed origins from comma-separated environment variable
+    cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:5173')
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',')]
 
 # PostgreSQL Configuration for RCA Historical Engine
-POSTGRES_HOST = os.environ.get("POSTGRES_HOST", "10.0.4.89")
+# REQUIRED: All of these must be set in .env file
+POSTGRES_HOST = os.environ.get("POSTGRES_HOST")
 POSTGRES_PORT = os.environ.get("POSTGRES_PORT", "5432")
-POSTGRES_DB = os.environ.get("POSTGRES_DB", "infraondb")
-POSTGRES_USER = os.environ.get("POSTGRES_USER", "postgres")
-POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "InfraonPostgres321")
+POSTGRES_DB = os.environ.get("POSTGRES_DB")
+POSTGRES_USER = os.environ.get("POSTGRES_USER")
+POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
 EMBEDING_MODEL = os.environ.get("EMBEDING_MODEL", "intfloat/e5-base-v2")
+
+# Validate that required PostgreSQL credentials are set
+if ENVIRONMENT == 'production':
+    if not all([POSTGRES_HOST, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD]):
+        raise ValueError(
+            "All PostgreSQL environment variables must be set in .env for production: "
+            "POSTGRES_HOST, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD"
+        )

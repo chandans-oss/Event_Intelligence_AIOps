@@ -10,12 +10,19 @@ from dotenv import load_dotenv, find_dotenv
 # Load environment variables from .env file
 load_dotenv(find_dotenv(usecwd=True))
 
-POSTGRES_HOST = os.environ.get("POSTGRES_HOST", "10.0.4.89")
+POSTGRES_HOST = os.environ.get("POSTGRES_HOST")
 POSTGRES_PORT = os.environ.get("POSTGRES_PORT", "5432")
-POSTGRES_DB = os.environ.get("POSTGRES_DB", "infraondb")
-POSTGRES_USER = os.environ.get("POSTGRES_USER", "postgres")
-POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "")
+POSTGRES_DB = os.environ.get("POSTGRES_DB")
+POSTGRES_USER = os.environ.get("POSTGRES_USER")
+POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
 EMBEDING_MODEL = os.environ.get("EMBEDING_MODEL", "intfloat/e5-base-v2")
+
+# Validate that required PostgreSQL credentials are set
+if not all([POSTGRES_HOST, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD]):
+    raise ValueError(
+        "PostgreSQL credentials must be set in .env file: "
+        "POSTGRES_HOST, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD"
+    )
 
 # Initialize 768-dim open-source embedding model
 print(f"Loading 768-dim embedding model {EMBEDING_MODEL}...")

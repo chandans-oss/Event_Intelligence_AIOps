@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Search, Filter, Calendar, Sparkles, Pause, LayoutGrid, LayoutList, 
-  Settings, Download, MessageSquare, Database, Globe, Eye, 
-  ChevronLeft, ChevronRight, MoreHorizontal, Info, AlertCircle, 
+import {
+  Search, Filter, Calendar, Sparkles, Pause, LayoutGrid, LayoutList,
+  Settings, Download, MessageSquare, Database, Globe, Eye,
+  ChevronLeft, ChevronRight, MoreHorizontal, Info, AlertCircle,
   ArrowUpCircle, AlertTriangle, HelpCircle, Sun, Moon, Target, GitBranch, Copy, BellOff,
   Clock, X, ThumbsUp, Trash2, Menu, Ticket, Brain, Activity
 } from 'lucide-react';
@@ -11,11 +11,11 @@ import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { Switch } from '@/shared/components/ui/switch';
-import { 
-  Tooltip, 
-  TooltipContent, 
-  TooltipProvider, 
-  TooltipTrigger 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
 } from '@/shared/components/ui/tooltip';
 import { MainLayout } from '@/shared/components/layout/MainLayout';
 import { RCASidebar } from '@/features/rca/components/RcaSidebar';
@@ -36,7 +36,7 @@ export default function Events() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('All');
   const [secondaryActiveTab, setSecondaryActiveTab] = useState<string | null>(null);
@@ -45,12 +45,15 @@ export default function Events() {
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
-  
+
   const [selectedEvent, setSelectedEvent] = useState<NetworkEvent | null>(null);
   const [activeSidebar, setActiveSidebar] = useState<SidebarType>(null);
   const [selectedCauseId, setSelectedCauseId] = useState<string | null>(null);
 
-  const stats = useMemo(() => getEventStats(sampleNetworkEvents), []);
+  const stats = useMemo(() => {
+    const visibleEvents = sampleNetworkEvents.filter(e => showHistory || e.status === 'Active');
+    return getEventStats(visibleEvents);
+  }, [showHistory]);
 
   const categoryGroups = [
     {
@@ -61,7 +64,8 @@ export default function Events() {
         { label: 'Critical', value: 'Critical', count: stats.severityCounts.Critical, icon: AlertCircle, color: 'text-red-500' },
         { label: 'Major', value: 'Major', count: stats.severityCounts.Major, icon: ArrowUpCircle, color: 'text-orange-500' },
         { label: 'Minor', value: 'Minor', count: stats.severityCounts.Minor, icon: AlertTriangle, color: 'text-amber-500' },
-      ]
+      ],
+      total: stats.severityCounts.Critical + stats.severityCounts.Major + stats.severityCounts.Minor
     },
     {
       id: 'status',
@@ -71,7 +75,8 @@ export default function Events() {
         { label: 'Acknowledged', value: 'Acknowledged', count: stats.statusCounts.Acknowledged, icon: ThumbsUp, color: 'text-blue-500' },
         { label: 'Ticketed', value: 'Ticketed', count: stats.statusCounts.Ticketed, icon: Ticket, color: 'text-indigo-500' },
         { label: 'Business Service', value: 'BusinessService', count: stats.statusCounts.BusinessService, icon: LayoutGrid, color: 'text-emerald-500' },
-      ]
+      ],
+      total: stats.statusCounts.Acknowledged + stats.statusCounts.Ticketed + stats.statusCounts.BusinessService
     },
     {
       id: 'association',
@@ -81,7 +86,8 @@ export default function Events() {
         { label: 'Root', value: 'Root', count: stats.associationCounts.Root, icon: Target, color: 'text-violet-500' },
         { label: 'Priority', value: 'Priority', count: stats.associationCounts.Priority, icon: Sparkles, color: 'text-amber-400' },
         { label: 'Associated', value: 'Associated', count: stats.associationCounts.Associated, icon: GitBranch, color: 'text-blue-400' },
-      ]
+      ],
+      total: stats.associationCounts.Root + stats.associationCounts.Priority + stats.associationCounts.Associated
     },
     {
       id: 'sources',
@@ -94,7 +100,8 @@ export default function Events() {
         { label: 'Seasonal', value: 'Seasonal', count: stats.sourceCounts.Seasonal, icon: Moon, color: 'text-indigo-400' },
         { label: 'NCCM', value: 'NCCM', count: stats.sourceCounts.NCCM, icon: Settings, color: 'text-blue-400' },
         { label: 'IPAM', value: 'IPAM', count: stats.sourceCounts.IPAM, icon: Database, color: 'text-cyan-400' },
-      ]
+      ],
+      total: stats.sourceCounts.Trap + stats.sourceCounts.Syslog + stats.sourceCounts.Adaptive + stats.sourceCounts.Seasonal + stats.sourceCounts.NCCM + stats.sourceCounts.IPAM
     },
     {
       id: 'ai',
@@ -105,7 +112,8 @@ export default function Events() {
         { label: 'RCA with Remediation', value: 'RcaRemediation', count: stats.aiCounts['RCA with Remediation'], icon: Ticket, color: 'text-blue-500' },
         { label: 'RCA with Auto Remediation', value: 'RcaAuto', count: stats.aiCounts['RCA with Auto Remediation'], icon: Sparkles, color: 'text-emerald-500' },
         { label: 'RCA Not Found', value: 'RcaNotFound', count: stats.aiCounts['RCA Not Found'], icon: AlertCircle, color: 'text-rose-500' },
-      ]
+      ],
+      total: stats.aiCounts['Only RCA'] + stats.aiCounts['RCA with Remediation'] + stats.aiCounts['RCA with Auto Remediation'] + stats.aiCounts['RCA Not Found']
     }
   ];
 
@@ -238,8 +246,7 @@ export default function Events() {
                           : "bg-card text-muted-foreground hover:bg-accent border border-border"
                       )}
                     >
-                      <span>All</span>
-                      <span className="text-[10px] opacity-70">({stats.total})</span>
+                      <span>All ({stats.total})</span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>Show All Events</TooltipContent>
@@ -251,9 +258,9 @@ export default function Events() {
                   const isExpanded = expandedCategories.includes(group.id) || isStatic;
 
                   const toggleCategory = () => {
-                    setExpandedCategories(prev => 
-                      prev.includes(group.id) 
-                        ? prev.filter(c => c !== group.id) 
+                    setExpandedCategories(prev =>
+                      prev.includes(group.id)
+                        ? prev.filter(c => c !== group.id)
                         : [...prev, group.id]
                     );
                   };
@@ -261,39 +268,52 @@ export default function Events() {
                   return (
                     <div key={group.id} className="flex items-center">
                       <div className="h-6 w-[1px] bg-border mx-2" />
-                      
+
                       <div className={cn(
                         "flex items-center gap-1 transition-all duration-500 ease-in-out bg-card/30 rounded-xl border border-border/50",
                         !isStatic && "overflow-hidden",
-                        isExpanded ? "max-w-[1000px] px-1.5 py-0.5 z-10" : "max-w-[44px] z-0"
+                        isExpanded ? "max-w-[1000px] px-1.5 py-0.5 z-10" : "max-w-[90px] z-0"
                       )}>
-                        {/* Main Category Icon / Toggle - Only for non-static */}
                         {!isStatic && (
                           <Tooltip delayDuration={0}>
                             <TooltipTrigger asChild>
                               <button
                                 onClick={toggleCategory}
                                 className={cn(
-                                  "flex items-center justify-center h-9 w-9 min-w-[36px] rounded-lg transition-all",
+                                  "flex items-center gap-2 h-10 px-3 rounded-lg transition-all",
                                   expandedCategories.includes(group.id) ? "bg-primary text-primary-foreground shadow-inner" : "hover:bg-accent text-muted-foreground"
                                 )}
                               >
-                                <group.icon className="h-5 w-5" />
+                                <group.icon className="h-4 w-4" />
+                                <span className="text-[10px] font-black opacity-90 whitespace-nowrap">({group.total})</span>
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="z-[100] p-0 overflow-hidden bg-background/95 backdrop-blur-md border-primary/20 shadow-2xl min-w-[180px] rounded-xl">
-                              <div className="px-4 py-2.5 bg-primary/10 border-b border-primary/20">
+                            <TooltipContent side="top" className="z-[100] p-0 overflow-hidden bg-background/95 backdrop-blur-md border-primary/20 shadow-2xl min-w-[190px] rounded-xl">
+                              <div className="px-4 py-2.5 bg-primary/10 border-b border-primary/20 flex items-center justify-between">
                                 <span className="text-[10px] font-black text-primary tracking-widest uppercase">{group.name}</span>
+                                <span className="text-[9px] font-black text-primary">({group.total})</span>
                               </div>
                               <div className="p-2 space-y-0.5">
                                 {group.filters.map((f) => (
-                                  <div key={f.label} className="flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-accent/50 transition-colors group/item">
+                                  <button
+                                    key={f.label}
+                                    onClick={() => {
+                                      setFilterCategory(filterCategory === f.value ? null : f.value);
+                                      if (!expandedCategories.includes(group.id)) {
+                                        toggleCategory();
+                                      }
+                                    }}
+                                    className={cn(
+                                      "w-full flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all group/item",
+                                      filterCategory === f.value ? "bg-primary/10 border border-primary/20" : "hover:bg-accent/50"
+                                    )}
+                                  >
                                     <f.icon className={cn("h-4 w-4 transition-transform group-hover/item:scale-110", f.color)} />
-                                    <span className="text-[11px] font-bold text-foreground/80">{f.label}</span>
+                                    <span className={cn("text-[11px] font-bold", filterCategory === f.value ? "text-primary" : "text-foreground/80")}>{f.label}</span>
                                     <span className="ml-auto text-[10px] font-black text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full border border-border/50">
                                       {f.count}
                                     </span>
-                                  </div>
+                                  </button>
                                 ))}
                               </div>
                             </TooltipContent>
@@ -364,7 +384,7 @@ export default function Events() {
                 };
 
                 return (
-                  <tr 
+                  <tr
                     key={event.event_id}
                     className={cn(
                       "group relative hover:bg-muted/50 transition-colors cursor-default border-b border-border/50",
@@ -377,13 +397,13 @@ export default function Events() {
                     <td className="px-4 py-4 w-10">
                       <div className={cn(
                         "absolute left-0 top-0 bottom-0 w-1",
-                        event.severity === 'Critical' ? "bg-red-500" : 
-                        event.severity === 'Major' ? "bg-orange-500" :
-                        event.severity === 'Minor' ? "bg-yellow-500" : "bg-blue-400"
+                        event.severity === 'Critical' ? "bg-red-500" :
+                          event.severity === 'Major' ? "bg-orange-500" :
+                            event.severity === 'Minor' ? "bg-yellow-500" : "bg-blue-400"
                       )} />
                       <input type="checkbox" className="rounded border-border bg-background" />
                     </td>
-                    
+
                     {/* ISSUE COLUMN */}
                     <td className="px-4 py-4 w-[350px]">
                       <div className="flex items-center gap-4">
@@ -404,17 +424,18 @@ export default function Events() {
                       <div className="flex flex-col items-start gap-1">
                         <Badge className={cn(
                           "h-6 px-3 text-[10px] font-black uppercase border-none rounded shadow-sm flex items-center gap-1.5",
-                          event.severity === 'Critical' ? "bg-red-500/10 text-red-500" : 
-                          event.severity === 'Major' ? "bg-orange-500/10 text-orange-500" :
-                          "bg-yellow-500/10 text-yellow-500"
+                          event.severity === 'Critical' ? "bg-red-500/10 text-red-500" :
+                            event.severity === 'Major' ? "bg-orange-500/10 text-orange-500" :
+                              "bg-yellow-500/10 text-yellow-500"
                         )}>
                           {event.severity === 'Major' ? <ArrowUpCircle className="h-3 w-3" /> : <div className="h-2 w-2 rounded-full bg-current" />}
                           {event.severity}
                         </Badge>
                         {event.clusterId && (
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border">
-                            <Clock className="h-3 w-3" />
-                            {Math.floor(Math.random() * 60)}
+                          <div className="flex items-center gap-1 text-[10px] font-black text-muted-foreground/50 border border-border/30 rounded px-1.5 py-0.5 bg-muted/20">
+                            <Clock className="h-2.5 w-2.5" />
+                            {/* Deterministic timer based on event ID to prevent flickering on hover */}
+                            {(parseInt(event.event_id.replace(/\D/g, '')) || 15) % 60}
                           </div>
                         )}
                       </div>
@@ -457,8 +478,8 @@ export default function Events() {
                         "flex items-center justify-end gap-2 transition-all duration-200",
                         hoveredRowId === event.event_id ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2 pointer-events-none"
                       )}>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           className="h-9 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs px-6 shadow-lg rounded-full"
                           onClick={(e) => {
                             e.stopPropagation();

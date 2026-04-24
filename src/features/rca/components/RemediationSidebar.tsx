@@ -39,14 +39,16 @@ const TIMELINE_DATA = [
 ];
 
 interface RemediationSidebarProps {
-  cluster: Cluster;
+  cluster: Cluster | ClusterSpecificData;
   causeId?: string;
-  onClose: () => void;
+  onClose?: () => void;
   onBack?: () => void;
+  isEmbedded?: boolean;
 }
 
-export function RemediationSidebar({ cluster, causeId, onClose, onBack }: RemediationSidebarProps) {
-  const clusterData = getClusterData(causeId || cluster.id) || getClusterData(cluster.id);
+export function RemediationSidebar({ cluster, causeId, onClose, onBack, isEmbedded }: RemediationSidebarProps) {
+  const currentId = 'clusterId' in cluster ? cluster.clusterId : cluster.id;
+  const clusterData = getClusterData(causeId || currentId) || getClusterData(currentId);
 
   const [viewMode, setViewMode] = useState<'execution' | 'verification' | 'history'>('execution');
   const [activeStepIndex, setActiveStepIndex] = useState(0);
@@ -62,7 +64,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
       });
       setStepStates(initialStates);
     }
-  }, [cluster.id]);
+  }, [currentId]);
 
   const handleStepAction = (stepId: string, result: 'success' | 'failed' | 'pending' | 'executed') => {
     setStepStates(prev => ({ ...prev, [stepId]: result }));
@@ -83,7 +85,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
         const logs = [
           { type: 'command' as const, text: `$ execute remediation_step --id ${step.id} --action "${step.action}"` },
           { type: 'output' as const, text: `> Initiating execution protocol...` },
-          { type: 'output' as const, text: `> Command sent to device ${cluster.id} via SSH` },
+          { type: 'output' as const, text: `> Command sent to device ${currentId} via SSH` },
           { type: 'output' as const, text: `> Waiting for execution confirmation...` },
           { type: 'output' as const, text: `✓ Execution completed. Please verify impact.` },
         ];
@@ -145,7 +147,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
                     </div>
                     <div>
                       <CardTitle className="text-base flex items-center gap-2">
-                        STEP {index + 1}: {step.action}
+                        Step {index + 1}: {step.action}
                         {isCompleted && <Badge className="bg-status-success text-[13px] h-5 font-medium">Worked</Badge>}
                         {isFailed && <Badge variant="destructive" className="text-[13px] h-5 font-medium">Failed</Badge>}
                       </CardTitle>
@@ -222,21 +224,21 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
 
                 {isFailed && (
                   <div className="space-y-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20 animate-fade-in shadow-inner">
-                    <div className="flex items-center gap-2 text-sm text-destructive font-black uppercase tracking-wider">
+                    <div className="flex items-center gap-2 text-sm text-destructive font-black tracking-wider">
                       <AlertTriangle className="h-5 w-5" />
                       Remediation Failure Detected
                     </div>
                     <p className="text-[13px] text-muted-foreground leading-relaxed">
-                      This step failed to produce the expected health improvements. anomaly detected in the execution path.
+                      This step failed to produce the expected health improvements. Anomaly detected in the execution path.
                     </p>
                     <div className="flex flex-wrap gap-2 pt-2">
-                      <Button variant="outline" size="sm" className="h-8 gap-2 text-[11px] font-black border-destructive/30 hover:bg-destructive/10 uppercase" onClick={() => handleStepAction(step.id, 'pending')}>
+                      <Button variant="outline" size="sm" className="h-8 gap-2 text-[11px] font-black border-destructive/30 hover:bg-destructive/10" onClick={() => handleStepAction(step.id, 'pending')}>
                         <RotateCcw className="h-3.5 w-3.5" /> Retry
                       </Button>
-                      <Button variant="outline" size="sm" className="h-8 gap-2 text-[11px] font-black text-destructive border-destructive/30 hover:bg-destructive/20 uppercase">
+                      <Button variant="outline" size="sm" className="h-8 gap-2 text-[11px] font-black text-destructive border-destructive/30 hover:bg-destructive/20">
                         <XCircle className="h-3.5 w-3.5" /> Rollback
                       </Button>
-                      <Button variant="ghost" size="sm" className="h-8 gap-2 text-[11px] font-black hover:bg-destructive/10 uppercase">
+                      <Button variant="ghost" size="sm" className="h-8 gap-2 text-[11px] font-black hover:bg-destructive/10">
                         <Users className="h-3.5 w-3.5" /> Support
                       </Button>
                     </div>
@@ -265,7 +267,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
       <div className="col-span-12 lg:col-span-4 space-y-6">
         <Card className="sticky top-0 bg-background/50 backdrop-blur-sm border-2">
           <CardHeader className="pb-4">
-            <CardTitle className="text-base flex items-center gap-2 font-black uppercase tracking-widest">
+            <CardTitle className="text-base flex items-center gap-2 font-black">
               <ClipboardCheck className="h-5 w-5 text-primary" />
               Live Monitoring
             </CardTitle>
@@ -274,16 +276,16 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
             <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/20 shadow-inner">
               <div className="flex items-center gap-2 mb-3">
                 <Activity className="h-4 w-4 text-orange-500 animate-pulse" />
-                <span className="text-[11px] font-black text-orange-500 uppercase tracking-widest">Real-time Telemetry</span>
+                <span className="text-[11px] font-black text-orange-500">Real-Time Telemetry</span>
               </div>
 
               <div className="overflow-hidden rounded-lg border border-orange-500/20">
                 <table className="w-full text-[11px]">
                   <thead className="bg-orange-500/10 border-b border-orange-500/20">
                     <tr>
-                      <th className="px-2 py-2 text-left font-bold text-orange-500 uppercase">Metric</th>
-                      <th className="px-2 py-2 text-center font-bold text-orange-500 uppercase">Base</th>
-                      <th className="px-2 py-2 text-right font-bold text-orange-500 uppercase">Now</th>
+                      <th className="px-2 py-2 text-left font-bold text-orange-500">Metric</th>
+                      <th className="px-2 py-2 text-center font-bold text-orange-500">Base</th>
+                      <th className="px-2 py-2 text-right font-bold text-orange-500">Now</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-orange-500/10">
@@ -310,7 +312,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
             <Separator />
 
             <div>
-              <h4 className="text-[11px] font-black uppercase tracking-widest mb-4 opacity-70">Execution Roadmap</h4>
+              <h4 className="text-[11px] font-black mb-4 opacity-70">Execution Roadmap</h4>
               <div className="space-y-4">
                 {steps.map((step, i) => {
                   const state = stepStates[step.id];
@@ -336,7 +338,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
                           state === 'success' ? "text-status-success" :
                             i === activeStepIndex ? "text-primary" : "text-muted-foreground"
                         )}>{step.action}</p>
-                        <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">{step.phase} Phase</p>
+                        <p className="text-[9px] text-muted-foreground font-bold tracking-tighter">{step.phase} Phase</p>
                       </div>
                     </div>
                   );
@@ -344,7 +346,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
               </div>
             </div>
 
-            <Button variant="outline" className="w-full gap-2 text-[11px] font-black uppercase h-10 tracking-widest bg-secondary/30" onClick={() => setCurrentTab('kb')}>
+            <Button variant="outline" className="w-full gap-2 text-[11px] font-black h-10 bg-secondary/30" onClick={() => setCurrentTab('kb')}>
               <BookOpen className="h-4 w-4" />
               Runbook Docs
             </Button>
@@ -365,17 +367,17 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
           <div>
             <h2 className="text-3xl font-black flex items-center gap-4">
               Verification Dashboard
-              <Badge className="bg-status-success animate-pulse h-6 px-3 text-[11px] font-black uppercase tracking-widest border-2 border-emerald-500 shadow-lg shadow-emerald-500/20">Checks Passing</Badge>
+              <Badge className="bg-status-success animate-pulse h-6 px-3 text-[11px] font-black border-2 border-emerald-500 shadow-lg shadow-emerald-500/20">Checks Passing</Badge>
             </h2>
-            <p className="text-muted-foreground text-lg  mt-1 font-medium opacity-80">System Health Stabilized • Verification phase complete</p>
+            <p className="text-muted-foreground text-lg  mt-1 font-medium opacity-80">System Health Stabilized • Verification Phase Complete</p>
           </div>
         </div>
         <div className="flex gap-4">
-          <Button variant="outline" className="gap-2 font-black uppercase h-12 px-6 border-2 hover:bg-secondary">
+          <Button variant="outline" className="gap-2 font-black h-12 px-6 border-2 hover:bg-secondary">
             <Download className="h-5 w-5" /> Export Report
           </Button>
           <Button
-            className="bg-primary hover:bg-primary/90 gap-2 font-black uppercase h-12 px-8 shadow-xl shadow-primary/30"
+            className="bg-primary hover:bg-primary/90 gap-2 font-black h-12 px-8 shadow-xl shadow-primary/30"
             onClick={() => setViewMode('history')}
           >
             Resolve Case
@@ -387,7 +389,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
       <div className="grid grid-cols-12 gap-8">
         <Card className="col-span-12 lg:col-span-7 border-2 overflow-hidden">
           <CardHeader className="bg-secondary/20 border-b-2">
-            <CardTitle className="text-xl flex items-center gap-3 font-black uppercase tracking-widest">
+            <CardTitle className="text-xl flex items-center gap-3 font-black">
               <TrendingDown className="h-6 w-6 text-status-success" />
               Post-Remedy Metrics
             </CardTitle>
@@ -399,10 +401,10 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
                 <table className="w-full text-sm">
                   <thead className="bg-secondary/50 border-b-2 border-border">
                     <tr>
-                      <th className="px-6 py-5 text-left font-black uppercase tracking-widest text-[11px] text-muted-foreground">Verification Metric</th>
-                      <th className="px-4 py-5 text-center font-black uppercase tracking-widest text-[11px] text-muted-foreground">Baseline (Pre)</th>
-                      <th className="px-4 py-5 text-center font-black uppercase tracking-widest text-[11px] text-muted-foreground">Observed (Post)</th>
-                      <th className="px-6 py-5 text-right font-black uppercase tracking-widest text-[11px] text-muted-foreground">Improvement</th>
+                      <th className="px-6 py-5 text-left font-black text-[11px] text-muted-foreground">Verification Metric</th>
+                      <th className="px-4 py-5 text-center font-black text-[11px] text-muted-foreground">Baseline (Pre)</th>
+                      <th className="px-4 py-5 text-center font-black text-[11px] text-muted-foreground">Observed (Post)</th>
+                      <th className="px-6 py-5 text-right font-black text-[11px] text-muted-foreground">Improvement</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y-2 divide-border">
@@ -447,7 +449,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
                       content={({ active, payload }) => {
                         if (active && payload && payload.length) {
                           return (
-                            <div className="bg-background/90 backdrop-blur border-2 border-border p-3 rounded-xl shadow-2xl text-[11px] font-black uppercase tracking-widest">
+                            <div className="bg-background/90 backdrop-blur border-2 border-border p-3 rounded-xl shadow-2xl text-[11px] font-black">
                               <p className="mb-2 text-primary">{payload[0].payload.name}</p>
                               <p className="text-destructive mb-1">Pre: {payload[0].value}{payload[0].payload.unit}</p>
                               <p className="text-status-success">Post: {payload[1].value}{payload[1].payload.unit}</p>
@@ -468,7 +470,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
 
         <Card className="col-span-12 lg:col-span-5 border-2">
           <CardHeader className="bg-secondary/20 border-b-2">
-            <CardTitle className="text-xl flex items-center gap-3 font-black uppercase tracking-widest">
+            <CardTitle className="text-xl flex items-center gap-3 font-black">
               <History className="h-6 w-6 text-primary" />
               Resolution Audit
             </CardTitle>
@@ -500,12 +502,12 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
 
             <div className="mt-12 p-8 rounded-3xl bg-primary/5 border-2 border-primary/20 text-center shadow-inner relative overflow-hidden group">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
-              <p className="text-[11px] text-muted-foreground mb-3 uppercase tracking-[0.2em] font-black">Resolution MTTR</p>
+              <p className="text-[11px] text-muted-foreground mb-3 font-black">Resolution Mttr</p>
               <div className="relative inline-block">
                 <p className="text-5xl font-black text-primary tracking-tighter">15m 00s</p>
-                <Badge className="absolute -right-12 -top-2 bg-emerald-500 text-[9px] font-black uppercase px-2 py-0.5 shadow-lg shadow-emerald-500/30">-75%</Badge>
+                <Badge className="absolute -right-12 -top-2 bg-emerald-500 text-[9px] font-black px-2 py-0.5 shadow-lg shadow-emerald-500/30">-75%</Badge>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-3 font-bold uppercase tracking-widest opacity-60 ">AI-Accelerated Remediation</p>
+              <p className="text-[11px] text-muted-foreground mt-3 font-bold opacity-60">Ai-Accelerated Remediation</p>
             </div>
           </CardContent>
         </Card>
@@ -520,7 +522,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
         <div className="h-32 w-32 rounded-full bg-status-success/20 flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-status-success/10 border-4 border-status-success/10">
           <CheckCircle2 className="h-16 w-16 text-status-success animate-in zoom-in-50 duration-500" />
         </div>
-        <h2 className="text-5xl font-black text-foreground tracking-tighter uppercase mb-2">Ticket Resolved</h2>
+        <h2 className="text-5xl font-black text-foreground tracking-tighter mb-2">Ticket Resolved</h2>
         <p className="text-muted-foreground text-xl font-medium  opacity-70">
           Closed-Loop AIOps lifecycle complete
         </p>
@@ -534,25 +536,25 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
                 <ShieldCheck className="h-8 w-8 text-white" />
               </div>
               <div>
-                <CardTitle className="text-2xl font-black tracking-tight uppercase">Case: {cluster.id}</CardTitle>
-                <CardDescription className="text-status-success/80 font-bold uppercase text-[11px] tracking-widest mt-1">Archived {new Date().toLocaleDateString()} • {new Date().toLocaleTimeString()}</CardDescription>
+                <CardTitle className="text-2xl font-bold tracking-tight">Case: {currentId}</CardTitle>
+                <CardDescription className="text-status-success/80 font-bold text-[11px] mt-1">Archived {new Date().toLocaleDateString()} • {new Date().toLocaleTimeString()}</CardDescription>
               </div>
             </div>
-            <Badge className="bg-foreground text-background font-black px-4 py-1.5 rounded-full tracking-widest shadow-xl">ARCHIVED</Badge>
+            <Badge className="bg-foreground text-background font-bold px-4 py-1.5 rounded-full shadow-xl">Archived</Badge>
           </div>
         </CardHeader>
         <CardContent className="p-10 space-y-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center p-6 rounded-3xl bg-background/50 border-2 border-border/50 shadow-inner">
-              <p className="text-[11px] uppercase tracking-widest font-black text-muted-foreground mb-2">Final MTTR</p>
+              <p className="text-[11px] font-black text-muted-foreground mb-2">Final Mttr</p>
               <p className="text-3xl font-black text-foreground tracking-tighter">15m 00s</p>
             </div>
             <div className="text-center p-6 rounded-3xl bg-background/50 border-2 border-border/50 shadow-inner">
-              <p className="text-[11px] uppercase tracking-widest font-black text-muted-foreground mb-2">Improvement</p>
+              <p className="text-[11px] font-black text-muted-foreground mb-2">Improvement</p>
               <p className="text-3xl font-black text-emerald-500 tracking-tighter">79% Avg</p>
             </div>
             <div className="text-center p-6 rounded-3xl bg-background/50 border-2 border-border/50 shadow-inner">
-              <p className="text-[11px] uppercase tracking-widest font-black text-muted-foreground mb-2">Audit Score</p>
+              <p className="text-[11px] font-black text-muted-foreground mb-2">Audit Score</p>
               <p className="text-3xl font-black text-primary tracking-tighter">A+ / 98%</p>
             </div>
           </div>
@@ -561,19 +563,19 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
               <History className="h-32 w-32" />
             </div>
-            <h4 className="text-[12px] font-black uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+            <h4 className="text-[12px] font-black mb-6 flex items-center gap-3">
               <History className="h-5 w-5 text-primary" />
               Executive Resolution Summary
             </h4>
             <p className="text-base text-muted-foreground leading-relaxed font-medium">
-              The case {cluster.id} has been fully remediated through automated QoS optimization.
+              The case {currentId} has been fully remediated through automated QoS optimization.
               Recovery metrics have been verified against established baselines, showing a total suppression of the anomalous link congestion pattern.
               Stability period is now active with 100% telemetry health.
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-6 justify-center pt-6">
-            <Button variant="outline" size="lg" onClick={() => setViewMode('verification')} className="h-14 gap-3 px-8 font-black uppercase tracking-widest border-2 shadow-xl hover:bg-secondary">
+            <Button variant="outline" size="lg" onClick={() => setViewMode('verification')} className="h-14 gap-3 px-8 font-black border-2 shadow-xl hover:bg-secondary">
               <Download className="h-5 w-5" /> Detailed Report
             </Button>
 
@@ -582,7 +584,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
       </Card>
 
       <div className="text-center pt-8">
-        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive gap-3 font-black uppercase tracking-widest opacity-50">
+        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive gap-3 font-black opacity-50">
           <Trash2 className="h-4 w-4" /> Purge Tracking Data
         </Button>
       </div>
@@ -590,20 +592,27 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
   );
 
   return (
-    <div className="fixed inset-y-0 right-0 w-[85%] max-w-[1200px] bg-background border-l-4 border-border shadow-[0_0_100px_rgba(0,0,0,0.5)] z-50 animate-slide-in-right flex flex-col">
+    <div className={cn(
+        isEmbedded ? "relative w-full h-full border-none shadow-none" : "fixed inset-y-0 right-0 w-[85%] max-w-[1200px] z-50 animate-slide-in-right bg-background border-l-4 border-border shadow-[0_0_100px_rgba(0,0,0,0.5)]",
+        "flex flex-col"
+    )}>
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b-2 border-border bg-card/30 backdrop-blur shadow-sm shrink-0">
           <div className="flex items-center gap-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onBack || onClose}
-              className="group h-12 w-12 rounded-full border-2 border-border hover:bg-primary hover:border-primary hover:text-white transition-all"
-            >
-              <ArrowLeft className="h-6 w-6 group-hover:-translate-x-1 transition-transform" />
-            </Button>
-            <div className="h-10 w-0.5 bg-border rounded-full" />
+            {(!isEmbedded || onBack || onClose) && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onBack || onClose}
+                  className="group h-12 w-12 rounded-full border-2 border-border hover:bg-primary hover:border-primary hover:text-white transition-all"
+                >
+                  <ArrowLeft className="h-6 w-6 group-hover:-translate-x-1 transition-transform" />
+                </Button>
+                <div className="h-10 w-0.5 bg-border rounded-full" />
+              </>
+            )}
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 border-2 border-primary/30 shadow-inner group overflow-hidden relative">
               <div className="absolute inset-0 bg-primary opacity-0 group-hover:opacity-10 transition-opacity" />
               <Wrench className="h-6 w-6 text-primary group-hover:rotate-45 transition-transform duration-500" />
@@ -614,7 +623,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
               </div>
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 <AlertCircle className="h-3.5 w-3.5 text-primary" />
-                {cluster.id} • {clusterData.rcaMetadata.rootEventType.replace(/_/g, ' ')}
+                {currentId} • {clusterData.rcaMetadata.rootEventType.replace(/_/g, ' ')}
               </p>
             </div>
           </div>
@@ -631,7 +640,17 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
                 <p className="text-[13px] text-muted-foreground translate-x-1">Execution Payload Activity</p>
               </div>
             )}
-
+            
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="h-10 w-10 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -668,9 +687,9 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
                           <div className="w-3.5 h-3.5 rounded-full bg-amber-500/80 shadow-lg shadow-amber-500/20" />
                           <div className="w-3.5 h-3.5 rounded-full bg-emerald-500/80 shadow-lg shadow-emerald-500/20" />
                         </div>
-                        <span className="text-[11px] uppercase font-black tracking-[0.3em] text-zinc-500 ml-4 group-hover:text-zinc-400 transition-colors">AIOps-Agent:~/remediation-session-v4</span>
+                        <span className="text-[11px] font-black text-zinc-500 ml-4 group-hover:text-zinc-400 transition-colors">Aiops-Agent:~/remediation-session-v4</span>
                       </div>
-                      <Button variant="ghost" size="sm" className="h-8 text-[11px] font-black uppercase hover:bg-zinc-800 hover:text-white border-zinc-800/50" onClick={() => setTerminalHistory([])}>
+                      <Button variant="ghost" size="sm" className="h-8 text-[11px] font-black hover:bg-zinc-800 hover:text-white border-zinc-800/50" onClick={() => setTerminalHistory([])}>
                         <RotateCcw className="h-3.5 w-3.5 mr-2" /> Clear Buffer
                       </Button>
                     </CardHeader>
@@ -680,7 +699,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
                         <div className="space-y-2">
                           <div className="text-zinc-500 mb-6 flex items-center gap-4">
                             <div className="h-px bg-zinc-800 flex-1" />
-                            <span className="text-[11px] font-black uppercase">Session Initialized: {new Date().toISOString()}</span>
+                            <span className="text-[11px] font-black">Session Initialized: {new Date().toISOString()}</span>
                             <div className="h-px bg-zinc-800 flex-1" />
                           </div>
                           {terminalHistory.length > 0 ? terminalHistory.map((line, index) => (
@@ -695,7 +714,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
                           )) : (
                             <div className="text-zinc-700  flex items-center gap-3 py-10 justify-center">
                               <Terminal className="h-10 w-10 opacity-20" />
-                              <span className="font-black uppercase tracking-widest text-lg">Waiting for instruction payload...</span>
+                              <span className="font-black text-lg">Waiting for instruction payload...</span>
                             </div>
                           )}
                           <div className="flex items-center gap-4 mt-6 opacity-80">
@@ -715,14 +734,14 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack }: Remedi
                       <Card key={i} className="hover:border-primary/50 hover:shadow-2xl hover:-translate-y-2 transition-all cursor-pointer group rounded-3xl border-2 overflow-hidden bg-background/50">
                         <CardHeader className="pb-4 bg-secondary/10 border-b-2">
                           <div className="flex justify-between items-start mb-4">
-                            <Badge className="bg-foreground text-background text-[9px] font-black uppercase tracking-widest px-2.5 py-1">Doc: #{i + 1}</Badge>
-                            <Badge className="bg-primary/20 text-primary border-primary/20 text-[11px] font-black uppercase tracking-widest px-2.5 py-1 transition-all group-hover:bg-primary group-hover:text-white">{article.relevance}% MATCH</Badge>
+                            <Badge className="bg-foreground text-background text-[9px] font-black px-2.5 py-1">Doc: #{i + 1}</Badge>
+                            <Badge className="bg-primary/20 text-primary border-primary/20 text-[11px] font-black px-2.5 py-1 transition-all group-hover:bg-primary group-hover:text-white">{article.relevance}% Match</Badge>
                           </div>
                           <CardTitle className="text-lg font-black tracking-tight leading-tight group-hover:text-primary transition-colors">{article.title}</CardTitle>
                         </CardHeader>
                         <CardContent className="p-6">
                           <p className="text-[13px] text-muted-foreground font-medium  opacity-80 leading-relaxed mb-6">Cross-referenced solution from central AIOps repository based on current link_congestion fingerprint.</p>
-                          <Button variant="secondary" size="sm" className="w-full text-[11px] font-black uppercase tracking-[0.2em] h-10 gap-2 border-2 rounded-xl group-hover:bg-primary group-hover:text-white transition-all shadow-inner" asChild>
+                          <Button variant="secondary" size="sm" className="w-full text-[11px] font-black h-10 gap-2 border-2 rounded-xl group-hover:bg-primary group-hover:text-white transition-all shadow-inner" asChild>
                             <a href={article.url} target="_blank" rel="noopener noreferrer">
                               <BookOpen className="h-4 w-4" /> Open Full Briefing
                             </a>

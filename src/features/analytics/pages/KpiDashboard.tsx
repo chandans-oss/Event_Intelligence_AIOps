@@ -103,7 +103,7 @@ const PIPELINE_STAGES = [
     { name: 'Deduplicate', value: '1,845', delta: '-25.6%', sub: '1.4s', color: 'emerald', conf: '96% conf', input: '2,482 -> 1,845', description: 'Eliminating redundant signals within a 1-minute window.' },
     { name: 'Suppress', value: '1,212', delta: '-34.3%', sub: '1.1s', color: 'emerald', conf: '93% conf', input: '1,845 -> 1,212', description: 'Filtering out non-actionable maintenance/log noise.' },
     { name: 'Correlate', value: '458', delta: '-62.2%', sub: '3.2s', color: 'purple', conf: '91% conf', input: '1,212 -> 458', description: 'Temporal and topological relationship clustering.' },
-    { name: 'Rca', value: '118', delta: '-74.2%', sub: '4.5s', color: 'orange', conf: '87% conf', input: '458 -> 118', description: 'AI-driven root cause identification using failure chains.' },
+    { name: 'RCA', value: '118', delta: '-74.2%', sub: '4.5s', color: 'orange', conf: '87% conf', input: '458 -> 118', description: 'AI-driven root cause identification using failure chains.' },
     { name: 'Remediate', value: '28', delta: '-47.2%', sub: '2.1s', color: 'blue', conf: '92% conf', input: '118 -> 38', description: 'Automated remediation playbooks and script execution.' }
 ];
 
@@ -113,12 +113,12 @@ const SANKEY_DATA = {
         { name: 'Deduplicate', fill: '#10B981' },     // 1
         { name: 'Suppress', fill: '#F59E0B' },        // 2
         { name: 'Correlate', fill: '#A855F7' },       // 3
-        { name: 'Rca', fill: '#F97316' },             // 4
+        { name: 'RCA', fill: '#F97316' },             // 4
         { name: 'Remediate', fill: '#3B82F6' },       // 5
         { name: 'Dropped (Dedup)', fill: '#EF4444' }, // 6
         { name: 'Dropped (Sup)', fill: '#EF4444' },   // 7
         { name: 'Dropped (Corr)', fill: '#EF4444' },  // 8
-        { name: 'Dropped (Rca)', fill: '#EF4444' }    // 9
+        { name: 'Dropped (RCA)', fill: '#EF4444' }    // 9
     ],
     links: [
         { source: 0, target: 1, value: 2482 },
@@ -623,7 +623,7 @@ export default function KpiDashboard() {
 
                             <CardHeader className="flex flex-row items-center justify-between py-6 shrink-0 bg-slate-100/50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/5">
                                 <div className="space-y-1">
-                                    <CardTitle className="text-2xl font-black  tracking-tight text-slate-900 dark:text-white ">{selectedStage.name === 'Rca' ? 'RCA' : selectedStage.name} Analysis</CardTitle>
+                                    <CardTitle className="text-2xl font-black  tracking-tight text-slate-900 dark:text-white ">{selectedStage.name === 'RCA' ? 'RCA' : selectedStage.name} Analysis</CardTitle>
                                 </div>
                                 <Button
                                     variant="ghost"
@@ -998,7 +998,7 @@ export default function KpiDashboard() {
                                                 </div>
                                             </div>
                                         </div>
-                                    ) : selectedStage.name === 'Rca' ? (
+                                    ) : selectedStage.name === 'RCA' ? (
                                         <div className="space-y-8">
                                             {/* RCA STATS */}
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

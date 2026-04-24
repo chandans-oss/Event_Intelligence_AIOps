@@ -19,16 +19,16 @@
 .rca-timeline-container {
     display: flex;
     align-items: center;
-    overflow-x: auto;
+    justify-content: space-between;
+    overflow-x: hidden;
     padding: 24px;
     background: var(--rca-bg-secondary);
     border: 1px solid var(--rca-border-color);
     border-radius: 16px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, .2);
     margin-bottom: 34px;
-    gap: 10px;
+    gap: 0px;
     flex-wrap: nowrap;
-    scrollbar-width: thin;
 }
 
 .rca-tl-box {
@@ -77,10 +77,12 @@
 }
 
 .rca-tl-line {
-    min-width: 30px;
+    flex: 1;
+    min-width: 20px;
     height: 3px;
     background: var(--rca-border-color);
     border-radius: 10px;
+    margin: 0 5px;
 }
 
 .rca-tl-line.done {

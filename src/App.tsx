@@ -10,6 +10,7 @@ import { ThemeProvider } from "next-themes";
 import { ErrorBoundary } from "@/shared/components/common/ErrorBoundary";
 import AnalyticsDashboard from "@/features/analytics/pages/AnalyticsDashboard";
 import Events from "@/features/events/pages/EventsPage";
+import EventAnalysisPage from "@/features/events/pages/EventAnalysisPage";
 
 import Admin from "@/features/admin/pages/AdminPage";
 import RCADetailPage from "@/features/rca/pages/RcaDetailPage";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/algo-training/training" element={<AlgoTrainingPage />} />
               <Route path="/algo-training/results" element={<AlgoResultsPage />} />
 
+              <Route path="/analysis/:id" element={<EventAnalysisPage />} />
               <Route path="/events" element={<Events />} />
               <Route path="/rca/detail/:id" element={<RCADetailPage />} />
               <Route path="/impact/detail/:id" element={<ImpactDetailPage />} />

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/shared/components/layout/MainLayout';
 import {
   BookOpen,
@@ -13,8 +14,11 @@ import {
   GitBranch,
   FolderArchive,
   ChevronRight,
-  BookMarked
+  BookMarked,
+  ArrowLeft,
+  X
 } from 'lucide-react';
+import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -186,9 +190,9 @@ const DOC_CATEGORIES = [
               Configure sliding time-windows, strict-match fields, and fuzzy-logic operators to bundle identical alarms from misconfigured alert managers.
             </p>
             <div className="mt-6 flex flex-wrap gap-2 text-xs font-bold font-mono">
-              <span className="px-3 py-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded">IDENTIFIER</span>
-              <span className="px-3 py-1 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded">TIMEFRAME</span>
-              <span className="px-3 py-1 bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded">SEVERITY CONFLICT RULES</span>
+              <span className="px-3 py-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded">Identifier</span>
+              <span className="px-3 py-1 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded">Timeframe</span>
+              <span className="px-3 py-1 bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded">Severity Conflict Rules</span>
             </div>
           </div>
         )
@@ -206,16 +210,91 @@ const DOC_CATEGORIES = [
         )
       }
     ]
+  },
+  {
+    id: 'remediation',
+    title: 'Remediation Workflow',
+    icon: Zap,
+    sections: [
+      {
+        id: 'guided-remediation',
+        title: 'Guided Remediation',
+        content: (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6">Guided Remediation Overlay</h2>
+            <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[15px]">
+              The Remediation Sidebar provides a step-by-step diagnostic journey. It uses a right-sliding overlay to minimize context switching while resolving critical incidents.
+            </p>
+            <div className="p-6 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 mt-6">
+              <h4 className="text-sm font-bold mb-4">Core Remediation Features:</h4>
+              <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
+                <li className="flex items-start gap-2">
+                  <div className="h-5 w-5 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <ChevronRight size={12} className="text-blue-500" />
+                  </div>
+                  <span>Real-Time Terminal Execution: Execute commands directly on target devices with immediate feedback.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="h-5 w-5 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <ChevronRight size={12} className="text-blue-500" />
+                  </div>
+                  <span>Ai Assistant Integration: Leverage built-in AI to summarize logs and recommend complex fixes.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="h-5 w-5 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <ChevronRight size={12} className="text-blue-500" />
+                  </div>
+                  <span>Verification Roadmaps: Automated checks to confirm that remediation steps have restored service health.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        )
+      }
+    ]
   }
 ];
 
+
 export default function DocsPage() {
+  const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState(DOC_CATEGORIES[0]);
   const [activeSection, setActiveSection] = useState(DOC_CATEGORIES[0].sections[0]);
 
   return (
     <MainLayout>
-      <div className="flex h-full bg-slate-50 dark:bg-[#0B0F19]">
+      <div className="flex flex-col h-full bg-slate-50 dark:bg-[#0B0F19]">
+        {/* Docs Header */}
+        <div className="h-14 border-b border-slate-200 dark:border-white/5 bg-white dark:bg-[#0B0F19] px-6 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate(-1)}
+              className="gap-2 text-muted-foreground hover:text-foreground font-bold text-xs"
+            >
+              <ArrowLeft size={16} />
+              Back
+            </Button>
+            <div className="h-6 w-[1px] bg-slate-200 dark:bg-white/10" />
+            <div className="flex items-center gap-2">
+              <BookOpen size={18} className="text-blue-500" />
+              <h1 className="text-sm font-bold">Platform Documentation</h1>
+            </div>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate(-1)}
+            className="text-muted-foreground hover:text-foreground h-8 w-8 rounded-lg"
+          >
+            <X size={20} />
+          </Button>
+
+        </div>
+
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+
         {/* DOCTREE SIDEBAR */}
         <div className="w-64 flex-shrink-0 border-r border-slate-200 dark:border-white/5 bg-white dark:bg-[#0B0F19] overflow-y-auto">
           <div className="p-6">
@@ -293,6 +372,9 @@ export default function DocsPage() {
           </div>
         </div>
       </div>
-    </MainLayout>
+    </div>
+  </MainLayout>
+
+
   );
 }

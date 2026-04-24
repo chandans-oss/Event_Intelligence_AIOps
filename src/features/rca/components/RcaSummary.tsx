@@ -1,7 +1,7 @@
 import { ClusterSpecificData } from '@/features/rca/data/clusterData';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
-import { Activity, TrendingUp, Users, DollarSign, Clock, AlertTriangle, ArrowRight, ExternalLink, Wrench } from 'lucide-react';
+import { Activity, TrendingUp, Users, DollarSign, Clock, AlertTriangle, ArrowRight, ExternalLink, Wrench, BrainCircuit } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Separator } from '@/shared/components/ui/separator';
 
@@ -26,10 +26,21 @@ export function RCASummary({ data, confidence = 0.95, onViewDetailedRCA }: RCASu
                             {data.rcaMetadata.device} • {new Date(data.rcaMetadata.timestamp).toLocaleString()}
                         </CardDescription>
                     </div>
-                    <Button onClick={onViewDetailedRCA} variant="default" size="sm" className="gap-2 shadow-md">
+                    <Button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onViewDetailedRCA();
+                        }} 
+                        variant="default" 
+                        size="sm" 
+                        className="gap-2 shadow-md"
+                        type="button"
+                    >
+                        <BrainCircuit className="h-4 w-4" />
                         RCA Analysis Flow
                         <ArrowRight className="h-4 w-4" />
                     </Button>
+
                 </CardHeader>
                 <CardContent>
                     <p className="text-foreground text-lg leading-relaxed font-medium">

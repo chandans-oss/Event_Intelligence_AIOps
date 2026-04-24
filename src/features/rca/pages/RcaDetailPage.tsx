@@ -2,10 +2,11 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { MainLayout } from '@/shared/components/layout/MainLayout';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Target, X } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { getClusterData } from '@/features/rca/data/clusterData';
 import { useState, useMemo } from 'react';
+import { RcaAnalyticsDashboard } from '../components/RcaAnalyticsDashboard';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { TimelineFlow } from '@/components/rca/TimelineFlow';
 import { Tabs, Tab, Paper, ThemeProvider, createTheme } from '@mui/material';
@@ -216,8 +217,9 @@ function MetadataStepContent({ details }: { details: any }) {
 // ──────────────────────────────────────────────────────
 // Main Page
 // ──────────────────────────────────────────────────────
-export default function RCADetailPage() {
-    const { id } = useParams();
+export default function RCADetailPage({ isEmbedded = false, eventId = null }: { isEmbedded?: boolean, eventId?: string | null }) {
+    const { id: paramsId } = useParams();
+    const id = eventId || paramsId;
     const navigate = useNavigate();
     const location = useLocation();
     const fromState = (location.state as any) || {}; // { fromCauseIndex, fromTab, fromClusterId } from ProbableCauseSidebar
@@ -243,14 +245,32 @@ export default function RCADetailPage() {
 
     const clusterData = getClusterData(id || 'CLU-LC-001');
     const [activeTab, setActiveTab] = useState(0);
+    const [viewMode, setViewMode] = useState<'summary' | 'flow'>(isEmbedded ? 'flow' : 'summary');
 
     if (!clusterData) {
+        const fallbackContent = (
+            <div className="p-12 flex flex-col items-center justify-center text-center h-[400px]">
+                <div className="bg-primary/5 p-6 rounded-full mb-4">
+                    <Target className="h-12 w-12 text-primary opacity-20" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground mb-2">RCA is NOT Provided for this event by the AIOps engine</h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    This event hasn't been grouped into a root cause cluster yet. 
+                    The AIOps engine only generates RCA for events identified as potential root causes or significant impact clusters.
+                </p>
+                {!isEmbedded && (
+                    <Button asChild className="mt-6">
+                        <Link to="/events">Back to Events</Link>
+                    </Button>
+                )}
+            </div>
+        );
+
+        if (isEmbedded) return fallbackContent;
+
         return (
             <MainLayout>
-                <div className="p-12 text-center text-muted-foreground">
-                    RCA Data not found for ID: {id}
-                    <Button asChild className="mt-4"><Link to="/events">Back to Events</Link></Button>
-                </div>
+                {fallbackContent}
             </MainLayout>
         );
     }
@@ -272,105 +292,127 @@ export default function RCADetailPage() {
     // Step icon emojis matching RCA steps
     const stepIcons = ['🚨', '📊', '🎯', '🔍', '📋', '📚', '🔗'];
 
+    const content = (
+        <ThemeProvider theme={muiTheme}>
+            <div style={{ padding: isEmbedded ? '0' : '0' }}>
+                {viewMode === 'summary' ? (
+                    <RcaAnalyticsDashboard 
+                        data={clusterData} 
+                        onViewDetailedRCA={() => setViewMode('flow')} 
+                        onBack={() => navigate(-1)}
+                        onClose={() => navigate(`/analysis/${id}`)}
+                    />
+                ) : (
+                    <div style={{ padding: isEmbedded ? '0' : '16px 24px' }}>
+                        {/* Header */}
+                        {!isEmbedded && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <div className="flex items-center gap-1">
+                                        <Button
+                                            variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground gap-1 text-xs"
+                                            onClick={() => setViewMode('summary')}
+                                        >
+                                            <ArrowLeft className="h-4 w-4" /> Back
+                                        </Button>
+                                        <Button
+                                            variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground gap-1 text-xs font-bold"
+                                            onClick={() => navigate(`/analysis/${id}`)}
+                                        >
+                                            Close <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    <div className="h-8 w-px bg-border/50 mx-1" />
+                                    <div>
+                                        <h1 style={{ fontSize: '1rem', fontWeight: 700, lineHeight: 1.2, margin: 0 }}>RCA Analysis Flow</h1>
+                                        <p style={{ fontSize: '0.7rem', color: 'var(--rca-text-secondary)', margin: 0 }}>
+                                            <span style={{ fontFamily: 'monospace' }}>{id}</span> • {clusterData.rootCause?.split(':')[0]}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-300 text-[10px] px-2 py-0.5 font-bold">
+                                        {((clusterData.confidence || 0) * 100).toFixed(0)}% Conf
+                                    </Badge>
+                                </div>
+                            </div>
+                        )}
+
+
+                        {/* Horizontal Timeline */}
+                        <TimelineFlow steps={tlSteps} currentIdx={currentIdx} />
+
+                        {/* MUI Tabs */}
+                        <Paper sx={{ borderBottom: 1, borderColor: 'divider', mb: 2, pt: 1, pb: 0 }}>
+                            <Tabs
+                                value={activeTab}
+                                onChange={(_e, val) => setActiveTab(val)}
+                                variant="fullWidth"
+
+                                sx={{
+                                    minHeight: '44px',
+                                    '& .MuiTab-root': {
+                                        textTransform: 'none', fontWeight: 600, fontSize: '0.85rem',
+                                        color: 'var(--rca-text-secondary)', minHeight: '44px',
+                                    },
+                                    '& .Mui-selected': { color: '#2563eb !important' },
+                                    '& .MuiTabs-indicator': { backgroundColor: '#2563eb', height: '3px', borderRadius: '3px 3px 0 0' }
+                                }}
+                            >
+                                {steps.map((s, i) => (
+                                    <Tab key={i} label={s.name} />
+                                ))}
+                            </Tabs>
+                        </Paper>
+
+                        {/* Step Content Card — rca-card style */}
+                        {activeStep && (
+                            <div
+                                className={`rca-card ${activeTab === steps.length - 1 && activeStep.status === 'complete' ? 'final' : ''}`}
+                                style={{ maxWidth: 1000, margin: '0 auto' }}
+                            >
+                                {/* Step title */}
+                                <div className="rca-step-title">
+                                    {stepIcons[activeTab] || '📍'} {activeStep.name}
+                                </div>
+                                {/* Step description */}
+                                {activeStep.description && (
+                                    <div className="rca-step-sub">• {activeStep.description}</div>
+                                )}
+
+                                {/* Content: "sections" array format */}
+                                {activeStep.details?.sections && activeStep.details.sections.length > 0 && (
+                                    <div>
+                                        {activeStep.details.sections.map((section, idx) => (
+                                            <SectionItem key={idx} section={section} />
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Content: generateRCASteps() metadata format */}
+                                {!activeStep.details?.sections && (
+                                    <MetadataStepContent details={activeStep.details} />
+                                )}
+
+                                {/* Mini completion badge */}
+                                {activeStep.status === 'complete' && (
+                                    <div className="rca-mini">
+                                        <span>✔</span> {activeStep.name} process completed.
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </ThemeProvider>
+    );
+
+    if (isEmbedded) return content;
+
     return (
         <MainLayout>
-            <ThemeProvider theme={muiTheme}>
-                <div style={{ padding: '16px 24px' }}>
-
-                    {/* Header */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <Button
-                                variant="ghost" size="icon" className="h-7 w-7"
-                                onClick={() => navigate('/events', {
-                                    state: {
-                                        openSidebar: 'probable-cause',
-                                        clusterId: fromState.fromClusterId || id,
-                                        causeIndex: fromState.fromCauseIndex ?? 0,
-                                        activeTab: fromState.fromTab ?? 'summary',
-                                    }
-                                })}
-                            >
-                                <ArrowLeft className="h-3.5 w-3.5" />
-                            </Button>
-                            <div>
-                                <h1 style={{ fontSize: '1rem', fontWeight: 700, lineHeight: 1.2, margin: 0 }}>RCA Analysis Flow</h1>
-                                <p style={{ fontSize: '0.7rem', color: 'var(--rca-text-secondary)', margin: 0 }}>
-                                    <span style={{ fontFamily: 'monospace' }}>{id}</span> • {clusterData.rootCause?.split(':')[0]}
-                                </p>
-                            </div>
-                        </div>
-                        <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-300 text-[10px] px-2 py-0.5 font-bold">
-                            {((clusterData.confidence || 0) * 100).toFixed(0)}% Conf
-                        </Badge>
-                    </div>
-
-                    {/* Horizontal Timeline */}
-                    <TimelineFlow steps={tlSteps} currentIdx={currentIdx} />
-
-                    {/* MUI Tabs */}
-                    <Paper sx={{ borderBottom: 1, borderColor: 'divider', mb: 2, pt: 1, pb: 0 }}>
-                        <Tabs
-                            value={activeTab}
-                            onChange={(_e, val) => setActiveTab(val)}
-                            variant="scrollable"
-                            scrollButtons="auto"
-                            sx={{
-                                minHeight: '44px',
-                                '& .MuiTab-root': {
-                                    textTransform: 'none', fontWeight: 600, fontSize: '0.85rem',
-                                    color: 'var(--rca-text-secondary)', minHeight: '44px',
-                                },
-                                '& .Mui-selected': { color: '#2563eb !important' },
-                                '& .MuiTabs-indicator': { backgroundColor: '#2563eb', height: '3px', borderRadius: '3px 3px 0 0' }
-                            }}
-                        >
-                            {steps.map((s, i) => (
-                                <Tab key={i} label={s.name} />
-                            ))}
-                        </Tabs>
-                    </Paper>
-
-                    {/* Step Content Card — rca-card style */}
-                    {activeStep && (
-                        <div
-                            className={`rca-card ${activeTab === steps.length - 1 && activeStep.status === 'complete' ? 'final' : ''}`}
-                            style={{ maxWidth: 1000, margin: '0 auto' }}
-                        >
-                            {/* Step title */}
-                            <div className="rca-step-title">
-                                {stepIcons[activeTab] || '📍'} {activeStep.name}
-                            </div>
-                            {/* Step description */}
-                            {activeStep.description && (
-                                <div className="rca-step-sub">• {activeStep.description}</div>
-                            )}
-
-                            {/* Content: "sections" array format */}
-                            {activeStep.details?.sections && activeStep.details.sections.length > 0 && (
-                                <div>
-                                    {activeStep.details.sections.map((section, idx) => (
-                                        <SectionItem key={idx} section={section} />
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Content: generateRCASteps() metadata format */}
-                            {!activeStep.details?.sections && (
-                                <MetadataStepContent details={activeStep.details} />
-                            )}
-
-                            {/* Mini completion badge */}
-                            {activeStep.status === 'complete' && (
-                                <div className="rca-mini">
-                                    <span>✔</span> {activeStep.name} process completed.
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                </div>
-            </ThemeProvider>
+            {content}
         </MainLayout>
     );
 }

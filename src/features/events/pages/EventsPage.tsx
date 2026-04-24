@@ -1,197 +1,163 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { Search, Filter, X, AlertCircle, Eye, BarChart3, Wrench, Info, Target, GitBranch, Copy, BellOff, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { 
+  Search, Filter, Calendar, Sparkles, Pause, LayoutGrid, LayoutList, 
+  Settings, Download, MessageSquare, Database, Globe, Eye, 
+  ChevronLeft, ChevronRight, MoreHorizontal, Info, AlertCircle, 
+  ArrowUpCircle, AlertTriangle, HelpCircle, Sun, Moon, Target, GitBranch, Copy, BellOff,
+  Clock, X, ThumbsUp, Trash2, Menu, Ticket, Brain, Activity
+} from 'lucide-react';
 import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { Switch } from '@/shared/components/ui/switch';
-import { Label } from '@/shared/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/shared/components/ui/dropdown-menu';
-import { Checkbox } from '@/shared/components/ui/checkbox';
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from '@/shared/components/ui/tooltip';
 import { MainLayout } from '@/shared/components/layout/MainLayout';
 import { RCASidebar } from '@/features/rca/components/RcaSidebar';
 import { ImpactSidebar } from '@/features/impact/components/ImpactSidebar';
 import { ProbableCauseSidebar } from '@/features/rca/components/ProbableCauseSidebar';
 import { RemediationSidebar } from '@/features/rca/components/RemediationSidebar';
-import { SeverityIcon } from '@/shared/components/common/SeverityIcon';
 import { sampleNetworkEvents, getEventStats, NetworkEvent } from '@/features/events/data/eventsData';
 import { mockClusters } from '@/data/mock/mockData';
-import { Severity } from '@/shared/types';
-import { cn, formatMetricLabel as formatLabel } from '@/shared/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
+import { cn } from '@/shared/lib/utils';
 import { useToast } from '@/shared/hooks/use-toast';
-
-// Local formatLabel removed, using centralized formatMetricLabel via import
+import { formatDistanceToNow } from 'date-fns';
 
 type SidebarType = 'rca' | 'impact' | 'remediation' | 'probable-cause' | null;
 
 const ITEMS_PER_PAGE = 10;
 
-const severityConfig: Record<Severity, { className: string; border: string }> = {
-  Critical: { className: 'bg-severity-critical/60 text-foreground', border: 'border-l-severity-critical' },
-  Major: { className: 'bg-severity-high/60 text-foreground', border: 'border-l-severity-high' },
-  Minor: { className: 'bg-severity-low/60 text-foreground', border: 'border-l-severity-low' },
-  Low: { className: 'bg-muted/60 text-foreground', border: 'border-l-muted' },
-  Info: { className: 'bg-severity-info/60 text-foreground', border: 'border-l-severity-info' },
-};
-
-const labelConfig = {
-  Root: { icon: Target, color: 'text-status-success', bg: 'bg-status-success/10', border: 'border-status-success/30', label: 'Root' },
-  Child: { icon: GitBranch, color: 'text-severity-info', bg: 'bg-severity-info/10', border: 'border-severity-info/30', label: 'Child (Correlated)' },
-  Duplicate: { icon: Copy, color: 'text-severity-medium', bg: 'bg-severity-medium/10', border: 'border-severity-medium/30', label: 'Duplicate' },
-  Suppressed: { icon: BellOff, color: 'text-muted-foreground', bg: 'bg-muted/30', border: 'border-border', label: 'Suppressed' },
-};
-
-const AVAILABLE_CORRELATIONS = [
-  'Temporal Correlation',
-  'Spatial Correlation',
-  'Topological Correlation',
-  'Causal / Rule-based Correlation',
-  'Dynamic Rule Correlation',
-  'ML / GNN Refinement',
-  'LLM Semantic Synthesis',
-  'Interface Flap Pattern',
-  'BGP Connection Loss pattern',
-  'Device Reboot Pattern',
-  'Link Degradation pattern',
-  'Firewall Load pattern',
-  'QoE Degradation pattern'
-];
-
 export default function Events() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
+  
   const [searchQuery, setSearchQuery] = useState('');
-  const [severityFilter, setSeverityFilter] = useState<string>('all');
-  const [labelFilter, setLabelFilter] = useState<string>('all');
-  const [showResolved, setShowResolved] = useState(false);
+  const [activeTab, setActiveTab] = useState('All');
+  const [secondaryActiveTab, setSecondaryActiveTab] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
+  const [filterCategory, setFilterCategory] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+  
   const [selectedEvent, setSelectedEvent] = useState<NetworkEvent | null>(null);
   const [activeSidebar, setActiveSidebar] = useState<SidebarType>(null);
   const [selectedCauseId, setSelectedCauseId] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedCorrelations, setSelectedCorrelations] = useState<string[]>(() => {
-    const fromUrl = searchParams.get('correlation');
-    if (fromUrl) {
-      return fromUrl.split(',').filter(Boolean);
-    }
-    return [];
-  });
-  const { toast } = useToast();
 
-  const handleShowResolvedChange = (checked: boolean) => {
-    setShowResolved(checked);
-    toast({
-      title: checked ? 'Historical Events Shown' : 'Historical Events Hidden',
-      description: `Resolved events are now ${checked ? 'visible' : 'hidden'} in the list.`,
-      variant: checked ? 'success' : 'destructive',
-    });
-  };
+  const stats = useMemo(() => getEventStats(sampleNetworkEvents), []);
 
-  // Restore sidebar state when navigating back from detail pages (uses location.state, NOT searchParams)
-  useEffect(() => {
-    const state = location.state as {
-      openSidebar?: SidebarType;
-      clusterId?: string;
-      causeIndex?: number;
-      activeTab?: string;
-    } | null;
-    if (state?.clusterId && state?.openSidebar) {
-      const rootEvent = sampleNetworkEvents.find(e => e.clusterId === state.clusterId && e.label === 'Root');
-      if (rootEvent) {
-        setSelectedEvent(rootEvent);
-        setActiveSidebar(state.openSidebar);
-      }
-      // Clear location state (but preserve causeIndex + activeTab so ProbableCauseSidebar can read them via its own location.state init)
-      navigate(location.pathname, {
-        replace: true,
-        state: { causeIndex: state.causeIndex ?? 0, activeTab: state.activeTab ?? 'summary' }
-      });
+  const categoryGroups = [
+    {
+      id: 'severity',
+      name: 'Severity',
+      icon: AlertCircle,
+      filters: [
+        { label: 'Critical', value: 'Critical', count: stats.severityCounts.Critical, icon: AlertCircle, color: 'text-red-500' },
+        { label: 'Major', value: 'Major', count: stats.severityCounts.Major, icon: ArrowUpCircle, color: 'text-orange-500' },
+        { label: 'Minor', value: 'Minor', count: stats.severityCounts.Minor, icon: AlertTriangle, color: 'text-amber-500' },
+      ]
+    },
+    {
+      id: 'status',
+      name: 'Status/Service',
+      icon: Ticket,
+      filters: [
+        { label: 'Acknowledged', value: 'Acknowledged', count: stats.statusCounts.Acknowledged, icon: ThumbsUp, color: 'text-blue-500' },
+        { label: 'Ticketed', value: 'Ticketed', count: stats.statusCounts.Ticketed, icon: Ticket, color: 'text-indigo-500' },
+        { label: 'Business Service', value: 'BusinessService', count: stats.statusCounts.BusinessService, icon: LayoutGrid, color: 'text-emerald-500' },
+      ]
+    },
+    {
+      id: 'association',
+      name: 'Association',
+      icon: Target,
+      filters: [
+        { label: 'Root', value: 'Root', count: stats.associationCounts.Root, icon: Target, color: 'text-violet-500' },
+        { label: 'Priority', value: 'Priority', count: stats.associationCounts.Priority, icon: Sparkles, color: 'text-amber-400' },
+        { label: 'Associated', value: 'Associated', count: stats.associationCounts.Associated, icon: GitBranch, color: 'text-blue-400' },
+      ]
+    },
+    {
+      id: 'sources',
+      name: 'Sources',
+      icon: Database,
+      filters: [
+        { label: 'Trap', value: 'Trap', count: stats.sourceCounts.Trap, icon: Globe, color: 'text-slate-400' },
+        { label: 'Syslog', value: 'Syslog', count: stats.sourceCounts.Syslog, icon: MessageSquare, color: 'text-slate-400' },
+        { label: 'Adaptive', value: 'Adaptive', count: stats.sourceCounts.Adaptive, icon: Activity, color: 'text-emerald-400' },
+        { label: 'Seasonal', value: 'Seasonal', count: stats.sourceCounts.Seasonal, icon: Moon, color: 'text-indigo-400' },
+        { label: 'NCCM', value: 'NCCM', count: stats.sourceCounts.NCCM, icon: Settings, color: 'text-blue-400' },
+        { label: 'IPAM', value: 'IPAM', count: stats.sourceCounts.IPAM, icon: Database, color: 'text-cyan-400' },
+      ]
+    },
+    {
+      id: 'ai',
+      name: 'AI Analytics',
+      icon: Brain,
+      filters: [
+        { label: 'Only RCA', value: 'OnlyRCA', count: stats.aiCounts['Only RCA'], icon: Brain, color: 'text-purple-500' },
+        { label: 'RCA with Remediation', value: 'RcaRemediation', count: stats.aiCounts['RCA with Remediation'], icon: Ticket, color: 'text-blue-500' },
+        { label: 'RCA with Auto Remediation', value: 'RcaAuto', count: stats.aiCounts['RCA with Auto Remediation'], icon: Sparkles, color: 'text-emerald-500' },
+        { label: 'RCA Not Found', value: 'RcaNotFound', count: stats.aiCounts['RCA Not Found'], icon: AlertCircle, color: 'text-rose-500' },
+      ]
     }
-  }, [location.state]);
-
-  // Legacy: also handle URL params for any existing links/bookmarks
-  useEffect(() => {
-    const clusterId = searchParams.get('cluster');
-    const sidebarToOpen = searchParams.get('openSidebar') as SidebarType;
-    if (clusterId && sidebarToOpen) {
-      const rootEvent = sampleNetworkEvents.find(e => e.clusterId === clusterId && e.label === 'Root');
-      if (rootEvent) {
-        setSelectedEvent(rootEvent);
-        setActiveSidebar(sidebarToOpen);
-      }
-      // Always clear URL params to avoid event list filtering
-      setSearchParams({}, { replace: true });
-    }
-  }, [searchParams]);
+  ];
 
   const filteredEvents = useMemo(() => {
     return sampleNetworkEvents.filter((event) => {
-      // Cluster filter from query params
-      const clusterIdParam = searchParams.get('cluster');
-      if (clusterIdParam && event.clusterId !== clusterIdParam) {
-        return false;
+      // Main Filter Logic
+      if (filterCategory) {
+        // Severity
+        if (['Critical', 'Major', 'Minor'].includes(filterCategory)) {
+          if (event.severity !== filterCategory) return false;
+        }
+        // Status
+        if (filterCategory === 'Acknowledged' && !event.isAcknowledged) return false;
+        if (filterCategory === 'Ticketed' && !event.ticketId) return false;
+        if (filterCategory === 'BusinessService' && !event.businessService) return false;
+        // Association
+        if (filterCategory === 'Root' && event.label !== 'Root') return false;
+        if (filterCategory === 'Priority' && event.priority !== 'High') return false;
+        if (filterCategory === 'Associated' && !event.clusterId) return false;
+        // Sources
+        if (['Trap', 'Syslog', 'Adaptive', 'Seasonal', 'NCCM', 'IPAM'].includes(filterCategory)) {
+          if (event.source !== filterCategory) return false;
+        }
+        // AI
+        if (filterCategory === 'OnlyRCA' && event.aiStatus !== 'Only RCA') return false;
+        if (filterCategory === 'RcaRemediation' && event.aiStatus !== 'RCA with Remediation') return false;
+        if (filterCategory === 'RcaAuto' && event.aiStatus !== 'RCA with Auto Remediation') return false;
+        if (filterCategory === 'RcaNotFound' && event.aiStatus !== 'RCA Not Found') return false;
       }
 
-      // Status filter
-      if (!showResolved && event.status === 'Resolved') return false;
+      // History (Status) filter
+      if (!showHistory && event.status === 'Resolved') return false;
 
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        const matchesId = event.event_id.toLowerCase().includes(query);
-        const matchesDevice = event.device.toLowerCase().includes(query);
-        const matchesCode = event.event_code.toLowerCase().includes(query);
-        const matchesMessage = event.message.toLowerCase().includes(query);
-        if (!matchesId && !matchesDevice && !matchesCode && !matchesMessage) return false;
+        return (
+          event.device.toLowerCase().includes(query) ||
+          event.message.toLowerCase().includes(query) ||
+          event.event_id.toLowerCase().includes(query) ||
+          event.event_code.toLowerCase().includes(query)
+        );
       }
-
-      // Severity filter
-      if (severityFilter !== 'all' && event.severity !== severityFilter) {
-        return false;
-      }
-
-      // Label filter
-      if (labelFilter !== 'all' && event.label !== labelFilter) {
-        return false;
-      }
-
-      // Correlation filter
-      if (selectedCorrelations.length > 0) {
-        if (!event.correlationLabels || !event.correlationLabels.some(c => selectedCorrelations.includes(c))) {
-          return false;
-        }
-      }
-
       return true;
     });
-  }, [searchQuery, severityFilter, labelFilter, showResolved, searchParams, selectedCorrelations]);
+  }, [searchQuery, filterCategory, showHistory]);
 
-  const stats = useMemo(() => getEventStats(sampleNetworkEvents), []);
-
-  // Pagination
   const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE);
   const paginatedEvents = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredEvents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredEvents, currentPage]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, severityFilter, labelFilter, showResolved, searchParams, selectedCorrelations]);
 
   const openSidebar = (type: SidebarType, event: NetworkEvent) => {
     setSelectedEvent(event);
@@ -201,10 +167,6 @@ export default function Events() {
   const closeSidebar = () => {
     setActiveSidebar(null);
     setSelectedEvent(null);
-    const newParams = new URLSearchParams(searchParams);
-    newParams.delete('cluster');
-    newParams.delete('openSidebar');
-    setSearchParams(newParams, { replace: true });
   };
 
   const currentCluster = useMemo(() => {
@@ -212,352 +174,375 @@ export default function Events() {
     return mockClusters.find(c => c.id === selectedEvent.clusterId) || null;
   }, [selectedEvent]);
 
-  const openRemediationFromRCA = () => {
-    setActiveSidebar('remediation');
-  };
-
-  useEffect(() => {
-    const handleOpenRemediation = () => {
-      setActiveSidebar('remediation');
-    };
-    document.addEventListener('open-remediation', handleOpenRemediation);
-    return () => document.removeEventListener('open-remediation', handleOpenRemediation);
-  }, []);
-
-  const backToProbableCause = () => {
-    setActiveSidebar('probable-cause');
-  };
-
-  const clearClusterFilter = () => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.delete('cluster');
-    newParams.delete('openSidebar');
-    setSearchParams(newParams, { replace: true });
-    setActiveSidebar(null);
-    setSelectedEvent(null);
-  };
-
-  const clearFilters = () => {
-    setSearchQuery('');
-    setSeverityFilter('all');
-    setLabelFilter('all');
-    setSelectedCorrelations([]);
-    setSearchParams({}, { replace: true });
-  };
-
-  const hasActiveFilters = searchQuery || severityFilter !== 'all' || labelFilter !== 'all' || selectedCorrelations.length > 0;
-
-  const toggleCorrelation = (correlation: string) => {
-    setSelectedCorrelations(prev => {
-      const isSelected = prev.includes(correlation);
-      const newSelections = isSelected ? prev.filter(c => c !== correlation) : [...prev, correlation];
-
-      const newParams = new URLSearchParams(searchParams);
-      if (newSelections.length > 0) {
-        newParams.set('correlation', newSelections.join(','));
-      } else {
-        newParams.delete('correlation');
-      }
-      setSearchParams(newParams, { replace: true });
-
-      return newSelections;
-    });
-  };
-
-  // Get cluster for root events
-  const getClusterForEvent = (event: NetworkEvent) => {
-    if ((event.label === 'Root' || event.label === 'Child') && event.clusterId) {
-      return mockClusters.find(c => c.id === event.clusterId);
-    }
-    return null;
-  };
-
   return (
     <MainLayout>
-      <div className="p-4 space-y-4">
-        {/* Filters */}
-        <div className="glass-card rounded-xl p-3">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="relative flex-1 min-w-[240px]">
+      <div className="flex flex-col h-full bg-background overflow-hidden text-foreground">
+        {/* Header Section - Controls Bar */}
+        <div className="p-4 space-y-4 border-b border-border bg-card/50">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[300px] max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by event ID, device, code, or message..."
+                placeholder="Search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-secondary/50 border-border/50"
+                className="pl-10 pr-10 h-10 bg-background border-border shadow-sm"
               />
-            </div>
-
-            <Select value={severityFilter} onValueChange={setSeverityFilter}>
-              <SelectTrigger className="w-[140px] bg-secondary/50 border-border/50">
-                <SelectValue placeholder="Severity" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Severity</SelectItem>
-                <SelectItem value="Critical">Critical</SelectItem>
-                <SelectItem value="Major">Major</SelectItem>
-                <SelectItem value="Minor">Minor</SelectItem>
-                <SelectItem value="Low">Low</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={labelFilter} onValueChange={setLabelFilter}>
-              <SelectTrigger className="w-[160px] bg-secondary/50 border-border/50">
-                <SelectValue placeholder="Label" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Labels</SelectItem>
-                <SelectItem value="Root">Root</SelectItem>
-                <SelectItem value="Child">Child (Correlated)</SelectItem>
-                <SelectItem value="Duplicate">Duplicate</SelectItem>
-                <SelectItem value="Suppressed">Suppressed</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-[180px] justify-between bg-secondary/50 border-border/50">
-                  {selectedCorrelations.length > 0
-                    ? `${selectedCorrelations.length} Correlation${selectedCorrelations.length > 1 ? 's' : ''}`
-                    : "Correlations..."}
-                  <Filter className="ml-2 h-4 w-4 text-muted-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-[220px]">
-                {AVAILABLE_CORRELATIONS.map(correlation => (
-                  <div
-                    key={correlation}
-                    className="flex items-center space-x-2 px-2 py-1.5 cursor-pointer hover:bg-accent rounded-sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      toggleCorrelation(correlation);
-                    }}
-                  >
-                    <Checkbox
-                      id={`corr-${correlation}`}
-                      checked={selectedCorrelations.includes(correlation)}
-                      onCheckedChange={() => toggleCorrelation(correlation)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <label
-                      htmlFor={`corr-${correlation}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {correlation}
-                    </label>
-                  </div>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <div className="flex items-center gap-3">
-              <Switch
-                id="show-resolved"
-                checked={showResolved}
-                onCheckedChange={handleShowResolvedChange}
-              />
-              <Label htmlFor="show-resolved" className="text-sm text-muted-foreground">
-                History
-              </Label>
-            </div>
-
-            {searchParams.get('cluster') && (
-              <Badge
-                variant="secondary"
-                className="gap-2 bg-primary/20 text-primary border-primary/30 py-1.5 px-3 animate-in fade-in slide-in-from-left-2 duration-300"
-              >
-                <Target className="h-3 w-3" />
-                Cluster Filter: {searchParams.get('cluster')}
-                <X
-                  className="h-3 w-3 cursor-pointer hover:text-foreground transition-colors"
-                  onClick={clearClusterFilter}
-                />
-              </Badge>
-            )}
-
-            {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-2">
-                <X className="h-4 w-4" />
-                Clear All
+              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-primary">
+                <Filter className="h-4 w-4" />
               </Button>
-            )}
+            </div>
 
-            <div className="ml-auto">
-              <Badge variant="outline" className="text-muted-foreground">
-                {filteredEvents.length} events
-              </Badge>
+            <div className="relative min-w-[200px]">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <div className="pl-10 pr-4 h-10 flex items-center justify-between bg-background border border-border rounded-md shadow-sm cursor-pointer hover:border-primary/50 transition-colors text-muted-foreground">
+                <span className="text-sm">Select Date Range</span>
+                <ChevronLeft className="h-4 w-4 rotate-270" />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 ml-auto">
+              {[Sparkles, Pause].map((Icon, idx) => (
+                <Button key={idx} variant="outline" size="icon" className="h-10 w-10 border-border text-primary hover:bg-primary/5">
+                  <Icon className="h-4 w-4" />
+                </Button>
+              ))}
+              <div className="flex items-center bg-secondary/30 p-1 rounded-md border border-border ml-2">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground"><LayoutList className="h-4 w-4" /></Button>
+                <Button variant="secondary" size="icon" className="h-8 w-8 shadow-sm text-primary"><LayoutGrid className="h-4 w-4" /></Button>
+              </div>
+              <Button variant="outline" size="icon" className="h-10 w-10 border-border text-primary ml-2"><Settings className="h-4 w-4" /></Button>
+              <div className="flex items-center gap-2 px-3 border-x border-border mx-2">
+                <span className="text-xs font-medium text-muted-foreground">History</span>
+                <Switch checked={showHistory} onCheckedChange={setShowHistory} />
+              </div>
+              <Button variant="outline" size="icon" className="h-10 w-10 border-border text-primary"><Download className="h-4 w-4" /></Button>
+              <Button variant="outline" size="icon" className="h-10 w-10 border-border text-primary"><MessageSquare className="h-4 w-4" /></Button>
             </div>
           </div>
-        </div>
 
-        {/* Events Grid */}
-        <div className="glass-card rounded-xl overflow-hidden">
-          {/* Horizontal Scroll Container */}
-          <div className="overflow-x-auto">
-            <div className="min-w-[1000px]">
-              {/* Table Header */}
-              <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-secondary/50 border-b border-border text-xs font-semibold text-muted-foreground tracking-wide">
-                <div className="col-span-2">Event Id</div>
-                <div className="col-span-1">Severity</div>
-                <div className="col-span-5">Event Message</div>
-                <div className="col-span-2">Event Code</div>
-                <div className="col-span-1">Timestamp</div>
-                <div className="col-span-1">Actions</div>
-              </div>
-
-              {/* Table Body */}
-              <div className="divide-y divide-border">
-                {paginatedEvents.map((event) => {
-                  const severity = severityConfig[event.severity];
-                  const label = event.label || 'Child';
-                  const labelCfg = labelConfig[label];
-                  const LabelIcon = labelCfg.icon;
-                  const isRootEvent = event.label === 'Root';
-                  const cluster = getClusterForEvent(event);
-                  const eventTime = formatDistanceToNow(new Date(event.timestamp), { addSuffix: true });
-
-                  return (
-                    <div
-                      key={event.event_id}
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <div className="flex flex-wrap items-center gap-y-3 gap-x-1 py-1">
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        setFilterCategory(null);
+                        setExpandedCategories([]);
+                      }}
                       className={cn(
-                        "grid grid-cols-12 gap-4 px-4 py-2.5 hover:bg-secondary/30 transition-all border-l-4",
-                        severity.border,
-                        event.status === 'Resolved' && "opacity-60"
+                        "px-6 py-1.5 rounded-xl text-xs font-black transition-all shadow-lg h-10 min-w-[100px] flex flex-col items-center justify-center leading-tight",
+                        !filterCategory
+                          ? "bg-primary text-primary-foreground ring-2 ring-primary/20"
+                          : "bg-card text-muted-foreground hover:bg-accent border border-border"
                       )}
                     >
-                      {/* Event ID / Device */}
-                      <div className="col-span-2 flex flex-col justify-center">
-                        <p className="font-mono text-sm font-medium text-foreground">{event.event_id}</p>
-                        <p className="text-xs text-muted-foreground">{event.device}</p>
-                        <p className="text-xs text-muted-foreground">{event.site} / {event.rack}</p>
-                      </div>
+                      <span>All</span>
+                      <span className="text-[10px] opacity-70">({stats.total})</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Show All Events</TooltipContent>
+                </Tooltip>
 
-                      {/* Severity */}
-                      <div className="col-span-1 flex items-center">
-                        <Badge className={cn("gap-1", severity.className)}>
-                          <SeverityIcon severity={event.severity} className="h-3 w-3" />
-                          {event.severity}
-                        </Badge>
-                      </div>
 
-                      {/* Message */}
-                      <div className="col-span-5 flex items-center py-1">
-                        <p className="text-sm text-muted-foreground break-words">{event.message}</p>
-                      </div>
+                {categoryGroups.map((group, gIdx) => {
+                  const isStatic = group.id === 'severity' || group.id === 'status';
+                  const isExpanded = expandedCategories.includes(group.id) || isStatic;
 
-                      {/* Event Code */}
-                      <div className="col-span-2 flex items-center">
-                        <Badge variant="outline" className="font-mono text-[10px] py-1 px-3 break-all">
-                          {formatLabel(event.event_code)}
-                        </Badge>
-                      </div>
+                  const toggleCategory = () => {
+                    setExpandedCategories(prev => 
+                      prev.includes(group.id) 
+                        ? prev.filter(c => c !== group.id) 
+                        : [...prev, group.id]
+                    );
+                  };
 
-                      {/* Timestamp */}
-                      <div className="col-span-1 flex items-center">
-                        <p className="text-xs text-muted-foreground">{eventTime}</p>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="col-span-1 flex items-center gap-2">
-                        {event.label === 'Root' ? (
-                          <Button
-                            size="sm"
-                            variant="default"
-                            className="gap-1 text-xs bg-status-success hover:bg-status-success/90"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openSidebar('probable-cause', event);
-                            }}
-                          >
-                            <Eye className="h-3 w-3" />
-                            RCA and Impact
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1 text-xs text-muted-foreground/40 border-border/30 cursor-not-allowed"
-                            disabled
-                            title="RCA/Impact is only available for Root events"
-                          >
-                            <Eye className="h-3 w-3" />
-                            RCA and Impact
-                          </Button>
+                  return (
+                    <div key={group.id} className="flex items-center">
+                      <div className="h-6 w-[1px] bg-border mx-2" />
+                      
+                      <div className={cn(
+                        "flex items-center gap-1 transition-all duration-500 ease-in-out bg-card/30 rounded-xl border border-border/50",
+                        !isStatic && "overflow-hidden",
+                        isExpanded ? "max-w-[1000px] px-1.5 py-0.5 z-10" : "max-w-[44px] z-0"
+                      )}>
+                        {/* Main Category Icon / Toggle - Only for non-static */}
+                        {!isStatic && (
+                          <Tooltip delayDuration={0}>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={toggleCategory}
+                                className={cn(
+                                  "flex items-center justify-center h-9 w-9 min-w-[36px] rounded-lg transition-all",
+                                  expandedCategories.includes(group.id) ? "bg-primary text-primary-foreground shadow-inner" : "hover:bg-accent text-muted-foreground"
+                                )}
+                              >
+                                <group.icon className="h-5 w-5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="z-[100] p-0 overflow-hidden bg-background/95 backdrop-blur-md border-primary/20 shadow-2xl min-w-[180px] rounded-xl">
+                              <div className="px-4 py-2.5 bg-primary/10 border-b border-primary/20">
+                                <span className="text-[10px] font-black text-primary tracking-widest uppercase">{group.name}</span>
+                              </div>
+                              <div className="p-2 space-y-0.5">
+                                {group.filters.map((f) => (
+                                  <div key={f.label} className="flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-accent/50 transition-colors group/item">
+                                    <f.icon className={cn("h-4 w-4 transition-transform group-hover/item:scale-110", f.color)} />
+                                    <span className="text-[11px] font-bold text-foreground/80">{f.label}</span>
+                                    <span className="ml-auto text-[10px] font-black text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full border border-border/50">
+                                      {f.count}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
                         )}
+
+
+                        {/* Filters */}
+                        <div className={cn(
+                          "flex items-center gap-1 transition-all duration-300",
+                          isExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
+                        )}>
+                          {group.filters.map((filter) => (
+                            <Tooltip key={filter.label} delayDuration={0}>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() => setFilterCategory(filterCategory === filter.value ? null : filter.value)}
+                                  className={cn(
+                                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all h-8 border",
+                                    filterCategory === filter.value
+                                      ? "border-primary/30 bg-primary/10 ring-1 ring-primary/10"
+                                      : "text-muted-foreground border-transparent hover:bg-accent/50"
+                                  )}
+                                >
+                                  <filter.icon className={cn("h-3.5 w-3.5", filter.color)} />
+                                  <span className="opacity-80">({filter.count})</span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent className="z-[100] font-bold">{filter.label}</TooltipContent>
+                            </Tooltip>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   );
                 })}
-              </div>
-            </div>
-          </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-secondary/30">
-              <div className="text-sm text-muted-foreground">
-                Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredEvents.length)} of {filteredEvents.length} events
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="gap-1"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = currentPage - 2 + i;
-                    }
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={currentPage === pageNum ? "default" : "outline"}
-                        size="sm"
-                        className="w-8 h-8 p-0"
-                        onClick={() => setCurrentPage(pageNum)}
-                      >
-                        {pageNum}
-                      </Button>
-                    );
-                  })}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="gap-1"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+            </TooltipProvider>
+          </div>
         </div>
 
-        {filteredEvents.length === 0 && (
-          <div className="glass-card rounded-xl p-12 text-center">
-            <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No Events Found</h3>
-            <p className="text-muted-foreground mb-4">Try adjusting your filters or search query</p>
-            <Button variant="outline" onClick={clearFilters}>Clear Filters</Button>
+
+        {/* Table Content */}
+        <div className="flex-1 overflow-auto bg-background/50">
+          <table className="w-full border-collapse">
+            <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur-sm border-b border-border">
+              <tr className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                <th className="px-4 py-3 w-10"><input type="checkbox" className="rounded border-border bg-background" /></th>
+                <th className="px-4 py-3">Issue</th>
+                <th className="px-4 py-3">Severity</th>
+                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Alarm ID</th>
+                <th className="px-4 py-3">Node</th>
+                <th className="px-4 py-3">Resource</th>
+                <th className="px-4 py-3 text-right">Acknowledged</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {paginatedEvents.map((event) => {
+                // Determine icon based on message content
+                const getIssueIcon = () => {
+                  const msg = event.message.toLowerCase();
+                  if (msg.includes('download')) return <Database className="h-5 w-5" />;
+                  if (msg.includes('service')) return <LayoutGrid className="h-5 w-5" />;
+                  if (msg.includes('link') || msg.includes('wifi')) return <ArrowUpCircle className="h-5 w-5 rotate-45" />; // wifi-like
+                  return <Settings className="h-5 w-5" />;
+                };
+
+                return (
+                  <tr 
+                    key={event.event_id}
+                    className={cn(
+                      "group relative hover:bg-muted/50 transition-colors cursor-default border-b border-border/50",
+                      hoveredRowId === event.event_id && "bg-muted/50",
+                      event.status === 'Resolved' && "opacity-60"
+                    )}
+                    onMouseEnter={() => setHoveredRowId(event.event_id)}
+                    onMouseLeave={() => setHoveredRowId(null)}
+                  >
+                    <td className="px-4 py-4 w-10">
+                      <div className={cn(
+                        "absolute left-0 top-0 bottom-0 w-1",
+                        event.severity === 'Critical' ? "bg-red-500" : 
+                        event.severity === 'Major' ? "bg-orange-500" :
+                        event.severity === 'Minor' ? "bg-yellow-500" : "bg-blue-400"
+                      )} />
+                      <input type="checkbox" className="rounded border-border bg-background" />
+                    </td>
+                    
+                    {/* ISSUE COLUMN */}
+                    <td className="px-4 py-4 w-[350px]">
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-lg bg-card border border-border shadow-sm flex items-center justify-center text-muted-foreground">
+                          {getIssueIcon()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-foreground truncate">{event.message}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 truncate opacity-70">
+                            {event.message.includes('threshold') ? 'Performance Threshold Breach' : 'Configuration Download Failed For Running.'}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* SEVERITY COLUMN */}
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col items-start gap-1">
+                        <Badge className={cn(
+                          "h-6 px-3 text-[10px] font-black uppercase border-none rounded shadow-sm flex items-center gap-1.5",
+                          event.severity === 'Critical' ? "bg-red-500/10 text-red-500" : 
+                          event.severity === 'Major' ? "bg-orange-500/10 text-orange-500" :
+                          "bg-yellow-500/10 text-yellow-500"
+                        )}>
+                          {event.severity === 'Major' ? <ArrowUpCircle className="h-3 w-3" /> : <div className="h-2 w-2 rounded-full bg-current" />}
+                          {event.severity}
+                        </Badge>
+                        {event.clusterId && (
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border">
+                            <Clock className="h-3 w-3" />
+                            {Math.floor(Math.random() * 60)}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* DATE COLUMN */}
+                    <td className="px-4 py-4">
+                      <p className="text-xs font-bold text-foreground whitespace-nowrap">
+                        {new Date(event.timestamp).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground font-medium">
+                        {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                      </p>
+                    </td>
+
+                    {/* ALARM ID COLUMN */}
+                    <td className="px-4 py-4">
+                      <p className="text-xs font-bold text-muted-foreground">{event.event_id}</p>
+                    </td>
+
+                    {/* NODE COLUMN */}
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs font-bold text-foreground">{event.device}</p>
+                          <p className="text-[11px] text-muted-foreground font-medium opacity-70">10.0.4.244</p>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* RESOURCE COLUMN */}
+                    <td className="px-4 py-4">
+                      <p className="text-xs font-bold text-foreground">{event.device}</p>
+                    </td>
+
+                    {/* ACTIONS / ACKNOWLEDGED COLUMN */}
+                    <td className="px-4 py-4 relative text-right">
+                      <div className={cn(
+                        "flex items-center justify-end gap-2 transition-all duration-200",
+                        hoveredRowId === event.event_id ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2 pointer-events-none"
+                      )}>
+                        <Button 
+                          size="sm" 
+                          className="h-9 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs px-6 shadow-lg rounded-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/analysis/${event.event_id}`, { state: { event } });
+                          }}
+                        >
+                          <div className="relative flex items-center justify-center">
+                            <Info className="h-4 w-4" />
+                            <div className="absolute inset-0 scale-150 border border-white/30 rounded-full" />
+                          </div>
+                          Analyse
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-9 w-9 bg-card border-border text-primary shadow-sm hover:bg-accent rounded-lg">
+                          <ThumbsUp className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-9 w-9 bg-card border-border text-primary shadow-sm hover:bg-accent rounded-lg">
+                          <Search className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-9 w-9 bg-card border-border text-primary shadow-sm hover:bg-accent rounded-lg">
+                          <Ticket className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-9 w-9 bg-card border-border text-destructive shadow-sm hover:bg-destructive/10 rounded-lg">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-9 w-9 bg-card border-border text-primary shadow-sm hover:bg-accent rounded-lg">
+                          <Menu className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Footer Section */}
+        <div className="p-3 border-t border-border bg-card/50 flex items-center justify-between">
+          <div className="text-xs text-muted-foreground">
+            Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredEvents.length)} of {filteredEvents.length}
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-1">
+              {[...Array(totalPages)].map((_, i) => (
+                <Button
+                  key={i}
+                  variant={currentPage === i + 1 ? "default" : "outline"}
+                  size="sm"
+                  className="h-8 w-8 p-0 text-xs"
+                  onClick={() => setCurrentPage(i + 1)}
+                >
+                  {i + 1}
+                </Button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Show</span>
+            <select className="bg-background border border-border rounded px-1 py-0.5 h-7">
+              <option>10</option>
+              <option>20</option>
+              <option>50</option>
+            </select>
+            <span>entries</span>
+          </div>
+        </div>
       </div>
 
       {/* Sidebars */}
@@ -573,7 +558,7 @@ export default function Events() {
               cluster={currentCluster}
               selectedCauseId={selectedCauseId}
               onClose={closeSidebar}
-              onOpenRemediation={openRemediationFromRCA}
+              onOpenRemediation={() => setActiveSidebar('remediation')}
               onBack={() => setActiveSidebar('probable-cause')}
             />
           )}
@@ -590,7 +575,7 @@ export default function Events() {
               cluster={currentCluster}
               causeId={selectedCauseId || undefined}
               onClose={closeSidebar}
-              onBack={backToProbableCause}
+              onBack={() => setActiveSidebar('probable-cause')}
             />
           )}
 

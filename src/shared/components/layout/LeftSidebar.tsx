@@ -56,6 +56,7 @@ const navItems: NavItem[] = [
     icon: Settings,
     children: [
       { path: "/playground/rca", label: "RCA Playground", icon: Workflow },
+      { path: "/playground/rag", label: "RAG Playground", icon: Workflow },
       { path: "/event-processing/deduplication", label: "Event Deduplication", icon: FolderArchive },
       { path: "/event-processing/suppression", label: "Event Suppression", icon: ShieldCheck },
       { path: "/event-processing/bulk-processing", label: "Event - Bulk Processing", icon: FolderArchive },

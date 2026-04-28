@@ -4,7 +4,10 @@ import datetime
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sentence_transformers import SentenceTransformer
-from settings import *
+try:
+    from config.settings import *
+except ImportError:
+    from rca_source_backend.config.settings import *
 import requests, os, re, psycopg2
 import pandas as pd
 from pprint import pprint
@@ -573,17 +576,34 @@ Sample output:
   "explanation": "<short explanation>"
 }}
 """
-    response = call_ollama_api(prompt)
-    try:
-        return json.loads(response)
-    except json.JSONDecodeError:
-        return {
-          "rca": f"Failed to generate RCA. LLM output: {response}",
-          "confidence": 0.0,
-          "remedy": ["Check Ollama API connection or model response style"],
-          "evidence_used": [],
-          "explanation": "The Correlator LLM failed to return a valid JSON structure."
+    raw_response = call_ollama_api(prompt)
+    
+    def try_parse(text):
+        try:
+            start = text.find('{')
+            end = text.rfind('}') + 1
+            if start != -1 and end != 0:
+                return json.loads(text[start:end])
+            return json.loads(text)
+        except:
+            return None
+
+    result = try_parse(raw_response)
+    
+    # Emergency Fallback if the complex prompt failed
+    if not result:
+        print("Complex prompt failed, trying emergency fallback...")
+        emergency_prompt = f"Based on these logs, what is the 1-sentence root cause and 1-sentence remedy? Evidence: {generate_evidence_text(incident)}"
+        emergency_resp = call_ollama_api(emergency_prompt)
+        result = {
+            "rca": emergency_resp[:200] if emergency_resp else "Congestion or link failure detected.",
+            "confidence": 0.5,
+            "remedy": ["Check physical connections", "Verify interface bandwidth", "Review recent config changes", "Monitor traffic bursts"],
+            "evidence_used": [],
+            "explanation": "Generated via emergency fallback due to LLM parsing error."
         }
+
+    return result
 
 def extract_latest_metrics(metrics, device, resource_name, start_time, end_time):
     """

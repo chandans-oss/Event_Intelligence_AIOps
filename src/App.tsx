@@ -18,14 +18,15 @@ import ImpactDetailPage from "@/features/impact/pages/ImpactDetailPage";
 import KBDetailPage from "@/features/admin/pages/KBDetailPage";
 import NotFound from "@/shared/components/common/NotFound";
 import DocsPage from "@/pages/DocsPage";
-import RCAPlaygroundPage from "./features/rca/pages/RCAPlaygroundPage";
-import EventProcessingPage from "./features/event-processing/pages/EventProcessingPage";
-import DeduplicationPage from "./features/event-processing/pages/DeduplicationPage";
-import SuppressionPage from "./features/event-processing/pages/SuppressionPage";
-import BulkEventProcessingPage from "./features/event-processing/pages/BulkEventProcessingPage";
-import AlgoConfigPage from "./features/algo-training/pages/AlgoConfigPage";
-import AlgoTrainingPage from "./features/algo-training/pages/AlgoTrainingPage";
-import AlgoResultsPage from "./features/algo-training/pages/AlgoResultsPage";
+import RCAPlaygroundPage from "@/features/rca/pages/RCAPlaygroundPage";
+import RAGPlaygroundPage from "@/features/rca/pages/RAGPlaygroundPage";
+import EventProcessingPage from "@/features/event-processing/pages/EventProcessingPage";
+import DeduplicationPage from "@/features/event-processing/pages/DeduplicationPage";
+import SuppressionPage from "@/features/event-processing/pages/SuppressionPage";
+import BulkEventProcessingPage from "@/features/event-processing/pages/BulkEventProcessingPage";
+import AlgoConfigPage from "@/features/algo-training/pages/AlgoConfigPage";
+import AlgoTrainingPage from "@/features/algo-training/pages/AlgoTrainingPage";
+import AlgoResultsPage from "@/features/algo-training/pages/AlgoResultsPage";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
               <Route path="/dashboard/kpi" element={<KpiDashboard />} />
               <Route path="/admin/kb/:id" element={<KBDetailPage />} />
               <Route path="/playground/rca" element={<RCAPlaygroundPage />} />
+              <Route path="/playground/rag" element={<RAGPlaygroundPage />} />
               <Route path="/event-processing/deduplication" element={<DeduplicationPage />} />
               <Route path="/event-processing/suppression" element={<SuppressionPage />} />
               <Route path="/event-processing/bulk-processing" element={<BulkEventProcessingPage />} />

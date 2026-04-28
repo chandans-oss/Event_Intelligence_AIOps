@@ -1,0 +1,3112 @@
+[
+  {
+    "doc_id": "intent_link.down",
+    "intent_id": "link.down",
+    "category": "link",
+    "metric_family": "link_operational_state",
+    "description": "Physical/optical link down",
+    "keywords": [
+      "interface down",
+      "link down",
+      "port down",
+      "los",
+      "loss of signal"
+    ],
+    "distinguishing_clues": [
+      "oper_status is down",
+      "admin_status is up",
+      "LOS or loss of signal present"
+    ],
+    "negative_clues": [
+      "interface may remain operational",
+      "crc or frame errors are present"
+    ],
+    "render_template": "Link/Interface {interface} on device {device} is down. Operational status is {oper_status}, while administrative status is {admin_status}. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "oper_status",
+        "op": "==",
+        "value": "down",
+        "weight": 0.7
+      },
+      {
+        "metric": "admin_status",
+        "op": "==",
+        "value": "up",
+        "weight": 0.2
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_CABLE_UNPLUGGED",
+        "description": "Physical cable disconnected or optical signal lost",
+        "signals": [
+          {
+            "metric": "oper_status",
+            "op": "==",
+            "value": "down",
+            "weight": 0.7
+          },
+          {
+            "metric": "admin_status",
+            "op": "==",
+            "value": "up",
+            "weight": 0.2
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "loss of signal",
+            "weight": 0.3
+          },
+          {
+            "keyword": "LOS",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_TRANSCEIVER_FAILURE",
+        "description": "Optical module or SFP failure",
+        "signals": [
+          {
+            "metric": "oper_status",
+            "op": "==",
+            "value": "down",
+            "weight": 0.6
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "transceiver",
+            "weight": 0.3
+          },
+          {
+            "keyword": "module failure",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: link Intent: Physical/optical link down. Link interface down, port down, LOS, loss of signal. Operational status down with administrative status up. Symptoms include interface down, port down, LOS, loss of signal, cable disconnected, transceiver failure.",
+    "reranker_text": "Intent link.down. Summary: Link or interface is down with oper_status down and admin_status up. Distinguishing clues: oper_status is down, admin_status is up, LOS or loss of signal present. Negative clues: interface may remain operational, CRC or frame errors are present. Hypotheses: Physical cable disconnected or optical signal lost; Optical module or SFP failure. Explicit physical link failure. Interface is administratively or operationally DOWN.",
+    "metadata": {
+      "domain": "link"
+    }
+  },
+  {
+    "doc_id": "intent_link.flap",
+    "intent_id": "link.flap",
+    "category": "link",
+    "metric_family": "link_flap",
+    "description": "Interface flapping frequently",
+    "keywords": [
+      "flap",
+      "bouncing",
+      "up/down",
+      "interface changed state"
+    ],
+    "distinguishing_clues": [
+      "interface changed state repeatedly",
+      "flap_count is elevated",
+      "oper_changes_per_min is elevated"
+    ],
+    "negative_clues": [
+      "oper_status is permanently down",
+      "LOS or loss of signal present"
+    ],
+    "render_template": "Interface {resource_name} on {device} is flapping frequently ({flap_count} flaps, {oper_changes_per_min} state changes per minute). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "flap_count",
+        "op": ">",
+        "value": 3,
+        "weight": 0.7
+      },
+      {
+        "metric": "oper_changes_per_min",
+        "op": ">",
+        "value": 1,
+        "weight": 0.3
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_LOOSE_CONNECTION",
+        "description": "Loose connection or faulty cable",
+        "signals": [
+          {
+            "metric": "flap_count",
+            "op": ">",
+            "value": 3,
+            "weight": 0.7
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "changed state to down",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_NEGOTIATION_ISSUE",
+        "description": "Speed/Duplex negotiation mismatch",
+        "signals": [
+          {
+            "metric": "oper_changes_per_min",
+            "op": ">",
+            "value": 1,
+            "weight": 0.3
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "duplex",
+            "weight": 0.3
+          },
+          {
+            "keyword": "speed mismatch",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: link Intent: Interface flapping frequently. Flap, bouncing, up/down, interface changed state. Repeated state changes, loose connection, faulty cable, speed duplex negotiation mismatch.",
+    "reranker_text": "Intent link.flap. Summary: Interface is flapping frequently with elevated flap_count and oper_changes_per_min. Distinguishing clues: interface changed state repeatedly, flap_count is elevated, oper_changes_per_min is elevated. Negative clues: oper_status is permanently down, LOS or loss of signal present. Hypotheses: Loose connection or faulty cable; Speed/Duplex negotiation mismatch.",
+    "metadata": {
+      "domain": "link"
+    }
+  },
+  {
+    "doc_id": "intent_link.high_errors",
+    "intent_id": "link.high_errors",
+    "category": "link",
+    "metric_family": "interface_errors",
+    "description": "High CRC/Input/Output errors",
+    "keywords": [
+      "crc",
+      "input error",
+      "output error",
+      "frame error"
+    ],
+    "distinguishing_clues": [
+      "crc or frame errors are present",
+      "interface may remain operational",
+      "input errors or output discards rising"
+    ],
+    "negative_clues": [
+      "oper_status is down with LOS",
+      "hard link-down symptoms dominate"
+    ],
+    "render_template": "Interface {resource_name} on {device} shows elevated CRC/input/output errors.",
+    "signals": [
+      {
+        "metric": "in_errors",
+        "op": ">",
+        "value": 100,
+        "weight": 0.5
+      },
+      {
+        "metric": "out_discards",
+        "op": ">",
+        "value": 100,
+        "weight": 0.3
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_CRC_ERRORS",
+        "description": "CRC or physical layer corruption",
+        "signals": [
+          {
+            "metric": "in_errors",
+            "op": ">",
+            "value": 100,
+            "weight": 0.6
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "crc error",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_BUFFER_OVERFLOW",
+        "description": "Packet drops due to output queue overflow",
+        "signals": [
+          {
+            "metric": "out_discards",
+            "op": ">",
+            "value": 100,
+            "weight": 0.4
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "queue full",
+            "weight": 0.2
+          },
+          {
+            "keyword": "tail drop",
+            "weight": 0.2
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: link Intent: High CRC input output errors. CRC, input error, output error, frame error. CRC rising, input errors rising, out_discards rising. Bad cable, bad optics, physical corruption, queue overflow.",
+    "reranker_text": "Intent link.high_errors. Summary: Interface shows elevated CRC, input, or output errors while the link may still be up. Distinguishing clues: crc or frame errors are present, interface may remain operational, input errors or output discards rising. Negative clues: oper_status is down with LOS, hard link-down symptoms dominate. Hypotheses: CRC or physical layer corruption; Packet drops due to output queue overflow.",
+    "metadata": {
+      "domain": "link"
+    }
+  },
+  {
+    "doc_id": "intent_performance.congestion",
+    "intent_id": "performance.congestion",
+    "category": "performance",
+    "metric_family": "interface_congestion",
+    "description": "Interface congestion",
+    "keywords": [
+      "congestion",
+      "queue drop",
+      "buffer full",
+      "tail drop",
+      "backup",
+      "rsync"
+    ],
+    "distinguishing_clues": [
+      "utilization_percent is high",
+      "out_discards rising",
+      "queue full or tail drop present"
+    ],
+    "negative_clues": [
+      "crc or physical corruption dominates",
+      "hard link-down symptoms dominate"
+    ],
+    "render_template": "Interface {resource_name} on {device} shows high utilization ({utilization_percent}%), with {out_discards} queue drops. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "utilization_percent",
+        "op": ">",
+        "value": 90,
+        "weight": 0.5
+      },
+      {
+        "metric": "out_discards",
+        "op": ">",
+        "value": 0,
+        "weight": 0.4
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_QOS_CONGESTION",
+        "description": "QOS_CONGESTION - High utilization and queue discards",
+        "signals": [
+          {
+            "metric": "utilization_percent",
+            "op": ">",
+            "value": 90,
+            "weight": 0.5
+          },
+          {
+            "metric": "out_discards",
+            "op": ">",
+            "value": 0,
+            "weight": 0.4
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "tail drop",
+            "weight": 0.3
+          },
+          {
+            "keyword": "buffer full",
+            "weight": 0.3
+          },
+          {
+            "keyword": "queue full",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_PEAK_TRAFFIC",
+        "description": "Peak-hour usage causing congestion",
+        "signals": [
+          {
+            "metric": "utilization_percent",
+            "op": ">",
+            "value": 85,
+            "weight": 0.4
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "traffic spike",
+            "weight": 0.2
+          }
+        ]
+      },
+      {
+        "id": "H_BACKUP_TRAFFIC",
+        "description": "Backup using default DSCP0 traffic",
+        "signals": [
+          {
+            "metric": "traffic_dscp0_percent",
+            "op": ">",
+            "value": 50,
+            "weight": 0.4
+          },
+          {
+            "metric": "utilization_percent",
+            "op": ">",
+            "value": 85,
+            "weight": 0.4
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "backup",
+            "weight": 0.3
+          },
+          {
+            "keyword": "replication",
+            "weight": 0.3
+          },
+          {
+            "keyword": "scheduled backup",
+            "weight": 0.2
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: performance Intent: Interface congestion. Congestion, queue drop, buffer full, tail drop, backup, rsync. High utilization with queue drops, peak-hour usage, backup traffic, qos congestion.",
+    "reranker_text": "Intent performance.congestion. Summary: Interface shows high utilization with queue drops. Distinguishing clues: utilization_percent is high, out_discards rising, queue full or tail drop present. Negative clues: crc or physical corruption dominates, hard link-down symptoms dominate. Hypotheses: QOS_CONGESTION; Peak-hour usage causing congestion; Backup using default DSCP0 traffic.",
+    "metadata": {
+      "domain": "performance"
+    }
+  },
+  {
+    "doc_id": "intent_routing.bgp_down",
+    "intent_id": "routing.bgp_down",
+    "category": "routing",
+    "metric_family": "bgp_session_state",
+    "description": "BGP session down",
+    "keywords": [
+      "bgp",
+      "neighbor down"
+    ],
+    "distinguishing_clues": [
+      "bgp_session_state is down",
+      "neighbor down",
+      "BGP adjchange or session loss"
+    ],
+    "negative_clues": [
+      "interface CRC errors are the primary symptom",
+      "physical link down is the dominant issue"
+    ],
+    "render_template": "BGP session between {device} and neighbor {peer} is down (state={bgp_session_state}). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "bgp_session_state",
+        "op": "==",
+        "value": "down",
+        "weight": 0.8
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_BGP_NEIGHBOR_LOST",
+        "description": "BGP peer or transport failure",
+        "signals": [
+          {
+            "metric": "bgp_session_state",
+            "op": "==",
+            "value": "down",
+            "weight": 0.8
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "BGP-5-ADJCHANGE",
+            "weight": 0.3
+          },
+          {
+            "keyword": "neighbor down",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: routing Intent: BGP session down. BGP, neighbor down, adjchange, session loss. BGP peer or transport failure.",
+    "reranker_text": "Intent routing.bgp_down. Summary: BGP session between device and neighbor is down. Distinguishing clues: bgp_session_state is down, neighbor down, BGP adjchange or session loss. Negative clues: interface CRC errors are the primary symptom, physical link down is the dominant issue. Hypotheses: BGP peer or transport failure.",
+    "metadata": {
+      "domain": "routing"
+    }
+  },
+  {
+    "doc_id": "intent_system.cpu_high",
+    "intent_id": "system.cpu_high",
+    "category": "system",
+    "metric_family": "cpu_util",
+    "description": "High CPU on device",
+    "keywords": [
+      "cpu high",
+      "high load"
+    ],
+    "distinguishing_clues": [
+      "cpu_percent is above threshold",
+      "high load present"
+    ],
+    "negative_clues": [
+      "memory pressure is the dominant issue",
+      "temperature issue is the primary cause"
+    ],
+    "render_template": "Device {device} CPU utilization is high ({cpu_percent}%). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "cpu_percent",
+        "op": ">",
+        "value": 80,
+        "weight": 0.8
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_CPU_SPIKE",
+        "description": "CPU nearing threshold causing impact",
+        "signals": [
+          {
+            "metric": "cpu_percent",
+            "op": ">",
+            "value": 80,
+            "weight": 0.8
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "high cpu",
+            "weight": 0.3
+          },
+          {
+            "keyword": "process",
+            "weight": 0.2
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: system Intent: High CPU on device. CPU high, high load. CPU utilization above threshold, sustained load, process spike.",
+    "reranker_text": "Intent system.cpu_high. Summary: Device CPU utilization is high. Distinguishing clues: cpu_percent is above threshold, high load present. Negative clues: memory pressure is the dominant issue, temperature issue is the primary cause. Hypotheses: CPU nearing threshold causing impact.",
+    "metadata": {
+      "domain": "system"
+    }
+  },
+  {
+    "doc_id": "intent_system.memory_high",
+    "intent_id": "system.memory_high",
+    "category": "system",
+    "metric_family": "memory_util",
+    "description": "High memory usage",
+    "keywords": [
+      "memory high",
+      "ram usage"
+    ],
+    "distinguishing_clues": [
+      "memory utilization is high",
+      "memory pressure is sustained",
+      "slowly increasing memory usage"
+    ],
+    "negative_clues": [
+      "CPU spike is the dominant issue",
+      "temperature issue is the primary cause"
+    ],
+    "render_template": "Device {device} memory utilization is high ({mem_percent}%). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "mem_percent",
+        "op": ">",
+        "value": 80,
+        "weight": 0.8
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_MEMORY_PRESSURE",
+        "description": "Memory nearing full capacity",
+        "signals": [
+          {
+            "metric": "mem_percent",
+            "op": ">",
+            "value": 80,
+            "weight": 0.8
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "memory",
+            "weight": 0.3
+          },
+          {
+            "keyword": "oom",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: system Intent: High memory usage. Memory high, ram usage. Memory utilization high, slow increase, sustained memory pressure.",
+    "reranker_text": "Intent system.memory_high. Summary: Device memory utilization is high and may increase slowly over time. Distinguishing clues: memory utilization is high, memory pressure is sustained, slowly increasing memory usage. Negative clues: CPU spike is the dominant issue, temperature issue is the primary cause. Hypotheses: Memory nearing full capacity.",
+    "metadata": {
+      "domain": "system"
+    }
+  },
+  {
+    "doc_id": "intent_system.device_overheat",
+    "intent_id": "system.device_overheat",
+    "category": "system",
+    "metric_family": "temp_c",
+    "description": "High chassis or CPU temperature",
+    "keywords": [
+      "overheat",
+      "high temperature"
+    ],
+    "distinguishing_clues": [
+      "temperature is high",
+      "thermal threshold exceeded"
+    ],
+    "negative_clues": [
+      "memory pressure is the dominant issue",
+      "link error counters are the primary issue"
+    ],
+    "render_template": "Device {device} temperature is high ({temp_c}\u00b0C). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "temp_c",
+        "op": ">",
+        "value": 70,
+        "weight": 0.7
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_OVERHEATING",
+        "description": "Device overheating due to airflow or fan failure",
+        "signals": [
+          {
+            "metric": "temp_c",
+            "op": ">",
+            "value": 70,
+            "weight": 0.7
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "temperature alarm",
+            "weight": 0.3
+          },
+          {
+            "keyword": "fan failure",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: system Intent: High chassis or CPU temperature. Overheat, high temperature, thermal threshold exceeded, fan failure.",
+    "reranker_text": "Intent system.device_overheat. Summary: Device temperature is high. Distinguishing clues: temperature is high, thermal threshold exceeded. Negative clues: memory pressure is the dominant issue, link error counters are the primary issue. Hypotheses: Device overheating due to airflow or fan failure. System-level component overheat (e.g. CPU running too hot under load). NOT an environmental HVAC/AC failure in the room.",
+    "metadata": {
+      "domain": "system"
+    }
+  },
+  {
+    "doc_id": "intent_security.ddos",
+    "intent_id": "security.ddos",
+    "category": "security",
+    "metric_family": "pps_rate",
+    "description": "High PPS traffic \u2013 potential DDOS",
+    "keywords": [
+      "ddos",
+      "attack",
+      "flood"
+    ],
+    "distinguishing_clues": [
+      "pps_rate is extremely high",
+      "attack-like traffic pattern"
+    ],
+    "negative_clues": [
+      "interface link-down symptoms are the primary issue",
+      "thermal or CPU issues dominate"
+    ],
+    "render_template": "Device {device} is experiencing unusually high packet rate ({pps_rate} PPS) indicating possible DDOS. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "pps_rate",
+        "op": ">",
+        "value": 1000000,
+        "weight": 0.6
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_VOLUME_ATTACK",
+        "description": "High-volume packet flood attack",
+        "signals": [
+          {
+            "metric": "pps_rate",
+            "op": ">",
+            "value": 1000000,
+            "weight": 0.6
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "attack",
+            "weight": 0.3
+          },
+          {
+            "keyword": "flood",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: security Intent: High PPS traffic potential DDOS. DDOS, attack, flood, packet rate extremely high.",
+    "reranker_text": "Intent security.ddos. Summary: Device is experiencing unusually high packet rate indicating possible DDOS. Distinguishing clues: pps_rate is extremely high, attack-like traffic pattern. Negative clues: interface link-down symptoms are the primary issue, thermal or CPU issues dominate. Hypotheses: High-volume packet flood attack.",
+    "metadata": {
+      "domain": "security"
+    }
+  },
+  {
+    "doc_id": "intent_unknown.low_confidence",
+    "intent_id": "unknown.low_confidence",
+    "category": "unknown",
+    "metric_family": "combined_score",
+    "description": "No confident match",
+    "keywords": [
+      "unknown",
+      "investigate"
+    ],
+    "distinguishing_clues": [
+      "combined score is low",
+      "no clear pattern detected"
+    ],
+    "negative_clues": [
+      "a strong intent already matches",
+      "a specific metric family is dominant"
+    ],
+    "render_template": "No clear pattern detected for {device}. Combined score = {combined_score}. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "combined_score",
+        "op": "<",
+        "value": 0.6,
+        "weight": 1.0
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_MANUAL_INVESTIGATION",
+        "description": "Not enough evidence \u2013 manual analysis required",
+        "signals": [
+          {
+            "metric": "combined_score",
+            "op": "<",
+            "value": 0.6,
+            "weight": 1.0
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "unknown",
+            "weight": 0.2
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: unknown Intent: No confident match. Unknown, investigate, low confidence, manual analysis.",
+    "reranker_text": "Intent unknown.low_confidence. Summary: No clear pattern detected and combined score is low. Distinguishing clues: combined score is low, no clear pattern detected. Negative clues: a strong intent already matches, a specific metric family is dominant. Hypotheses: Not enough evidence \u2013 manual analysis required.",
+    "metadata": {
+      "domain": "unknown"
+    }
+  },
+  {
+    "doc_id": "intent_thermal.device_temperature_high",
+    "intent_id": "thermal.device_temperature_high",
+    "category": "thermal",
+    "metric_family": "thermal_rise",
+    "description": "Device temperature high.",
+    "keywords": [
+      "overheating",
+      "thermal load",
+      "cooling failure",
+      "airflow reduced",
+      "Router temperature",
+      "CRAC failure",
+      "fan RPM unstable",
+      "environmental high temp",
+      "cooling degradation",
+      "temperature increase"
+    ],
+    "distinguishing_clues": [
+      "temperature has increased sharply",
+      "thermal impact is present",
+      "fan or cooling degradation is likely"
+    ],
+    "negative_clues": [
+      "physical link errors are the primary issue",
+      "BGP down is the dominant issue"
+    ],
+    "render_template": "Device {device} temperature has increased sharply to {temp_c}\u00b0C causing thermal impact on its performance. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "temp_c",
+        "op": ">",
+        "value": 45,
+        "weight": 0.2
+      },
+      {
+        "metric": "cpu_percent",
+        "op": ">",
+        "value": 50,
+        "weight": 0.1
+      },
+      {
+        "metric": "fan_speed",
+        "op": ">",
+        "value": 3500,
+        "weight": 0.1
+      },
+      {
+        "metric": "power_watt",
+        "op": ">",
+        "value": 50,
+        "weight": 0.1
+      },
+      {
+        "metric": "power_watt",
+        "op": "<",
+        "value": 20,
+        "weight": 0.15
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_COOLING_DEGRADED",
+        "description": "Cooling efficiency decreased (airflow reduced, fan speed abnormal)",
+        "signals": [
+          {
+            "metric": "temp_c",
+            "op": ">",
+            "value": 45,
+            "weight": 0.2
+          },
+          {
+            "metric": "latency_ms",
+            "op": ">",
+            "value": 10,
+            "weight": 0.1
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "Critical thermal alarm",
+            "weight": 0.3
+          },
+          {
+            "keyword": "fan speed",
+            "weight": 0.2
+          },
+          {
+            "keyword": "environment temperature rise",
+            "weight": 0.2
+          },
+          {
+            "keyword": "cooling degradation",
+            "weight": 0.2
+          }
+        ]
+      },
+      {
+        "id": "H_CRAC_FAILURE",
+        "description": "CRAC / cooling unit failure causing environment temperature spike",
+        "signals": [
+          {
+            "metric": "temp_c",
+            "op": ">",
+            "value": 50,
+            "weight": 0.3
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "Fan RPM unstable",
+            "weight": 0.1
+          },
+          {
+            "keyword": "Severe RPM drop",
+            "weight": 0.2
+          },
+          {
+            "keyword": "airflow insufficient",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_ROUTER_OVERHEAT",
+        "description": "Device temperature exceeded thermal threshold, causing instability",
+        "signals": [
+          {
+            "metric": "temp_c",
+            "op": ">",
+            "value": 50,
+            "weight": 0.3
+          },
+          {
+            "metric": "cpu_percent",
+            "op": ">",
+            "value": 52,
+            "weight": 0.1
+          },
+          {
+            "metric": "latency_ms",
+            "op": ">",
+            "value": 15,
+            "weight": 0.07
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "high-load thermal",
+            "weight": 0.1
+          },
+          {
+            "keyword": "chassis temperature",
+            "weight": 0.2
+          },
+          {
+            "keyword": "fan instability",
+            "weight": 0.2
+          }
+        ]
+      },
+      {
+        "id": "H_ROOM_TEMP_RISE",
+        "description": "Room / zone temperature increase due to cooling inefficiency",
+        "signals": [
+          {
+            "metric": "temp_c",
+            "op": ">",
+            "value": 47,
+            "weight": 0.2
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "room temperature rise",
+            "weight": 0.3
+          },
+          {
+            "keyword": "environment temp high",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_CPU_THROTTLE",
+        "description": "CPU thermal throttling triggered by high internal temperature",
+        "signals": [
+          {
+            "metric": "cpu_percent",
+            "op": ">",
+            "value": 50,
+            "weight": 0.3
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "CPU throttling",
+            "weight": 0.3
+          },
+          {
+            "keyword": "discards climbing",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_DOWNSTREAM_IMPACT",
+        "description": "Overheated router causing downstream packet drops, latency, and retransmissions",
+        "signals": [
+          {
+            "metric": "latency_ms",
+            "op": ">",
+            "value": 15,
+            "weight": 0.3
+          },
+          {
+            "metric": "packet_loss_percent",
+            "op": ">",
+            "value": 2,
+            "weight": 0.3
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "packet drop",
+            "weight": 0.3
+          },
+          {
+            "keyword": "queue buildup",
+            "weight": 0.2
+          },
+          {
+            "keyword": "flow retries",
+            "weight": 0.2
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: thermal Intent: Device temperature high. Overheating, thermal load, cooling failure, airflow reduced, Router temperature, CRAC failure, fan RPM unstable, environmental high temp, cooling degradation, temperature increase.",
+    "reranker_text": "Intent thermal.device_temperature_high. Summary: Device temperature has increased sharply and thermal impact is present. Distinguishing clues: temperature has increased sharply, thermal impact is present, fan or cooling degradation is likely. Negative clues: physical link errors are the primary issue, BGP down is the dominant issue. Hypotheses: Cooling efficiency decreased; CRAC / cooling unit failure; Device temperature exceeded thermal threshold; Room / zone temperature increase; CPU thermal throttling; Downstream packet drops and retransmissions.",
+    "metadata": {
+      "domain": "thermal"
+    }
+  },
+  {
+    "doc_id": "intent_thermal.early_thermal_risk",
+    "intent_id": "thermal.early_thermal_risk",
+    "category": "thermal",
+    "metric_family": "thermal_trend",
+    "description": "Early-stage temperature rise indicating potential future overheating",
+    "keywords": [
+      "temperature rise",
+      "thermal trend",
+      "heat buildup",
+      "cooling warning",
+      "early thermal risk",
+      "temp drifting upward"
+    ],
+    "distinguishing_clues": [
+      "slow, consistent rise in temperature",
+      "temperature drifting upward",
+      "early warning before overheating"
+    ],
+    "negative_clues": [
+      "temperature is already at critical threshold",
+      "a hard fault or shutdown is already present"
+    ],
+    "render_template": "Device {device} is affected by environmental heat anomaly. Inlet temperature is {inlet_temp_c}\u00b0C and device temperature is {temp_c}\u00b0C. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "temp_c",
+        "op": ">",
+        "value": 38,
+        "weight": 0.3
+      },
+      {
+        "metric": "temp_trend_rate",
+        "op": ">",
+        "value": 5,
+        "weight": 0.3
+      },
+      {
+        "metric": "fan_speed",
+        "op": ">",
+        "value": 3000,
+        "weight": 0.1
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_GRADUAL_HEAT_BUILDUP",
+        "description": "Slow, consistent rise in internal device temperature over time",
+        "signals": [
+          {
+            "metric": "temp_trend_rate",
+            "op": ">",
+            "value": 4,
+            "weight": 0.3
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "temperature rising",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_COOLING_WARN",
+        "description": "Cooling system showing early signs of inefficiency",
+        "signals": [
+          {
+            "metric": "fan_speed",
+            "op": ">",
+            "value": 3200,
+            "weight": 0.1
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "fan warning",
+            "weight": 0.2
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: thermal Intent: Early-stage temperature rise indicating potential future overheating. Temperature rise, thermal trend, heat buildup, cooling warning, early thermal risk, temp drifting upward.",
+    "reranker_text": "Intent thermal.early_thermal_risk. Summary: Slow, consistent temperature rise indicates future overheating risk. Distinguishing clues: slow, consistent rise in temperature, temperature drifting upward, early warning before overheating. Negative clues: temperature is already at critical threshold, a hard fault or shutdown is already present. Hypotheses: Slow, consistent rise in internal device temperature over time; Cooling system showing early signs of inefficiency.",
+    "metadata": {
+      "domain": "thermal"
+    }
+  },
+  {
+    "doc_id": "intent_thermal.environmental_heat_anomaly",
+    "intent_id": "thermal.environmental_heat_anomaly",
+    "category": "thermal",
+    "metric_family": "environment_temp",
+    "description": "Abnormal room or rack temperature increase affecting device thermal conditions",
+    "keywords": [
+      "room temperature spike",
+      "rack overheating",
+      "environmental heat",
+      "inlet temperature high",
+      "CRAC air temperature",
+      "cooling airflow low"
+    ],
+    "distinguishing_clues": [
+      "inlet temperature is high",
+      "room or rack heat is elevated",
+      "cooling airflow is low"
+    ],
+    "negative_clues": [
+      "device internal thermal threshold is already the main failure",
+      "physical link errors dominate"
+    ],
+    "render_template": "Device {device} shows an early thermal risk signal. Temperature is trending upward to {temp_c}\u00b0C, with trend rate {temp_trend_rate}. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "inlet_temp_c",
+        "op": ">",
+        "value": 35,
+        "weight": 0.4
+      },
+      {
+        "metric": "temp_c",
+        "op": ">",
+        "value": 40,
+        "weight": 0.2
+      },
+      {
+        "metric": "humidity_percent",
+        "op": "<",
+        "value": 30,
+        "weight": 0.1
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_RACK_HOTSPOT",
+        "description": "Localized heat hotspot in rack impacting device",
+        "signals": [
+          {
+            "metric": "inlet_temp_c",
+            "op": ">",
+            "value": 36,
+            "weight": 0.3
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "rack temperature high",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_CRAC_AIR_TEMP_ANOMALY",
+        "description": "Cooling system supply air temperature higher than expected",
+        "signals": [
+          {
+            "metric": "inlet_temp_c",
+            "op": ">",
+            "value": 38,
+            "weight": 0.4
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "CRAC warm air",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: thermal Intent: Abnormal room or rack temperature increase affecting device thermal conditions. Room temperature spike, rack overheating, environmental heat, inlet temperature high, CRAC air temperature, cooling airflow low.",
+    "reranker_text": "Intent thermal.environmental_heat_anomaly. Summary: Abnormal room or rack temperature increase is affecting device thermal conditions. Distinguishing clues: inlet temperature is high, room or rack heat is elevated, cooling airflow is low. Negative clues: device internal thermal threshold is already the main failure, physical link errors dominate. Hypotheses: Localized heat hotspot in rack; Cooling system supply air temperature higher than expected.",
+    "metadata": {
+      "domain": "thermal"
+    }
+  },
+  {
+    "doc_id": "intent_wireless.client_association_failure",
+    "intent_id": "wireless.client_association_failure",
+    "category": "wireless",
+    "metric_family": "wireless_association",
+    "description": "Client fails to associate with Access Point",
+    "keywords": [
+      "association failure",
+      "assoc fail",
+      "cannot join",
+      "association reject"
+    ],
+    "distinguishing_clues": [
+      "high association failure rate",
+      "client repeatedly attempts to associate",
+      "low RSSI or poor signal during assoc"
+    ],
+    "negative_clues": [
+      "client successfully associates but then disconnects",
+      "authentication succeeds but association fails"
+    ],
+    "render_template": "Client {client_mac} is failing to associate with AP {ap_name} / SSID {ssid} (failure rate: {assoc_fail_rate}%). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "assoc_fail_rate",
+        "op": ">",
+        "value": 20,
+        "weight": 0.7
+      },
+      {
+        "metric": "rssi_dbm",
+        "op": "<",
+        "value": -70,
+        "weight": 0.3
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_LOW_RSSI_COVERAGE",
+        "description": "Insufficient coverage / low RSSI at client location",
+        "signals": [
+          {
+            "metric": "rssi_dbm",
+            "op": "<",
+            "value": -72,
+            "weight": 0.6
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "assoc reject",
+            "weight": 0.3
+          },
+          {
+            "keyword": "signal too weak",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_AP_OVERLOAD",
+        "description": "AP overloaded with too many clients",
+        "signals": [
+          {
+            "metric": "client_count",
+            "op": ">",
+            "value": 50,
+            "weight": 0.5
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "max clients reached",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: wireless Intent: Client association failure. Association failure, assoc fail, cannot join AP, association reject. Low RSSI, poor coverage, AP overload, too many clients.",
+    "reranker_text": "Intent wireless.client_association_failure. Summary: Client fails to associate with AP/SSID. Distinguishing clues: high association failure rate, client repeatedly attempts to associate, low RSSI during assoc. Negative clues: client successfully associates but then disconnects, authentication succeeds but association fails. Hypotheses: Insufficient coverage/low RSSI; AP overloaded with too many clients.",
+    "metadata": {
+      "domain": "wireless"
+    }
+  },
+  {
+    "doc_id": "intent_wireless.authentication_failure",
+    "intent_id": "wireless.authentication_failure",
+    "category": "wireless",
+    "metric_family": "wireless_auth",
+    "description": "802.1X or WPA authentication failure",
+    "keywords": [
+      "auth failure",
+      "authentication fail",
+      "802.1x fail",
+      "eap failure",
+      "radius reject"
+    ],
+    "distinguishing_clues": [
+      "authentication step fails after probe/association",
+      "RADIUS or AAA server reject",
+      "EAP timeout or credential issue"
+    ],
+    "negative_clues": [
+      "association itself fails before authentication",
+      "client connects successfully on open SSID"
+    ],
+    "render_template": "Client {client_mac} authentication failing on SSID {ssid} (auth failure rate: {auth_fail_rate}%). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "auth_fail_rate",
+        "op": ">",
+        "value": 15,
+        "weight": 0.7
+      },
+      {
+        "metric": "radius_response_time_ms",
+        "op": ">",
+        "value": 2000,
+        "weight": 0.2
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_RADIUS_UNREACHABLE",
+        "description": "RADIUS/AAA server unreachable or slow",
+        "signals": [
+          {
+            "metric": "radius_response_time_ms",
+            "op": ">",
+            "value": 1500,
+            "weight": 0.6
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "radius timeout",
+            "weight": 0.3
+          },
+          {
+            "keyword": "aaa server unreachable",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_WRONG_CREDENTIALS",
+        "description": "Wrong credentials or certificate mismatch",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "eap failure",
+            "weight": 0.4
+          },
+          {
+            "keyword": "credential reject",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: wireless Intent: 802.1X WPA authentication failure. Auth failure, 802.1x fail, EAP failure, radius reject. RADIUS unreachable, wrong credentials, certificate issues.",
+    "reranker_text": "Intent wireless.authentication_failure. Summary: Client fails 802.1X/WPA authentication on SSID. Distinguishing clues: authentication step fails after association, RADIUS reject, EAP timeout. Negative clues: association itself fails before auth, client connects on open SSID. Hypotheses: RADIUS/AAA unreachable; Wrong credentials or cert mismatch.",
+    "metadata": {
+      "domain": "wireless"
+    }
+  },
+  {
+    "doc_id": "intent_wireless.low_rssi",
+    "intent_id": "wireless.low_rssi",
+    "category": "wireless",
+    "metric_family": "wireless_coverage",
+    "description": "Poor signal strength (low RSSI)",
+    "keywords": [
+      "low rssi",
+      "weak signal",
+      "poor coverage",
+      "signal strength low"
+    ],
+    "distinguishing_clues": [
+      "RSSI below -70 dBm consistently",
+      "coverage hole detected",
+      "client at cell edge"
+    ],
+    "negative_clues": [
+      "RSSI good but high retries or interference",
+      "client has good signal but low throughput"
+    ],
+    "render_template": "Client {client_mac} on AP {ap_name} experiencing low RSSI ({rssi_dbm} dBm). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "rssi_dbm",
+        "op": "<",
+        "value": -72,
+        "weight": 0.8
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_COVERAGE_HOLE",
+        "description": "Coverage hole or AP placement issue",
+        "signals": [
+          {
+            "metric": "rssi_dbm",
+            "op": "<",
+            "value": -75,
+            "weight": 0.7
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "coverage hole",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_CLIENT_FAR_AWAY",
+        "description": "Client too far from AP or behind obstruction",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "cell edge",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: wireless Intent: Low RSSI poor signal strength. Low RSSI, weak signal, poor coverage, signal strength low. Coverage hole, client at cell edge.",
+    "reranker_text": "Intent wireless.low_rssi. Summary: Client experiences poor signal strength (low RSSI). Distinguishing clues: RSSI below -70 dBm consistently, coverage hole detected. Negative clues: RSSI good but high retries, good signal but low throughput. Hypotheses: Coverage hole/AP placement issue; Client too far or obstructed.",
+    "metadata": {
+      "domain": "wireless"
+    }
+  },
+  {
+    "doc_id": "intent_wireless.high_interference",
+    "intent_id": "wireless.high_interference",
+    "category": "wireless",
+    "metric_family": "wireless_rf",
+    "description": "High WiFi or non-WiFi interference",
+    "keywords": [
+      "interference",
+      "co-channel",
+      "adjacent channel",
+      "non wifi interference",
+      "microwave"
+    ],
+    "distinguishing_clues": [
+      "high channel utilization with low client count",
+      "high retry rate with good RSSI",
+      "non-WiFi interference detected"
+    ],
+    "negative_clues": [
+      "high utilization due to many clients (congestion)",
+      "low RSSI is the dominant issue"
+    ],
+    "render_template": "High interference detected on AP {ap_name} channel {channel} (interference level: {interference_percent}%). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "interference_percent",
+        "op": ">",
+        "value": 40,
+        "weight": 0.6
+      },
+      {
+        "metric": "retry_rate",
+        "op": ">",
+        "value": 15,
+        "weight": 0.3
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_CO_CHANNEL_INTERFERENCE",
+        "description": "Co-channel or adjacent channel WiFi interference",
+        "signals": [
+          {
+            "metric": "neighbor_count",
+            "op": ">",
+            "value": 8,
+            "weight": 0.5
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "co-channel",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_NON_WIFI_INTERFERENCE",
+        "description": "Non-WiFi interference (microwave, Bluetooth, etc.)",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "non-wifi interference",
+            "weight": 0.4
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: wireless Intent: High WiFi non-WiFi interference. Interference, co-channel, adjacent channel, non wifi interference. High retries with good RSSI, channel utilization high with low clients.",
+    "reranker_text": "Intent wireless.high_interference. Summary: High WiFi or non-WiFi interference on channel. Distinguishing clues: high channel utilization with low client count, high retry rate with good RSSI. Negative clues: high utilization due to many clients, low RSSI dominant. Hypotheses: Co-channel/adjacent interference; Non-WiFi interference (microwave etc.).",
+    "metadata": {
+      "domain": "wireless"
+    }
+  },
+  {
+    "doc_id": "intent_wireless.channel_congestion",
+    "intent_id": "wireless.channel_congestion",
+    "category": "wireless",
+    "metric_family": "wireless_capacity",
+    "description": "High channel utilization / airtime congestion",
+    "keywords": [
+      "channel utilization high",
+      "airtime congestion",
+      "channel busy",
+      "overutilization",
+      "RF congestion",
+      "channel utilization"
+    ],
+    "distinguishing_clues": [
+      "channel utilization > 70-80%",
+      "many clients on same AP/channel",
+      "airtime fairness issues"
+    ],
+    "negative_clues": [
+      "low client count but high interference",
+      "low RSSI is primary symptom"
+    ],
+    "render_template": "AP {ap_name} / channel {channel} experiencing high utilization ({utilization_percent}%) with {client_count} clients. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "utilization_percent",
+        "op": ">",
+        "value": 75,
+        "weight": 0.7
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_AP_OVERLOAD",
+        "description": "Too many clients on single AP/channel",
+        "signals": [
+          {
+            "metric": "client_count",
+            "op": ">",
+            "value": 40,
+            "weight": 0.6
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "airtime congestion",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_BANDWIDTH_HOGGING",
+        "description": "Few clients consuming excessive airtime (e.g., video streaming)",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "airtime hog",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: wireless Intent: High channel utilization airtime congestion. Channel utilization high, airtime congestion, channel busy. Too many clients, bandwidth hogging.",
+    "reranker_text": "Intent wireless.channel_congestion. Summary: High channel utilization and airtime congestion. Distinguishing clues: channel utilization >75%, many clients on same AP/channel. Negative clues: low client count but high interference, low RSSI primary. Hypotheses: Too many clients on AP; Few clients hogging airtime. Wireless RF interference and channel utilization. NOT a wired TCP retransmission or wired congestion issue.",
+    "metadata": {
+      "domain": "wireless"
+    }
+  },
+  {
+    "doc_id": "intent_wireless.high_retry_rate",
+    "intent_id": "wireless.high_retry_rate",
+    "category": "wireless",
+    "metric_family": "wireless_performance",
+    "description": "High packet retry rate on wireless link",
+    "keywords": [
+      "high retry",
+      "retry rate",
+      "data retries",
+      "packet retransmission"
+    ],
+    "distinguishing_clues": [
+      "retry rate > 10-15%",
+      "good RSSI but poor performance",
+      "FCS errors or CRC present"
+    ],
+    "negative_clues": [
+      "low RSSI is the main driver",
+      "association/authentication failing"
+    ],
+    "render_template": "High retry rate detected for clients on AP {ap_name} ({retry_rate}% retries). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "retry_rate",
+        "op": ">",
+        "value": 12,
+        "weight": 0.7
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_INTERFERENCE_RETRIES",
+        "description": "Interference causing frame corruption and retries",
+        "signals": [
+          {
+            "metric": "retry_rate",
+            "op": ">",
+            "value": 15,
+            "weight": 0.6
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "high retries",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_HIDDEN_NODE",
+        "description": "Hidden node problem or poor client transmit power",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "hidden node",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: wireless Intent: High packet retry rate. High retry, retry rate, data retries. Good RSSI but high retries, interference, hidden node.",
+    "reranker_text": "Intent wireless.high_retry_rate. Summary: High packet retry rate impacting performance. Distinguishing clues: retry rate >12%, good RSSI but poor throughput. Negative clues: low RSSI dominant, association failing. Hypotheses: Interference causing corruption; Hidden node problem.",
+    "metadata": {
+      "domain": "wireless"
+    }
+  },
+  {
+    "doc_id": "intent_wireless.roaming_failure",
+    "intent_id": "wireless.roaming_failure",
+    "category": "wireless",
+    "metric_family": "wireless_roaming",
+    "description": "Client roaming failure or sticky client",
+    "keywords": [
+      "roaming failure",
+      "sticky client",
+      "roam fail",
+      "fast roam failure"
+    ],
+    "distinguishing_clues": [
+      "client stays on weak AP despite better options",
+      "high roam delay or failed roams",
+      "ping-pong roaming"
+    ],
+    "negative_clues": [
+      "client has good signal but still disconnects",
+      "association failure on target AP"
+    ],
+    "render_template": "Client {client_mac} experiencing roaming issues (roam success rate: {roam_success_rate}%). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "roam_fail_rate",
+        "op": ">",
+        "value": 20,
+        "weight": 0.7
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_STICKY_CLIENT",
+        "description": "Sticky client not roaming to stronger AP",
+        "signals": [
+          {
+            "metric": "rssi_dbm",
+            "op": "<",
+            "value": -65,
+            "weight": 0.5
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "sticky client",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_80211KVR_DISABLED",
+        "description": "802.11k/v/r features disabled or misconfigured",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "roaming assist",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: wireless Intent: Client roaming failure sticky client. Roaming failure, sticky client, roam fail. Client not roaming to better AP, ping-pong roaming.",
+    "reranker_text": "Intent wireless.roaming_failure. Summary: Client fails to roam or sticks to weak AP. Distinguishing clues: client stays on weak AP, high roam delay or failed roams. Negative clues: good signal but disconnects, association failure on target. Hypotheses: Sticky client behavior; 802.11k/v/r misconfigured.",
+    "metadata": {
+      "domain": "wireless"
+    }
+  },
+  {
+    "doc_id": "intent_wireless.ap_overload",
+    "intent_id": "wireless.ap_overload",
+    "category": "wireless",
+    "metric_family": "wireless_capacity",
+    "description": "Access Point overloaded with clients or traffic",
+    "keywords": [
+      "ap overload",
+      "too many clients",
+      "ap capacity exceeded"
+    ],
+    "distinguishing_clues": [
+      "client count per AP/radio very high",
+      "high airtime utilization with many clients",
+      "degraded performance per client"
+    ],
+    "negative_clues": [
+      "high utilization but low client count (interference)",
+      "single client with very high traffic"
+    ],
+    "render_template": "AP {ap_name} overloaded with {client_count} clients (utilization: {utilization_percent}%). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "client_count",
+        "op": ">",
+        "value": 45,
+        "weight": 0.6
+      },
+      {
+        "metric": "utilization_percent",
+        "op": ">",
+        "value": 70,
+        "weight": 0.3
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_CLIENT_DENSITY_HIGH",
+        "description": "Excessive client density on single AP",
+        "signals": [
+          {
+            "metric": "client_count",
+            "op": ">",
+            "value": 50,
+            "weight": 0.7
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "max clients",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: wireless Intent: Access Point overloaded. AP overload, too many clients, ap capacity exceeded. High client count per AP, degraded per-client performance.",
+    "reranker_text": "Intent wireless.ap_overload. Summary: Access Point overloaded with too many clients or traffic. Distinguishing clues: very high client count per AP, high airtime with many clients. Negative clues: high utilization low clients (interference). Hypotheses: Excessive client density on single AP. Wireless specific issue: Too many clients associated with a single Access Point. NOT a general wired network application slowness.",
+    "metadata": {
+      "domain": "wireless"
+    }
+  },
+  {
+    "doc_id": "intent_wireless.wifi_slow_performance",
+    "intent_id": "wireless.wifi_slow_performance",
+    "category": "wireless",
+    "metric_family": "wireless_throughput",
+    "description": "Overall slow WiFi performance / low throughput",
+    "keywords": [
+      "wifi slow",
+      "low throughput",
+      "slow speeds",
+      "poor performance"
+    ],
+    "distinguishing_clues": [
+      "low data rate / MCS despite good RSSI",
+      "high retries or utilization",
+      "throughput much lower than expected"
+    ],
+    "negative_clues": [
+      "wired side congestion or uplink issue",
+      "single application slow but others normal"
+    ],
+    "render_template": "Clients on AP {ap_name} / SSID {ssid} experiencing slow WiFi performance (avg throughput: {throughput_mbps} Mbps). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "avg_data_rate_mbps",
+        "op": "<",
+        "value": 50,
+        "weight": 0.5
+      },
+      {
+        "metric": "retry_rate",
+        "op": ">",
+        "value": 10,
+        "weight": 0.3
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_COMBINED_RF_ISSUES",
+        "description": "Combination of interference, retries, or low MCS",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "low data rate",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_LEGACY_CLIENT",
+        "description": "Legacy clients dragging down airtime",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "legacy device",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: wireless Intent: Slow WiFi performance low throughput. Wifi slow, low throughput, slow speeds. Low data rate, high retries, poor MCS.",
+    "reranker_text": "Intent wireless.wifi_slow_performance. Summary: Overall slow WiFi speeds and low throughput. Distinguishing clues: low data rate despite good RSSI, high retries or utilization. Negative clues: wired congestion, single app slow. Hypotheses: RF issues (interference/retries); Legacy clients impacting airtime.",
+    "metadata": {
+      "domain": "wireless"
+    }
+  },
+  {
+    "doc_id": "intent_wireless.ssid_not_broadcasting",
+    "intent_id": "wireless.ssid_not_broadcasting",
+    "category": "wireless",
+    "metric_family": "wireless_ssid",
+    "description": "SSID not visible or not broadcasting",
+    "keywords": [
+      "ssid not broadcasting",
+      "ssid hidden",
+      "ssid missing",
+      "beacon missing"
+    ],
+    "distinguishing_clues": [
+      "SSID beacons not received by clients",
+      "AP up but SSID not visible",
+      "sudden disappearance of SSID"
+    ],
+    "negative_clues": [
+      "SSID visible but clients cannot connect",
+      "multiple SSIDs affected on same AP"
+    ],
+    "render_template": "SSID {ssid} is not broadcasting on AP {ap_name}. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "beacon_count",
+        "op": "==",
+        "value": 0,
+        "weight": 0.8
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_SSID_DISABLED",
+        "description": "SSID accidentally disabled in configuration",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "ssid disabled",
+            "weight": 0.4
+          }
+        ]
+      },
+      {
+        "id": "H_RADIO_DOWN",
+        "description": "Radio interface down or misconfigured",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "radio down",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: wireless Intent: SSID not broadcasting. SSID not broadcasting, ssid hidden, beacon missing. SSID not visible, sudden disappearance.",
+    "reranker_text": "Intent wireless.ssid_not_broadcasting. Summary: SSID is not visible or broadcasting beacons. Distinguishing clues: no beacons received, AP up but SSID missing. Negative clues: SSID visible but cannot connect. Hypotheses: SSID disabled in config; Radio interface down.",
+    "metadata": {
+      "domain": "wireless"
+    }
+  },
+  {
+    "doc_id": "intent_routing.ospf_neighbor_down",
+    "intent_id": "routing.ospf_neighbor_down",
+    "category": "routing",
+    "metric_family": "ospf_neighbor_state",
+    "description": "OSPF neighbor adjacency down or not forming",
+    "keywords": [
+      "ospf neighbor down",
+      "ospf adjacency fail",
+      "no ospf neighbor",
+      "ospf down"
+    ],
+    "distinguishing_clues": [
+      "OSPF neighbor state not Full",
+      "hello/dead interval mismatch",
+      "MTU mismatch on link"
+    ],
+    "negative_clues": [
+      "BGP session is the primary issue",
+      "physical link is completely down"
+    ],
+    "render_template": "OSPF neighbor {neighbor_ip} on device {device} interface {interface} is down (state: {ospf_state}). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "ospf_neighbor_state",
+        "op": "!=",
+        "value": "full",
+        "weight": 0.8
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_HELLO_MISMATCH",
+        "description": "Hello/Dead interval or area ID mismatch",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "hello mismatch",
+            "weight": 0.3
+          },
+          {
+            "keyword": "area mismatch",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_MTU_MISMATCH",
+        "description": "MTU mismatch preventing DBD exchange",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "mtu mismatch",
+            "weight": 0.4
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: routing Intent: OSPF neighbor down. OSPF neighbor down, ospf adjacency fail, no ospf neighbor. Hello mismatch, MTU mismatch, area ID mismatch.",
+    "reranker_text": "Intent routing.ospf_neighbor_down. Summary: OSPF neighbor adjacency is down or stuck. Distinguishing clues: OSPF neighbor state not Full, hello/dead interval mismatch, MTU mismatch. Negative clues: BGP session primary, physical link completely down. Hypotheses: Hello/area mismatch; MTU mismatch.",
+    "metadata": {
+      "domain": "routing"
+    }
+  },
+  {
+    "doc_id": "intent_routing.ospf_route_missing",
+    "intent_id": "routing.ospf_route_missing",
+    "category": "routing",
+    "metric_family": "ospf_route_table",
+    "description": "Expected OSPF route missing from routing table",
+    "keywords": [
+      "ospf route missing",
+      "no ospf route",
+      "route not learned"
+    ],
+    "distinguishing_clues": [
+      "prefix absent in OSPF database or RIB",
+      "LSA not flooding or not installed"
+    ],
+    "negative_clues": [
+      "BGP route is present instead",
+      "physical link or OSPF neighbor is down"
+    ],
+    "render_template": "OSPF route {prefix} is missing on device {device}. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "ospf_route_present",
+        "op": "==",
+        "value": false,
+        "weight": 0.8
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_NETWORK_STATEMENT_MISSING",
+        "description": "Network statement or passive interface misconfigured",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "network statement",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_LSA_FLOODING_ISSUE",
+        "description": "LSA not received or flooded due to area/filter issues",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "lsa not received",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: routing Intent: OSPF route missing. OSPF route missing, no ospf route, route not learned. Network statement missing, LSA flooding issue.",
+    "reranker_text": "Intent routing.ospf_route_missing. Summary: Expected OSPF route is missing from routing table. Distinguishing clues: prefix absent in OSPF database or RIB. Negative clues: BGP route present, physical link down. Hypotheses: Network statement missing; LSA flooding issue.",
+    "metadata": {
+      "domain": "routing"
+    }
+  },
+  {
+    "doc_id": "intent_routing.eigrp_neighbor_down",
+    "intent_id": "routing.eigrp_neighbor_down",
+    "category": "routing",
+    "metric_family": "eigrp_neighbor_state",
+    "description": "EIGRP neighbor adjacency down",
+    "keywords": [
+      "eigrp neighbor down",
+      "eigrp adjacency fail",
+      "no eigrp neighbor"
+    ],
+    "distinguishing_clues": [
+      "EIGRP neighbor not in Active/Established state",
+      "AS number or K-value mismatch"
+    ],
+    "negative_clues": [
+      "OSPF or BGP is the dominant protocol",
+      "link is operationally down"
+    ],
+    "render_template": "EIGRP neighbor {neighbor_ip} on device {device} is down (state: {eigrp_state}). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "eigrp_neighbor_state",
+        "op": "!=",
+        "value": "established",
+        "weight": 0.8
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_KVALUE_MISMATCH",
+        "description": "K-value or AS number mismatch",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "k value mismatch",
+            "weight": 0.4
+          }
+        ]
+      },
+      {
+        "id": "H_HOLD_TIMER_EXPIRED",
+        "description": "Hold timer expired due to packet loss or delay",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "hold timer",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: routing Intent: EIGRP neighbor down. EIGRP neighbor down, eigrp adjacency fail. K-value mismatch, AS mismatch, hold timer expired.",
+    "reranker_text": "Intent routing.eigrp_neighbor_down. Summary: EIGRP neighbor adjacency is down. Distinguishing clues: EIGRP neighbor not established, AS or K-value mismatch. Negative clues: OSPF/BGP dominant, link down. Hypotheses: K-value/AS mismatch; Hold timer expired.",
+    "metadata": {
+      "domain": "routing"
+    }
+  },
+  {
+    "doc_id": "intent_routing.bgp_flap_dampened",
+    "intent_id": "routing.bgp_flap_dampened",
+    "category": "routing",
+    "metric_family": "bgp_session_stability",
+    "description": "BGP route flapping or dampened",
+    "keywords": [
+      "bgp flap",
+      "bgp dampened",
+      "bgp route flapping",
+      "bgp instability"
+    ],
+    "distinguishing_clues": [
+      "BGP route repeatedly withdrawn and re-advertised",
+      "route dampening penalty high"
+    ],
+    "negative_clues": [
+      "BGP session completely down",
+      "physical link flapping"
+    ],
+    "render_template": "BGP route {prefix} to neighbor {peer} is flapping/dampened on device {device}. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "bgp_dampening_penalty",
+        "op": ">",
+        "value": 1000,
+        "weight": 0.7
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_UNSTABLE_UNDERLYING_LINK",
+        "description": "Unstable IGP or transport link causing flaps",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "bgp flap",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_IGP_FLAP_PROPAGATION",
+        "description": "IGP route instability redistributed into BGP",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "dampening",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: routing Intent: BGP route flapping dampened. BGP flap, bgp dampened, bgp route flapping. Unstable link, IGP instability.",
+    "reranker_text": "Intent routing.bgp_flap_dampened. Summary: BGP route is flapping or dampened. Distinguishing clues: route repeatedly withdrawn, high dampening penalty. Negative clues: BGP session down, physical link flapping. Hypotheses: Unstable underlying link; IGP flap propagation.",
+    "metadata": {
+      "domain": "routing"
+    }
+  },
+  {
+    "doc_id": "intent_routing.routing_loop_detected",
+    "intent_id": "routing.routing_loop_detected",
+    "category": "routing",
+    "metric_family": "routing_loop",
+    "description": "Routing loop or TTL expiry detected",
+    "keywords": [
+      "routing loop",
+      "ttl expired",
+      "loop detected",
+      "route loop",
+      "ttl expired",
+      "hop limit reached"
+    ],
+    "distinguishing_clues": [
+      "increasing TTL drops or traceroute looping",
+      "same prefix learned with inconsistent next-hops"
+    ],
+    "negative_clues": [
+      "simple blackhole (no return traffic)",
+      "high packet loss without looping"
+    ],
+    "render_template": "Routing loop detected for prefix {prefix} on device {device} (TTL drops increasing). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "ttl_expired_rate",
+        "op": ">",
+        "value": 10,
+        "weight": 0.7
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_REDISTRIBUTION_LOOP",
+        "description": "Mutual redistribution between protocols without filters",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "redistribution loop",
+            "weight": 0.4
+          }
+        ]
+      },
+      {
+        "id": "H_STATIC_ROUTE_MISCONFIG",
+        "description": "Incorrect static route or default route creating loop",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "routing loop",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: routing Intent: Routing loop detected. Routing loop, ttl expired, loop detected. Redistribution loop, static route misconfig.",
+    "reranker_text": "Intent routing.routing_loop_detected. Summary: Routing loop causing TTL expiry or circular forwarding. Distinguishing clues: increasing TTL drops, inconsistent next-hops. Negative clues: simple blackhole, high loss without loop. Hypotheses: Mutual redistribution loop; Static route misconfiguration. Routing loop detected. Packets are looping between routers. TTL expired in transit.",
+    "metadata": {
+      "domain": "routing"
+    }
+  },
+  {
+    "doc_id": "intent_routing.blackhole_route",
+    "intent_id": "routing.blackhole_route",
+    "category": "routing",
+    "metric_family": "routing_blackhole",
+    "description": "Traffic blackholed due to missing or null route",
+    "keywords": [
+      "blackhole",
+      "traffic blackhole",
+      "route to null",
+      "silent drop"
+    ],
+    "distinguishing_clues": [
+      "packets dropped with no ICMP unreachable",
+      "route points to Null0 or missing next-hop"
+    ],
+    "negative_clues": [
+      "routing loop (TTL expiry)",
+      "high congestion or queue drops"
+    ],
+    "render_template": "Traffic to prefix {prefix} is being blackholed on device {device}. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "blackhole_drops",
+        "op": ">",
+        "value": 100,
+        "weight": 0.7
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_NULL_ROUTE_INSTALLED",
+        "description": "Static Null0 route or BGP blackhole triggered",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "null0",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_NEXT_HOP_UNREACHABLE",
+        "description": "Recursive next-hop resolution failure",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "unresolved next hop",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: routing Intent: Traffic blackhole. Blackhole, traffic blackhole, route to null. Null route, next-hop unreachable, redistribution issue.",
+    "reranker_text": "Intent routing.blackhole_route. Summary: Traffic is silently blackholed. Distinguishing clues: packets dropped with no ICMP, route to Null0. Negative clues: routing loop, congestion drops. Hypotheses: Null route installed; Next-hop unreachable.",
+    "metadata": {
+      "domain": "routing"
+    }
+  },
+  {
+    "doc_id": "intent_routing.default_route_missing",
+    "intent_id": "routing.default_route_missing",
+    "category": "routing",
+    "metric_family": "default_route",
+    "description": "Default route (0.0.0.0/0) missing or withdrawn",
+    "keywords": [
+      "default route missing",
+      "no default route",
+      "gateway of last resort"
+    ],
+    "distinguishing_clues": [
+      "no 0.0.0.0/0 in routing table",
+      "internet/external routes unreachable"
+    ],
+    "negative_clues": [
+      "specific prefixes missing but default present",
+      "internal routing issue only"
+    ],
+    "render_template": "Default route is missing on device {device}. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "default_route_present",
+        "op": "==",
+        "value": false,
+        "weight": 0.8
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_BGP_DEFAULT_WITHDRAWN",
+        "description": "BGP default route withdrawn by upstream peer",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "default route withdrawn",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_STATIC_DEFAULT_REMOVED",
+        "description": "Static default route deleted or next-hop unreachable",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "no gateway of last resort",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: routing Intent: Default route missing. Default route missing, no default route. BGP default withdrawn, static default removed.",
+    "reranker_text": "Intent routing.default_route_missing. Summary: Default route (0.0.0.0/0) is missing. Distinguishing clues: no default in routing table, external destinations unreachable. Negative clues: specific prefixes missing, internal only. Hypotheses: BGP default withdrawn; Static default removed.",
+    "metadata": {
+      "domain": "routing"
+    }
+  },
+  {
+    "doc_id": "intent_routing.route_redistribution_failure",
+    "intent_id": "routing.route_redistribution_failure",
+    "category": "routing",
+    "metric_family": "redistribution",
+    "description": "Route redistribution between protocols failing",
+    "keywords": [
+      "redistribution failure",
+      "route not redistributed",
+      "protocol redistribution"
+    ],
+    "distinguishing_clues": [
+      "routes from one protocol not appearing in another",
+      "metric or tag issues during redistribution"
+    ],
+    "negative_clues": [
+      "neighbor adjacency down in source protocol",
+      "route missing in originating protocol"
+    ],
+    "render_template": "Redistribution from {source_protocol} to {target_protocol} failing for prefix {prefix} on device {device}. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "redistributed_route_count",
+        "op": "<",
+        "value": 5,
+        "weight": 0.6
+      },
+      {
+        "metric": "expected_redistributed_routes",
+        "op": ">",
+        "value": 10,
+        "weight": 0.4
+      },
+      {
+        "metric": "redistribution_failure_rate",
+        "op": ">",
+        "value": 30,
+        "weight": 0.5
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_MISSING_ROUTE_MAP",
+        "description": "Route-map filter or missing redistribution config",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "route map",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_METRIC_MISMATCH",
+        "description": "Incorrect metric or AD causing route rejection",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "redistribution metric",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: routing Intent: Route redistribution failure. Redistribution failure, route not redistributed. Route-map missing, metric issues, mutual redistribution loop.",
+    "reranker_text": "Intent routing.route_redistribution_failure. Summary: Routes not properly redistributed between protocols. Distinguishing clues: routes from source not in target protocol. Negative clues: neighbor down, route missing in source. Hypotheses: Missing route-map; Metric/AD mismatch.",
+    "metadata": {
+      "domain": "routing"
+    }
+  },
+  {
+    "doc_id": "intent_routing.ospf_lsa_flooding",
+    "intent_id": "routing.ospf_lsa_flooding",
+    "category": "routing",
+    "metric_family": "ospf_lsa",
+    "description": "Excessive OSPF LSA flooding or database overload",
+    "keywords": [
+      "lsa flooding",
+      "ospf database overload",
+      "high lsa rate"
+    ],
+    "distinguishing_clues": [
+      "high LSA generation or flooding rate",
+      "OSPF database too large"
+    ],
+    "negative_clues": [
+      "simple neighbor down",
+      "CPU high due to other processes",
+      "Not a security incident or DDoS"
+    ],
+    "render_template": "High OSPF LSA flooding detected on device {device} (LSA rate: {lsa_rate}/sec). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "lsa_flood_rate",
+        "op": ">",
+        "value": 50,
+        "weight": 0.7
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_UNSTABLE_LINK_FLAPPING",
+        "description": "Frequent link flaps causing repeated LSA updates",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "lsa flood",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_AREA_DESIGN_ISSUE",
+        "description": "Too many routers in single area or summary issues",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "area overload",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: routing Intent: OSPF LSA flooding. LSA flooding, ospf database overload, high lsa rate. Unstable links, area design issue.",
+    "reranker_text": "Intent routing.ospf_lsa_flooding. Summary: Excessive OSPF LSA flooding or database overload. Distinguishing clues: high LSA generation rate. Negative clues: neighbor down, unrelated CPU high. Hypotheses: Unstable link flapping; Area design issue. This is an internal routing protocol (OSPF) issue. NOT a malicious security DDoS attack.",
+    "metadata": {
+      "domain": "routing"
+    }
+  },
+  {
+    "doc_id": "intent_routing.eigrp_route_flap",
+    "intent_id": "routing.eigrp_route_flap",
+    "category": "routing",
+    "metric_family": "eigrp_route_stability",
+    "description": "EIGRP route flapping or SIA (Stuck in Active)",
+    "keywords": [
+      "eigrp route flap",
+      "eigrp sia",
+      "stuck in active",
+      "eigrp query storm"
+    ],
+    "distinguishing_clues": [
+      "EIGRP routes repeatedly active/inactive",
+      "high query/reply traffic"
+    ],
+    "negative_clues": [
+      "BGP flapping dominant",
+      "physical interface down",
+      "Physical interface is stable"
+    ],
+    "render_template": "EIGRP route {prefix} flapping or SIA on device {device}. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "eigrp_route_flap_count",
+        "op": ">",
+        "value": 5,
+        "weight": 0.7
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_QUERY_STORM",
+        "description": "Query propagation issue or stuck in active",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "stuck in active",
+            "weight": 0.4
+          }
+        ]
+      },
+      {
+        "id": "H_UNSTABLE_SUCCESSOR",
+        "description": "Frequent successor changes due to link instability",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "eigrp flap",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: routing Intent: EIGRP route flap SIA. EIGRP route flap, eigrp sia, stuck in active. Query storm, unstable successor.",
+    "reranker_text": "Intent routing.eigrp_route_flap. Summary: EIGRP route flapping or Stuck in Active. Distinguishing clues: routes repeatedly changing, high query traffic. Negative clues: BGP flapping, interface down. Hypotheses: Query storm/SIA; Unstable successor. Layer 3 EIGRP protocol flapping and Stuck in Active. The physical Layer 1/2 link is stable and NOT flapping.",
+    "metadata": {
+      "domain": "routing"
+    }
+  },
+  {
+    "doc_id": "intent_performance.high_latency",
+    "intent_id": "performance.high_latency",
+    "category": "performance",
+    "metric_family": "latency_metrics",
+    "description": "High end-to-end or one-way latency",
+    "keywords": [
+      "high latency",
+      "slow response",
+      "delayed packets",
+      "rtt high"
+    ],
+    "distinguishing_clues": [
+      "latency_ms significantly above baseline",
+      "increased round-trip time affecting applications",
+      "consistent delay without high utilization"
+    ],
+    "negative_clues": [
+      "high packet loss or jitter is dominant",
+      "interface congestion with queue drops"
+    ],
+    "render_template": "High latency detected on interface {interface} / path to {destination} (latency: {latency_ms} ms). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "latency_ms",
+        "op": ">",
+        "value": 150,
+        "weight": 0.7
+      },
+      {
+        "metric": "rtt_ms",
+        "op": ">",
+        "value": 200,
+        "weight": 0.3
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_CONGESTION_DELAY",
+        "description": "Queueing delay due to congestion or insufficient bandwidth",
+        "signals": [
+          {
+            "metric": "utilization_percent",
+            "op": ">",
+            "value": 80,
+            "weight": 0.5
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "queue delay",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_LONG_PATH_ROUTING",
+        "description": "Suboptimal routing or long geographic path",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "as path long",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: performance Intent: High end-to-end latency. High latency, slow response, delayed packets, rtt high. Queueing delay, suboptimal routing, serialization delay.",
+    "reranker_text": "Intent performance.high_latency. Summary: High latency impacting application performance. Distinguishing clues: latency_ms significantly above baseline, increased round-trip time. Negative clues: high packet loss/jitter dominant, interface congestion with drops. Hypotheses: Queueing delay due to congestion; Suboptimal routing or long path.",
+    "metadata": {
+      "domain": "performance"
+    }
+  },
+  {
+    "doc_id": "intent_performance.packet_loss",
+    "intent_id": "performance.packet_loss",
+    "category": "performance",
+    "metric_family": "packet_loss_metrics",
+    "description": "Elevated packet loss rate",
+    "keywords": [
+      "packet loss",
+      "packet drop",
+      "loss rate",
+      "drops increasing"
+    ],
+    "distinguishing_clues": [
+      "packet loss percent above 1%",
+      "TCP retransmits or application timeouts increasing",
+      "random or bursty loss pattern"
+    ],
+    "negative_clues": [
+      "queue discards due to congestion (tail drop)",
+      "physical link errors (CRC) dominant",
+      "interface is UP",
+      "link is active"
+    ],
+    "render_template": "Elevated packet loss detected ({packet_loss_percent}%) on interface {interface} or path. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "packet_loss_percent",
+        "op": ">",
+        "value": 1,
+        "weight": 0.8
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_CONGESTION_DROP",
+        "description": "Congestion causing random or tail drops",
+        "signals": [
+          {
+            "metric": "out_discards",
+            "op": ">",
+            "value": 100,
+            "weight": 0.5
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "tail drop",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_LINK_ERRORS",
+        "description": "Physical layer corruption or interference",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "crc error",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: performance Intent: Elevated packet loss. Packet loss, packet drop, loss rate. Congestion drops, physical errors, TCP retransmits high.",
+    "reranker_text": "Intent performance.packet_loss. Summary: Elevated packet loss rate impacting throughput and applications. Distinguishing clues: packet loss percent >1%, TCP retransmits increasing. Negative clues: queue discards only, physical CRC dominant. Hypotheses: Congestion causing drops; Physical layer corruption. The physical interface is UP and operational. This is a performance drop issue, NOT a physical link down.",
+    "metadata": {
+      "domain": "performance"
+    }
+  },
+  {
+    "doc_id": "intent_performance.jitter_high",
+    "intent_id": "performance.jitter_high",
+    "category": "performance",
+    "metric_family": "jitter_metrics",
+    "description": "High jitter (variation in packet delay)",
+    "keywords": [
+      "high jitter",
+      "jitter variation",
+      "delay variation",
+      "voip quality poor"
+    ],
+    "distinguishing_clues": [
+      "jitter_ms above 30ms (critical for real-time apps)",
+      "variable latency causing buffering or choppy audio/video",
+      "good average latency but high variation"
+    ],
+    "negative_clues": [
+      "consistent high latency without variation",
+      "pure packet loss without delay variation"
+    ],
+    "render_template": "High jitter detected ({jitter_ms} ms) on path or interface {interface}. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "jitter_ms",
+        "op": ">",
+        "value": 30,
+        "weight": 0.8
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_CONGESTION_JITTER",
+        "description": "Variable queueing delay due to congestion",
+        "signals": [
+          {
+            "metric": "utilization_percent",
+            "op": ">",
+            "value": 75,
+            "weight": 0.6
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "variable delay",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_ROUTE_FLAPPING",
+        "description": "Unstable routing causing path changes",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "route change",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: performance Intent: High jitter delay variation. High jitter, jitter variation, delay variation, voip quality poor. Congestion jitter, route instability.",
+    "reranker_text": "Intent performance.jitter_high. Summary: High jitter (packet delay variation) affecting real-time applications. Distinguishing clues: jitter_ms >30ms, variable latency with good average. Negative clues: consistent latency, pure packet loss. Hypotheses: Variable queueing due to congestion; Unstable routing.",
+    "metadata": {
+      "domain": "performance"
+    }
+  },
+  {
+    "doc_id": "intent_performance.microburst_detected",
+    "intent_id": "performance.microburst_detected",
+    "category": "performance",
+    "metric_family": "burst_metrics",
+    "description": "Short-duration traffic microbursts causing drops",
+    "keywords": [
+      "microburst",
+      "traffic burst",
+      "short burst drop",
+      "instantaneous peak"
+    ],
+    "distinguishing_clues": [
+      "brief spikes in utilization or PPS with queue drops",
+      "drops despite average utilization being low",
+      "buffer overflow in short intervals"
+    ],
+    "negative_clues": [
+      "sustained high utilization/congestion",
+      "steady packet loss without bursts"
+    ],
+    "render_template": "Microbursts detected on interface {interface} causing intermittent drops (peak PPS: {peak_pps}). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "microburst_duration_ms",
+        "op": "<",
+        "value": 100,
+        "weight": 0.5
+      },
+      {
+        "metric": "peak_utilization",
+        "op": ">",
+        "value": 95,
+        "weight": 0.4
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_INSUFFICIENT_BUFFER",
+        "description": "Buffer size too small for burst traffic",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "microburst",
+            "weight": 0.4
+          }
+        ]
+      },
+      {
+        "id": "H_BURSTY_APPLICATION",
+        "description": "Bursty application traffic (backup, replication, etc.)",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "backup burst",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: performance Intent: Microburst detected. Microburst, traffic burst, short burst drop. Brief high PPS causing drops despite low average utilization.",
+    "reranker_text": "Intent performance.microburst_detected. Summary: Short-duration microbursts causing packet drops. Distinguishing clues: brief spikes with drops, low average utilization. Negative clues: sustained congestion, steady loss. Hypotheses: Insufficient buffer; Bursty application traffic.",
+    "metadata": {
+      "domain": "performance"
+    }
+  },
+  {
+    "doc_id": "intent_performance.qos_misclassification",
+    "intent_id": "performance.qos_misclassification",
+    "category": "performance",
+    "metric_family": "qos_metrics",
+    "description": "QoS misclassification or policy failure",
+    "keywords": [
+      "qos misclassification",
+      "qos not working",
+      "wrong class",
+      "voice in best effort"
+    ],
+    "distinguishing_clues": [
+      "critical traffic (VoIP/video) in default/best-effort queue",
+      "high drops in priority queue or low drops in data queue",
+      "DSCP/ToS markings not honored"
+    ],
+    "negative_clues": [
+      "no QoS policy applied at all",
+      "general congestion without classification issues"
+    ],
+    "render_template": "QoS misclassification detected \u2013 critical traffic dropped on interface {interface}. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "voice_queue_drop",
+        "op": ">",
+        "value": 50,
+        "weight": 0.6
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_MARKING_ERROR",
+        "description": "Incorrect DSCP marking at source or ingress",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "dscp mismatch",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_POLICY_MISCONFIG",
+        "description": "QoS policy or class-map not matching traffic correctly",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "class map",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: performance Intent: QoS misclassification. Qos misclassification, qos not working, wrong class. Critical traffic in default queue, marking errors.",
+    "reranker_text": "Intent performance.qos_misclassification. Summary: QoS policy failing to classify or prioritize traffic correctly. Distinguishing clues: critical traffic in best-effort queue, unexpected queue drops. Negative clues: no QoS applied, general congestion. Hypotheses: Incorrect DSCP marking; Policy or class-map misconfig.",
+    "metadata": {
+      "domain": "performance"
+    }
+  },
+  {
+    "doc_id": "intent_performance.buffer_bloat",
+    "intent_id": "performance.buffer_bloat",
+    "category": "performance",
+    "metric_family": "buffer_metrics",
+    "description": "Excessive buffering causing high latency (bufferbloat)",
+    "keywords": [
+      "buffer bloat",
+      "bufferbloat",
+      "excessive buffering",
+      "high latency low loss"
+    ],
+    "distinguishing_clues": [
+      "high latency with very low packet loss",
+      "large standing queues",
+      "poor interactive performance"
+    ],
+    "negative_clues": [
+      "high packet loss with low latency",
+      "queue drops due to full buffers"
+    ],
+    "render_template": "Bufferbloat detected \u2013 high latency with low loss on interface {interface} (latency: {latency_ms} ms). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "latency_ms",
+        "op": ">",
+        "value": 200,
+        "weight": 0.6
+      },
+      {
+        "metric": "packet_loss_percent",
+        "op": "<",
+        "value": 0.5,
+        "weight": 0.3
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_OVERSIZED_BUFFERS",
+        "description": "Large device buffers without active queue management",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "buffer bloat",
+            "weight": 0.4
+          }
+        ]
+      },
+      {
+        "id": "H_NO_AQM",
+        "description": "Absence of CoDel/FQ-CoDel or RED",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "no aqm",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: performance Intent: Bufferbloat excessive buffering. Buffer bloat, bufferbloat, high latency low loss. Large standing queues, poor interactive apps.",
+    "reranker_text": "Intent performance.buffer_bloat. Summary: Excessive buffering leading to high latency with low loss. Distinguishing clues: high latency + very low packet loss, large queues. Negative clues: high loss with low latency, queue drops. Hypotheses: Oversized buffers without AQM; No active queue management.",
+    "metadata": {
+      "domain": "performance"
+    }
+  },
+  {
+    "doc_id": "intent_performance.asymmetric_routing",
+    "intent_id": "performance.asymmetric_routing",
+    "category": "performance",
+    "metric_family": "routing_asymmetry",
+    "description": "Asymmetric routing causing performance issues",
+    "keywords": [
+      "asymmetric routing",
+      "return path different",
+      "asym routing",
+      "path asymmetry",
+      "out-of-state",
+      "tcp state bypass",
+      "firewall drop"
+    ],
+    "distinguishing_clues": [
+      "different forward and return paths observed",
+      "stateful devices (firewalls) dropping return traffic",
+      "higher latency or loss on one direction"
+    ],
+    "negative_clues": [
+      "symmetric path with general congestion",
+      "routing loop"
+    ],
+    "render_template": "Asymmetric routing detected for flow to {destination} (forward/return paths differ). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "path_asymmetry_detected",
+        "op": "==",
+        "value": true,
+        "weight": 0.8
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_ECMP_IMBALANCE",
+        "description": "ECMP load balancing with uneven paths",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "ecmp",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_POLICY_ROUTING",
+        "description": "PBR or policy-based routing causing asymmetry",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "policy route",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: performance Intent: Asymmetric routing. Asymmetric routing, return path different, asym routing. Stateful firewall drops, one-way performance issues.",
+    "reranker_text": "Intent performance.asymmetric_routing. Summary: Asymmetric forward/return paths causing performance degradation. Distinguishing clues: different paths observed, stateful device issues. Negative clues: symmetric congestion, routing loop. Hypotheses: ECMP imbalance; Policy-based routing. TCP state mismatch due to asymmetric paths (e.g. firewall drops). The physical interfaces are perfectly healthy without errors.",
+    "metadata": {
+      "domain": "performance"
+    }
+  },
+  {
+    "doc_id": "intent_performance.mtu_fragmentation",
+    "intent_id": "performance.mtu_fragmentation",
+    "category": "performance",
+    "metric_family": "mtu_metrics",
+    "description": "MTU mismatch causing fragmentation or blackholing",
+    "keywords": [
+      "mtu mismatch",
+      "fragmentation",
+      "df bit drop",
+      "pmtud failure",
+      "jumbo frames",
+      "ipsec overhead",
+      "df bit"
+    ],
+    "distinguishing_clues": [
+      "high fragmentation rate or ICMP fragmentation needed",
+      "PMTUD blackhole (packets dropped with DF bit set)",
+      "large packets failing while small ones succeed"
+    ],
+    "negative_clues": [
+      "general packet loss across all sizes",
+      "link down or congestion"
+    ],
+    "render_template": "MTU mismatch or fragmentation issue detected (large packets affected). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "fragmentation_rate",
+        "op": ">",
+        "value": 10,
+        "weight": 0.6
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_PATH_MTU_MISMATCH",
+        "description": "Different MTU along the path",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "mtu mismatch",
+            "weight": 0.4
+          }
+        ]
+      },
+      {
+        "id": "H_PMTUD_BLACKHOLE",
+        "description": "Path MTU Discovery failing (ICMP blocked)",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "pmtud failure",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: performance Intent: MTU mismatch fragmentation. MTU mismatch, fragmentation, df bit drop, pmtud failure. Large packets failing, ICMP needed.",
+    "reranker_text": "Intent performance.mtu_fragmentation. Summary: MTU mismatch leading to fragmentation or blackholing. Distinguishing clues: high fragmentation or PMTUD issues, large packets fail. Negative clues: uniform packet loss, congestion. Hypotheses: Path MTU mismatch; PMTUD blackhole. Packet size exceeds MTU. Jumbo frames failing. The interface itself is healthy without physical errors.",
+    "metadata": {
+      "domain": "performance"
+    }
+  },
+  {
+    "doc_id": "intent_performance.tcp_retransmits_high",
+    "intent_id": "performance.tcp_retransmits_high",
+    "category": "performance",
+    "metric_family": "tcp_metrics",
+    "description": "High TCP retransmission rate",
+    "keywords": [
+      "tcp retransmits",
+      "retransmission high",
+      "tcp performance poor"
+    ],
+    "distinguishing_clues": [
+      "high percentage of TCP segments retransmitted",
+      "application slowdown due to retransmission timeout",
+      "correlates with packet loss or jitter"
+    ],
+    "negative_clues": [
+      "UDP-based applications affected similarly",
+      "pure application-layer issue"
+    ],
+    "render_template": "High TCP retransmits detected ({tcp_retransmit_percent}%) impacting throughput. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "tcp_retransmit_percent",
+        "op": ">",
+        "value": 5,
+        "weight": 0.8
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_UNDERLYING_PACKET_LOSS",
+        "description": "Underlying packet loss triggering retransmits",
+        "signals": [
+          {
+            "metric": "packet_loss_percent",
+            "op": ">",
+            "value": 1,
+            "weight": 0.6
+          }
+        ],
+        "log_patterns": [
+          {
+            "keyword": "retransmit",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_HIGH_LATENCY_RTO",
+        "description": "High latency increasing retransmission timeout",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "rto",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: performance Intent: High TCP retransmits. TCP retransmits, retransmission high. Packet loss triggering TCP recovery, high latency RTO.",
+    "reranker_text": "Intent performance.tcp_retransmits_high. Summary: High TCP retransmission rate reducing goodput. Distinguishing clues: high % of segments retransmitted, application slowdown. Negative clues: UDP apps affected, pure app issue. Hypotheses: Underlying packet loss; High latency increasing RTO.",
+    "metadata": {
+      "domain": "performance"
+    }
+  },
+  {
+    "doc_id": "intent_performance.application_slow",
+    "intent_id": "performance.application_slow",
+    "category": "performance",
+    "metric_family": "application_performance",
+    "description": "General slow application performance over network",
+    "keywords": [
+      "application slow",
+      "slow app",
+      "poor user experience",
+      "throughput low",
+      "application timeout",
+      "slow loading"
+    ],
+    "distinguishing_clues": [
+      "multiple performance metrics degraded (latency/loss/jitter)",
+      "application-specific slowdown with normal infrastructure",
+      "user-reported slowness"
+    ],
+    "negative_clues": [
+      "single metric dominant (e.g., only high CPU)",
+      "server-side resource exhaustion"
+    ],
+    "render_template": "Application performance degraded (response time: {app_response_time_ms} ms). Top hypothesis: {top_hypothesis} (score={prior}).",
+    "signals": [
+      {
+        "metric": "app_response_time_ms",
+        "op": ">",
+        "value": 500,
+        "weight": 0.6
+      }
+    ],
+    "hypotheses": [
+      {
+        "id": "H_COMPOSITE_NETWORK_ISSUE",
+        "description": "Combination of latency, loss, or jitter",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "composite performance",
+            "weight": 0.3
+          }
+        ]
+      },
+      {
+        "id": "H_SERVER_NETWORK_HANDOFF",
+        "description": "Issue at server NIC or last-mile link",
+        "signals": [],
+        "log_patterns": [
+          {
+            "keyword": "server link",
+            "weight": 0.3
+          }
+        ]
+      }
+    ],
+    "retrieval_text": "Category: performance Intent: General slow application performance. Application slow, slow app, poor user experience, throughput low. Composite network degradation.",
+    "reranker_text": "Intent performance.application_slow. Summary: Overall slow application performance over the network. Distinguishing clues: multiple metrics degraded, user-reported slowness. Negative clues: single metric dominant, server resource issue. Hypotheses: Combination of network issues; Server-network handoff problem. Application layer latency and throughput issues. NOT caused by physical layer interface CRC or input errors.",
+    "metadata": {
+      "domain": "performance"
+    }
+  }
+]

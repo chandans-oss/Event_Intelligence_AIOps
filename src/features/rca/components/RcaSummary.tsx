@@ -12,7 +12,7 @@ interface RCASummaryProps {
 
 export function RCASummary({ data, confidence = 0.95 }: RCASummaryProps) {
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             {/* Root Cause Description */}
             <Card>
                 <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
@@ -46,50 +46,6 @@ export function RCASummary({ data, confidence = 0.95 }: RCASummaryProps) {
                 </CardContent>
             </Card>
 
-
-
-
-            {/* Timeline */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-base">Incident Timeline</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="relative flex items-start justify-between pt-2 px-2">
-                        {/* Connecting Line */}
-                        <div className="absolute top-[13px] left-8 right-8 h-[2px] bg-primary/30" />
-
-                        <div className="flex flex-col items-center text-center space-y-2 relative px-2">
-                            <div className="h-3 w-3 rounded-full bg-muted border border-border ring-4 ring-card" />
-                            <div>
-                                <p className="text-sm font-medium">Issue Started</p>
-                                <p className="text-xs text-muted-foreground font-mono">14:00:00</p>
-                            </div>
-                        </div>
-                        <div className="flex flex-col items-center text-center space-y-2 relative px-2">
-                            <div className="h-3 w-3 rounded-full bg-orange-500 border border-border ring-4 ring-card" />
-                            <div>
-                                <p className="text-sm font-medium">Detection</p>
-                                <p className="text-xs text-muted-foreground font-mono">+2m 15s</p>
-                            </div>
-                        </div>
-                        <div className="flex flex-col items-center text-center space-y-2 relative px-2">
-                            <div className="h-3 w-3 rounded-full bg-primary border border-border ring-4 ring-card" />
-                            <div>
-                                <p className="text-sm font-medium">RCA Done</p>
-                                <p className="text-xs text-muted-foreground font-mono">+30s</p>
-                            </div>
-                        </div>
-                        <div className="flex flex-col items-center text-center space-y-2 relative px-2">
-                            <div className="h-3 w-3 rounded-full bg-muted border border-border animate-pulse ring-4 ring-card" />
-                            <div>
-                                <p className="text-sm font-medium">Resolution</p>
-                                <p className="text-xs text-muted-foreground font-mono">14:45:00</p>
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
 
 
         </div>

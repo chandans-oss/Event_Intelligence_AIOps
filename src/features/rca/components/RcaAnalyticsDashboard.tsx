@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Brain, Zap, AlertTriangle, ArrowRight, Activity,
   Database, GitBranch, Target, BarChart2, ShieldAlert,
-  ArrowLeft, X, Wrench, Cpu, BrainCircuit
+  ArrowLeft, X, Wrench, Cpu, BrainCircuit, Clock
 } from 'lucide-react';
 import { ClusterSpecificData, getProbableCauses, ProbableCause } from '@/features/rca/data/clusterData';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card';
@@ -51,18 +51,18 @@ export function RcaAnalyticsDashboard({ data, onViewDetailedRCA, onBack, onClose
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#f8fafc] dark:bg-slate-950/20">
+    <div className="flex flex-col h-full bg-background/50">
       {/* Probable Root Causes Section */}
-      <div className="p-6 space-y-6">
+      <div className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-4 mb-2">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center border border-blue-200 dark:border-blue-800">
-              <Cpu className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+              <Cpu className="h-4 w-4 text-primary" />
             </div>
-            <h2 className="text-[15px] font-bold text-slate-900 dark:text-slate-100 tracking-tight font-sans">Probable Root Causes</h2>
+            <h2 className="text-[15px] font-bold text-foreground tracking-tight font-sans">Probable Root Causes</h2>
           </div>
 
-          <Button 
+          <Button
             onClick={onViewDetailedRCA}
             className="h-9 bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-bold px-4 rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
@@ -72,80 +72,92 @@ export function RcaAnalyticsDashboard({ data, onViewDetailedRCA, onBack, onClose
           </Button>
         </div>
 
-        {/* Main Hypothesis Card */}
-        <div className="max-w-4xl">
-          <MainHypothesisCard
-            cause={mainCause}
-            remedyTitle={data.remedyTitle}
-            isSelected={selectedCauseIndex === 0}
-            onClick={() => setSelectedCauseIndex(0)}
-            onRemediate={(e) => handleRemediate(e, 0)}
-          />
-        </div>
+        <div className="flex flex-row gap-6 items-start">
+          {/* Left: Main Selected Cause Details */}
+          <div className="flex-[2.5] h-full min-h-[300px]">
+            <MainHypothesisCard
+              cause={selectedCause}
+              index={selectedCauseIndex}
+              remedyTitle={data.remedyTitle}
+              onRemediate={(e) => handleRemediate(e, selectedCauseIndex)}
+            />
+          </div>
 
-        {/* Alternative Possibilities */}
-        {alternativeCauses.length > 0 && (
-          <div className="space-y-6">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 font-sans px-1">Alternative Possibilities</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {alternativeCauses.map((cause, idx) => (
+          {/* Right: Scrollable Cause Sidebar */}
+          <div className="flex-[1] h-[320px] flex flex-col">
+            <div className="flex items-center justify-between mb-4 shrink-0">
+              <h3 className="text-[13px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Root Causes</h3>
+              <Badge variant="secondary" className="text-[10px] bg-slate-100 dark:bg-slate-800">{causes.length} Found</Badge>
+            </div>
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
+              {causes.map((cause, idx) => (
                 <AlternativeHypothesisCard
                   key={cause.id}
                   cause={cause}
-                  isSelected={selectedCauseIndex === idx + 1}
-                  onClick={() => setSelectedCauseIndex(idx + 1)}
-                  onRemediate={(e) => handleRemediate(e, idx + 1)}
+                  index={idx}
+                  isSelected={selectedCauseIndex === idx}
+                  onClick={() => setSelectedCauseIndex(idx)}
                 />
               ))}
             </div>
           </div>
-        )}
-
-        {/* Tab Navigation Section */}
-        <div className="bg-transparent border-b border-slate-200 dark:border-border/50 pt-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="h-12 w-full bg-transparent p-0 flex items-center justify-start gap-0">
-              {tabs.map((tab) => (
-                <TabsTrigger
-                  key={tab.id}
-                  value={tab.id}
-                  className={cn(
-                    "relative h-12 px-6 flex items-center justify-center gap-2.5 rounded-none border-b-2 border-transparent bg-transparent transition-all duration-300 text-slate-500",
-                    "data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-bold data-[state=active]:bg-white/50 dark:data-[state=active]:bg-white/5",
-                    "hover:text-slate-800 dark:hover:text-foreground/80"
-                  )}
-                >
-                  <tab.icon className={cn(
-                    "h-3.5 w-3.5",
-                    activeTab === tab.id ? "opacity-100" : "opacity-50"
-                  )} />
-                  <span className="text-[11px] font-bold uppercase tracking-wider">{tab.label}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
         </div>
 
-        {/* Tab Content */}
-        <div className="bg-white dark:bg-card border border-slate-200 dark:border-border shadow-sm rounded-xl overflow-hidden min-h-[400px]">
-          <div className="p-6">
-            {activeTab === 'summary' && (
-              <RCASummary
-                data={{
-                  ...data,
-                  rcaSummary: selectedCause.description,
-                  rcaMetadata: {
-                    ...data.rcaMetadata,
-                    severity: selectedCause.severity
-                  }
-                }}
-                confidence={selectedCause.confidence}
-              />
-            )}
-            {activeTab === 'evidence' && <RCADataEvidence data={data} />}
-            {activeTab === 'events' && <RCACorrelatedEvents data={data} />}
-            {activeTab === 'impact' && <RCAImpactMap data={data} />}
-            {activeTab === 'analytics' && <RCAAnalytics data={data} />}
+        <div className="flex flex-row gap-6">
+          {/* Bottom Left: Diagnostics Tabs */}
+          <div className="flex-[3]">
+            {/* Tab Navigation Section */}
+            <div className="bg-transparent border-b border-slate-200 dark:border-border/50">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="h-10 w-full bg-transparent p-0 flex items-center justify-start gap-0">
+                  {tabs.map((tab) => (
+                    <TabsTrigger
+                      key={tab.id}
+                      value={tab.id}
+                      className={cn(
+                        "relative h-10 px-5 flex items-center justify-center gap-2 rounded-none border-b-2 border-transparent bg-transparent transition-all",
+                        "text-muted-foreground hover:text-foreground",
+                        "data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-bold"
+                      )}
+                    >
+                      <tab.icon className={cn(
+                        "h-3.5 w-3.5",
+                        activeTab === tab.id ? "opacity-100" : "opacity-70"
+                      )} />
+                      <span className="text-[11px] font-bold uppercase tracking-wider">{tab.label}</span>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            </div>
+
+            {/* Tab Content */}
+            <div className="bg-white dark:bg-card border border-slate-200 dark:border-border shadow-sm rounded-xl overflow-hidden min-h-[300px] mt-1">
+              <div className="p-4">
+                {activeTab === 'summary' && (
+                  <RCASummary
+                    data={{
+                      ...data,
+                      rcaSummary: selectedCause.description,
+                      rcaMetadata: {
+                        ...data.rcaMetadata,
+                        severity: selectedCause.severity
+                      }
+                    }}
+                    confidence={selectedCause.confidence}
+                  />
+                )}
+                {activeTab === 'evidence' && <RCADataEvidence data={data} />}
+                {activeTab === 'events' && <RCACorrelatedEvents data={data} />}
+                {activeTab === 'impact' && <RCAImpactMap data={data} />}
+                {activeTab === 'analytics' && <RCAAnalytics data={data} />}
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Right: Incident Lifecycle Journal */}
+          <div className="flex-[1] h-fit">
+            <IncidentLifecycle data={data} />
           </div>
         </div>
       </div>
@@ -171,79 +183,85 @@ export function RcaAnalyticsDashboard({ data, onViewDetailedRCA, onBack, onClose
 
 interface MainHypothesisCardProps {
   cause: ProbableCause;
+  index: number;
   remedyTitle?: string;
-  isSelected: boolean;
-  onClick: () => void;
   onRemediate: (e: React.MouseEvent) => void;
 }
 
-function MainHypothesisCard({ cause, remedyTitle, isSelected, onClick, onRemediate }: MainHypothesisCardProps) {
+function MainHypothesisCard({ cause, index, remedyTitle, onRemediate }: MainHypothesisCardProps) {
   const percentage = Math.round(cause.confidence * 100);
+  const radius = 38;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percentage / 100) * circumference;
+
+  const getConfidenceTag = (idx: number) => {
+    switch (idx) {
+      case 0: return { label: 'AI High Confidence', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' };
+      case 1: return { label: 'AI Medium Confidence', color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' };
+      default: return { label: 'AI Low Confidence', color: 'bg-muted text-muted-foreground border-border' };
+    }
+  };
+
+  const tag = getConfidenceTag(index);
 
   return (
-    <Card
-      onClick={onClick}
-      className={cn(
-        "relative overflow-hidden transition-all cursor-pointer border-2 shadow-lg rounded-2xl p-6",
-        isSelected
-          ? "border-blue-500 bg-white dark:bg-slate-900 ring-2 ring-blue-500/5"
-          : "border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-card/50 hover:border-slate-200 shadow-sm"
-      )}
-    >
-      <div className="flex flex-col gap-6">
-        <div className="flex items-start justify-between">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100 font-sans">
-                {cause.title}
-              </h1>
-              {percentage > 80 && (
-                <Badge className="bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm">
-                  <Zap className="h-2.5 w-2.5 fill-blue-600" /> AI High Confidence
-                </Badge>
-              )}
-            </div>
-            <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl font-medium">
-              {cause.description}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-between h-24">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Signature Strength</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{cause.confidence.toFixed(2)}</span>
-            </div>
-            <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden mt-3">
-              <div
-                className="bg-blue-500 h-full rounded-full transition-all duration-1000"
-                style={{ width: `${percentage}%` }}
-              />
-            </div>
+    <Card className="relative overflow-hidden h-full border-2 shadow-lg rounded-2xl p-5 bg-card border-primary/10">
+      <div className="flex flex-col h-full justify-between gap-4">
+        <div className="space-y-3">
+          <div className="flex items-start justify-between">
+            <h1 className="text-xl font-bold tracking-tight text-foreground font-sans pr-4">
+              {cause.title}
+            </h1>
+            <Badge variant="outline" className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm whitespace-nowrap", tag.color)}>
+              <Zap className="h-2.5 w-2.5 fill-current" /> {tag.label}
+            </Badge>
           </div>
 
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700/50 flex items-center gap-4 h-24">
-            <div className="h-12 w-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
-              <Activity className="h-5 w-5" />
+          <div className="flex items-center gap-8 py-2">
+            <div className="flex-[2]">
+              <p className="text-[13px] text-muted-foreground leading-relaxed font-medium">
+                {cause.description}
+              </p>
             </div>
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 block mb-0.5">Occurrences</span>
-              <span className="text-xl font-black text-slate-900 dark:text-slate-100">{cause.occurrenceCount || 1}</span>
+
+            {/* SVG Circular Progress Display */}
+            <div className="flex-[1] flex flex-col items-center justify-center gap-2">
+              <div className="relative h-24 w-24 flex items-center justify-center">
+                <svg className="h-full w-full -rotate-90">
+                  <circle
+                    cx="48"
+                    cy="48"
+                    r={radius}
+                    fill="transparent"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    className="text-muted/30"
+                  />
+                  <circle
+                    cx="48"
+                    cy="48"
+                    r={radius}
+                    fill="transparent"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={offset}
+                    strokeLinecap="round"
+                    className="text-primary transition-all duration-1000 ease-out"
+                  />
+                </svg>
+                <span className="absolute text-2xl font-black text-foreground">{percentage}%</span>
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Confidence Score</span>
             </div>
           </div>
         </div>
 
         <Button
           onClick={onRemediate}
-          className="w-full h-14 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.01] active:scale-[0.99]"
+          className="w-full h-12 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
         >
-          <div className="flex items-center gap-2">
-             Execute AI Remediation
-          </div>
-          {remedyTitle && (
-            <span className="text-[10px] font-medium opacity-80">(Recommended: {remedyTitle})</span>
-          )}
+          Remediation <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
     </Card>
@@ -252,50 +270,107 @@ function MainHypothesisCard({ cause, remedyTitle, isSelected, onClick, onRemedia
 
 interface AlternativeHypothesisCardProps {
   cause: ProbableCause;
+  index: number;
   isSelected: boolean;
   onClick: () => void;
-  onRemediate: (e: React.MouseEvent) => void;
 }
 
-function AlternativeHypothesisCard({ cause, isSelected, onClick, onRemediate }: AlternativeHypothesisCardProps) {
+function AlternativeHypothesisCard({ cause, index, isSelected, onClick }: AlternativeHypothesisCardProps) {
   const percentage = Math.round(cause.confidence * 100);
+
+  const getConfidenceTag = (idx: number) => {
+    switch (idx) {
+      case 0: return { label: 'AI HIGH', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' };
+      case 1: return { label: 'AI MEDIUM', color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' };
+      default: return { label: 'AI LOW', color: 'bg-muted text-muted-foreground border-border' };
+    }
+  };
+
+  const tag = getConfidenceTag(index);
 
   return (
     <Card
       onClick={onClick}
       className={cn(
-        "group relative overflow-hidden transition-all cursor-pointer border shadow-sm rounded-xl flex flex-col",
+        "group relative overflow-hidden transition-all cursor-pointer border shadow-sm rounded-xl flex flex-col p-3",
         isSelected
-          ? "border-blue-500 ring-2 ring-blue-500/5 bg-white dark:bg-slate-900"
-          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-card hover:border-slate-300 hover:shadow-md"
+          ? "border-primary bg-primary/5 ring-2 ring-primary/10"
+          : "border-border bg-card hover:border-primary/30"
       )}
     >
-      <div className="p-4 flex-1 flex flex-col">
-        <div className="flex items-start justify-between mb-3">
-          <h4 className="text-[13px] font-bold text-slate-900 dark:text-slate-100 leading-tight group-hover:text-blue-600 transition-colors pr-2 flex-1">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-start justify-between">
+          <h4 className="text-[11px] font-bold text-foreground leading-tight pr-2 line-clamp-2">
             {cause.title}
           </h4>
-          <div className="text-right shrink-0">
-            <span className="text-[11px] font-bold text-slate-400 block uppercase tracking-tighter mb-0.5">{percentage}%</span>
-            <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 block uppercase tracking-widest">Match</span>
+          <Badge className={cn("px-1.5 py-0 rounded text-[8px] font-black uppercase tracking-tighter whitespace-nowrap", tag.color)}>
+            {tag.label}
+          </Badge>
+        </div>
+        <div className="flex items-center justify-between mt-1">
+          <div className="flex items-center gap-1.5 w-full mr-4">
+            <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
+              <div className="h-full bg-primary" style={{ width: `${percentage}%` }} />
+            </div>
+            <span className="text-[10px] font-bold text-muted-foreground">{percentage}%</span>
           </div>
         </div>
-
-        <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 line-clamp-3 mb-4 font-medium">
-          {cause.description}
-        </p>
-
-        <div className="mt-auto pt-3 border-t border-slate-50 dark:border-slate-800/50">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onRemediate}
-            className="w-full h-9 text-[10px] font-black uppercase tracking-widest border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 dark:border-slate-700 rounded-lg transition-all"
-          >
-            Remediate
-          </Button>
-        </div>
       </div>
+    </Card>
+  );
+}
+
+function IncidentLifecycle({ data }: { data: ClusterSpecificData }) {
+  return (
+    <Card className="bg-card border-border shadow-sm rounded-xl overflow-hidden h-fit">
+      <CardHeader className="py-3 px-4 border-b border-border/50">
+        <CardTitle className="text-[12px] font-bold uppercase tracking-wider flex items-center gap-2">
+          <Clock className="h-3.5 w-3.5 text-primary" /> Incident Lifecycle
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-4">
+        <div className="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100 dark:before:bg-slate-800">
+          <div className="relative pl-8">
+            <div className="absolute left-0 top-1 h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-2 border-white dark:border-slate-950 z-10">
+              <div className="h-2 w-2 rounded-full bg-slate-400" />
+            </div>
+            <div>
+              <p className="text-[12px] font-bold text-foreground">Issue Started</p>
+              <p className="text-[10px] text-muted-foreground font-mono mt-0.5">14:00:00</p>
+            </div>
+          </div>
+
+          <div className="relative pl-8">
+            <div className="absolute left-0 top-1 h-6 w-6 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center border-2 border-white dark:border-slate-950 z-10">
+              <div className="h-2 w-2 rounded-full bg-orange-500" />
+            </div>
+            <div>
+              <p className="text-[12px] font-bold text-foreground">Detection</p>
+              <p className="text-[10px] text-muted-foreground font-mono mt-0.5">+2m 15s</p>
+            </div>
+          </div>
+
+          <div className="relative pl-8">
+            <div className="absolute left-0 top-1 h-6 w-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center border-2 border-white dark:border-slate-950 z-10">
+              <div className="h-2 w-2 rounded-full bg-blue-500" />
+            </div>
+            <div>
+              <p className="text-[12px] font-bold text-foreground">RCA Done</p>
+              <p className="text-[10px] text-muted-foreground font-mono mt-0.5">+30s</p>
+            </div>
+          </div>
+
+          <div className="relative pl-8">
+            <div className="absolute left-0 top-1 h-6 w-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center border-2 border-white dark:border-slate-950 z-10">
+              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+            <div>
+              <p className="text-[12px] font-bold text-foreground">Resolution</p>
+              <p className="text-[10px] text-muted-foreground font-mono mt-0.5">14:45:00</p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
     </Card>
   );
 }

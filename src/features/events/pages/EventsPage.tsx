@@ -368,7 +368,6 @@ export default function Events() {
                 <th className="px-4 py-3 w-10"><input type="checkbox" className="rounded border-border bg-background" /></th>
                 <th className="px-4 py-3">Issue</th>
                 <th className="px-4 py-3">Severity</th>
-                <th className="px-4 py-3">RCA/Remedy</th>
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Alarm ID</th>
                 <th className="px-4 py-3">Node</th>
@@ -435,40 +434,54 @@ export default function Events() {
                           {event.severity === 'Major' ? <ArrowUpCircle className="h-3 w-3" /> : <div className="h-2 w-2 rounded-full bg-current" />}
                           {event.severity}
                         </Badge>
-                        {event.clusterId && (
-                          <div className="flex items-center gap-1 text-[10px] font-black text-muted-foreground/50 border border-border/30 rounded px-1.5 py-0.5 bg-muted/20">
-                            <Clock className="h-2.5 w-2.5" />
-                            {(parseInt(event.event_id.replace(/\D/g, '')) || 15) % 60}
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1.5">
+                          {event.clusterId && (
+                            <div className="flex items-center gap-1 text-[10px] font-black text-muted-foreground/50 border border-border/30 rounded px-1.5 py-0.5 bg-muted/20">
+                              <Clock className="h-2.5 w-2.5" />
+                              {(parseInt(event.event_id.replace(/\D/g, '')) || 15) % 60}
+                            </div>
+                          )}
+                          
+                          {/* AI Analytics Icons Appended Beside Count */}
+                          {event.label === 'Root' && (
+                            <div className="flex items-center gap-1">
+                              {event.aiStatus === 'Only RCA' && (
+                                <TooltipProvider>
+                                  <Tooltip delayDuration={0}>
+                                    <TooltipTrigger asChild>
+                                      <Brain className="h-3.5 w-3.5 text-purple-500" />
+                                    </TooltipTrigger>
+                                    <TooltipContent className="font-bold text-[10px]">RCA Identified</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              {event.aiStatus === 'RCA with Remediation' && (
+                                <TooltipProvider>
+                                  <Tooltip delayDuration={0}>
+                                    <TooltipTrigger asChild>
+                                      <Ticket className="h-3.5 w-3.5 text-blue-500" />
+                                    </TooltipTrigger>
+                                    <TooltipContent className="font-bold text-[10px]">Remediation Available</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              {event.aiStatus === 'RCA with Auto Remediation' && (
+                                <TooltipProvider>
+                                  <Tooltip delayDuration={0}>
+                                    <TooltipTrigger asChild>
+                                      <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+                                    </TooltipTrigger>
+                                    <TooltipContent className="font-bold text-[10px]">Auto-Remediation Active</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
 
-                    {/* RCA/REMEDY COLUMN (DOTS) */}
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-1">
-                        {event.label === 'Root' && [1, 2, 3].map((dotIndex) => {
-                          const status = event.aiStatus;
-                          let isActive = false;
-                          if (dotIndex === 1 && (status === 'Only RCA' || status === 'RCA with Remediation' || status === 'RCA with Auto Remediation')) isActive = true;
-                          if (dotIndex === 2 && (status === 'RCA with Remediation' || status === 'RCA with Auto Remediation')) isActive = true;
-                          if (dotIndex === 3 && status === 'RCA with Auto Remediation') isActive = true;
-                          
-                          return (
-                            <div 
-                              key={dotIndex}
-                              className={cn(
-                                "h-2.5 w-2.5 rounded-full transition-all duration-300 shadow-sm",
-                                isActive ? "bg-emerald-500 shadow-emerald-500/20" : "bg-muted/30 border border-border/50"
-                              )}
-                            />
-                          );
-                        })}
-                        {event.label !== 'Root' && (
-                          <div className="h-1 w-4 bg-muted/20 rounded-full" />
-                        )}
-                      </div>
-                    </td>
+
 
                     {/* DATE COLUMN */}
                     <td className="px-4 py-4">

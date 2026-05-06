@@ -7,7 +7,7 @@ import {
   Ticket, LayoutDashboard, Workflow, GitBranch, Target, ShieldCheck,
   ChevronRight, BookOpen, Zap, MoreHorizontal, ExternalLink as ExternalLinkIcon,
   Calendar, MoreVertical, List, ChevronDown, ChevronUp, Router,
-  BrainCircuit
+  BrainCircuit, Sparkles, ThumbsUp, Trash2
 } from 'lucide-react';
 import { AreaChart as AreaChartIcon } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
@@ -52,7 +52,7 @@ export default function EventAnalysisPage() {
   const location = useLocation();
   const [activeMainTab, setActiveMainTab] = useState<'details' | 'aiops'>('details');
   const [isRcaFlowSidebarOpen, setIsRcaFlowSidebarOpen] = useState(false);
-  
+
   const handleViewDetailedRCA = useCallback(() => {
     setIsRcaFlowSidebarOpen(true);
   }, []);
@@ -87,127 +87,148 @@ export default function EventAnalysisPage() {
   return (
     <MainLayout>
       <div className="flex flex-col h-full bg-background overflow-hidden text-foreground">
-        {/* Navigation Tabs */}
-        <div className="bg-card px-6 border-b border-border flex items-center justify-between shadow-sm">
-          <div className="flex items-center gap-8">
-            <button
-              onClick={() => setActiveMainTab('details')}
-              className={cn(
-                "py-3 text-[13px] font-bold border-b-2 transition-colors flex items-center gap-2",
-                activeMainTab === 'details' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
+        {/* Header: Back Button, Tabs and Action Badges */}
+        <div className="bg-background border-b border-border flex items-center justify-between px-6 shrink-0 h-14 overflow-hidden">
+          <div className="flex items-center gap-3 h-full">
+            {/* Separate Back Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/events')}
+              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-all"
             >
-              <Info className="h-4 w-4" />
-              Event Details
-            </button>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
 
-            <button
-              onClick={() => {
-                setActiveMainTab('aiops');
-                setIsRcaFlowSidebarOpen(false);
-              }}
-              className={cn(
-                "py-3 text-[13px] font-bold border-b-2 transition-colors flex items-center gap-2",
-                activeMainTab === 'aiops' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <BrainCircuit className="h-4 w-4" />
-              AI Analytics
-            </button>
+            <div className="flex items-center gap-4 h-full">
+              <button
+                onClick={() => setActiveMainTab('details')}
+                className={cn(
+                  "h-full px-2 text-[13px] font-bold transition-all border-b-2 flex items-center gap-2 relative",
+                  activeMainTab === 'details'
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Event Details
+                <Info className="h-3.5 w-3.5 opacity-50" />
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveMainTab('aiops');
+                  setIsRcaFlowSidebarOpen(false);
+                }}
+                className={cn(
+                  "h-full px-2 text-[13px] font-bold transition-all border-b-2 flex items-center gap-2 relative group",
+                  activeMainTab === 'aiops'
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                AI Analytics
+                <Sparkles className="h-3.5 w-3.5 opacity-50" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-muted text-muted-foreground border-border font-bold text-[10px] h-6 px-3">
-              Details View
-            </Badge>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 mr-4">
+              <Badge variant="secondary" className="bg-muted text-muted-foreground/70 font-mono text-[10px] h-6 px-2 lowercase tracking-tight border-none">
+                {event.device} / {event.event_code.toLowerCase()}
+              </Badge>
+              <Badge variant="secondary" className="bg-muted text-muted-foreground/70 font-mono text-[10px] h-6 px-2 border-none">
+                {event.event_id.replace(/\D/g, '')}
+              </Badge>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/events')}
+              className="h-8 w-8 text-muted-foreground/40 hover:text-foreground transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
-        {/* Header Section */}
-        <div className="bg-card border-b border-border px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/events')} className="h-7 w-7 text-muted-foreground hover:bg-muted">
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-              <h1 className="text-sm font-bold flex items-center gap-2">
-                Event Detail
-                <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-border text-[10px] h-5 px-1.5 font-mono">
-                  {event.device}
-                </Badge>
-                <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-border text-[10px] h-5 px-1.5 font-mono">
-                  {event.event_id}
-                </Badge>
+        {/* Scrollable Container */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Title Section: Link Down, Severity, and Timestamp */}
+          <div className="px-6 py-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                {event.message.includes('utilization') ? 'Link Congestion' : 'Link Down'}
               </h1>
+              <Badge className={cn(
+                "h-6 px-3 text-[10px] font-bold uppercase rounded flex items-center gap-1.5 border-none",
+                event.severity === 'Critical' ? "bg-red-500/10 text-red-500" : "bg-orange-500/10 text-orange-500"
+              )}>
+                <AlertCircle className="h-3 w-3" />
+                {event.severity}
+              </Badge>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/events')} className="h-7 w-7 text-muted-foreground/50 hover:bg-muted">
-                <X className="h-5 w-5" />
-              </Button>
+            <div className="text-[13px] font-medium text-muted-foreground/70">
+              {new Date(event.timestamp).toLocaleString('en-US', { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
             </div>
           </div>
 
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center gap-3">
-                <h2 className="text-xl font-bold">
-                  {event.description}
-                </h2>
-                <Badge variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20 text-[10px] font-bold uppercase h-4 px-1.5">
-                  {event.severity}
-                </Badge>
-                <span className="text-[12px] text-muted-foreground ml-4">{event.timestamp}</span>
+          <div className="flex items-start justify-between gap-12">
+            <div className="space-y-3 flex-1">
+              <div className="bg-muted/30 w-fit px-2 py-0.5 rounded text-[11px] text-muted-foreground font-medium">
+                Source : State Change
               </div>
-              <p className="text-[12px] text-muted-foreground">
-                Source : <span className="text-foreground font-medium">{event.source || 'State Change'}</span>
-              </p>
-              <div className="flex items-center gap-2 text-red-500 mt-2">
-                <AlertCircle className="h-4 w-4" />
-                <p className="text-[12px] font-bold">
-                  Alarm Probable Cause : <span className="font-normal text-muted-foreground">{event.classificationReason?.description || event.message}</span>
+              <div className="flex items-center gap-2 text-foreground">
+                <div className="h-4 w-4 rounded-full border border-red-500 flex items-center justify-center">
+                  <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                </div>
+                <p className="text-[14px] font-medium">
+                  Alarm Probable Cause : <span className="text-muted-foreground">{event.classificationReason?.description || event.message}</span>
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="bg-orange-500/5 border border-orange-500/20 rounded px-4 py-2 min-w-[180px]">
-                <p className="text-[10px] font-bold uppercase text-orange-500 mb-1">Alarm Metric</p>
-                <p className="text-[12px] font-bold text-orange-600 dark:text-orange-400 capitalize">{event.metric.replace(/_/g, ' ')}</p>
+            {/* Metrics Dashboard Row */}
+            <div className="flex items-center gap-1">
+              <div className="bg-orange-500/[0.03] border border-orange-500/10 rounded-lg p-3 min-w-[200px]">
+                <p className="text-[9px] font-black uppercase text-orange-500/50 tracking-widest mb-1">Alarm Cause</p>
+                <p className="text-[14px] font-bold text-orange-600/90 dark:text-orange-400/90">BGP Peer is Down</p>
               </div>
-              <div className="bg-orange-500/5 border border-orange-500/20 rounded px-4 py-2 min-w-[120px]">
-                <p className="text-[10px] font-bold uppercase text-orange-500 mb-1">Alert Value</p>
-                <p className="text-[12px] font-bold text-orange-600 dark:text-orange-400">{event.value} {event.metric === 'utilization' || event.metric === 'heap_usage' ? '%' : ''}</p>
+              <div className="bg-orange-500/[0.03] border border-orange-500/10 rounded-lg p-3 min-w-[140px] text-center">
+                <p className="text-[9px] font-black uppercase text-orange-500/50 tracking-widest mb-1">Alert Value</p>
+                <p className="text-[14px] font-bold text-orange-600/90 dark:text-orange-400/90">{event.value}.00 %</p>
               </div>
-              <div className="bg-orange-500/5 border border-orange-500/20 rounded px-4 py-2 min-w-[120px]">
-                <p className="text-[10px] font-bold uppercase text-orange-500 mb-1">Current Value</p>
-                <p className="text-[12px] font-bold text-orange-600 dark:text-orange-400">{event.value} {event.metric === 'utilization' || event.metric === 'heap_usage' ? '%' : ''}</p>
+              <div className="bg-orange-500/[0.03] border border-orange-500/10 rounded-lg p-3 min-w-[140px] text-center">
+                <p className="text-[9px] font-black uppercase text-orange-500/50 tracking-widest mb-1">Current Value</p>
+                <p className="text-[14px] font-bold text-orange-600/90 dark:text-orange-400/90">—</p>
               </div>
             </div>
-
           </div>
         </div>
 
-        {/* Action Bar */}
-        <div className="px-6 py-2.5 border-b border-border bg-card flex items-center gap-4">
-          <Button variant="outline" size="sm" className="h-9 border-border text-primary font-bold gap-2 hover:bg-muted text-xs px-4 shadow-sm">
-            <CheckCircle2 className="h-4 w-4 text-primary" /> Acknowledge
+          {/* Action Bar */}
+          <div className="px-6 py-3 border-b border-border bg-background flex items-center gap-3">
+          <Button variant="outline" size="sm" className="h-9 border-slate-200 dark:border-slate-800 text-primary font-bold gap-2 hover:bg-muted text-xs px-4 shadow-sm bg-background">
+            <ThumbsUp className="h-3.5 w-3.5 text-primary" /> Acknowledge
           </Button>
-          <Button variant="outline" size="sm" className="h-9 border-border text-primary font-bold gap-2 hover:bg-muted text-xs px-4 shadow-sm">
-            <Search className="h-4 w-4 text-primary" /> Diagnose
+          <Button variant="outline" size="sm" className="h-9 border-slate-200 dark:border-slate-800 text-primary font-bold gap-2 hover:bg-muted text-xs px-4 shadow-sm bg-background">
+            <Search className="h-3.5 w-3.5 text-primary" /> Diagnose
           </Button>
-          <Button variant="outline" size="sm" className="h-9 border-border text-primary font-bold gap-2 hover:bg-muted text-xs px-4 shadow-sm">
-            <Ticket className="h-4 w-4 text-primary" /> TKT3335
+          <Button variant="outline" size="sm" className="h-9 border-slate-200 dark:border-slate-800 text-primary font-bold gap-2 hover:bg-muted text-xs px-4 shadow-sm bg-background">
+            <Ticket className="h-3.5 w-3.5 text-primary" /> Create Ticket
           </Button>
-          <Button variant="outline" size="sm" className="h-9 border-border text-primary font-bold gap-2 hover:bg-muted text-xs px-4 shadow-sm">
-            <X className="h-4 w-4 text-primary" /> Clear Event
+          <Button variant="outline" size="sm" className="h-9 border-slate-200 dark:border-slate-800 text-primary font-bold gap-2 hover:bg-muted text-xs px-4 shadow-sm bg-background">
+            <Trash2 className="h-3.5 w-3.5 text-primary" /> Clear Event
           </Button>
-          <Button variant="outline" size="sm" className="h-9 border-border text-primary font-bold gap-2 hover:bg-muted text-xs px-4 shadow-sm">
-            <List className="h-4 w-4 text-primary" /> View Activity Log
+          <Button variant="outline" size="sm" className="h-9 border-slate-200 dark:border-slate-800 text-primary font-bold gap-2 hover:bg-muted text-xs px-4 shadow-sm bg-background">
+            <List className="h-3.5 w-3.5 text-primary" /> View Activity Log
           </Button>
         </div>
 
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-auto p-6 space-y-6">
+          {/* Content Area */}
+          <div className="p-6 space-y-6">
           {activeMainTab === 'details' ? (
             <div className="space-y-6 max-w-[1600px] mx-auto">
               {/* Row 1: Asset Details & Recent Events */}
@@ -380,6 +401,7 @@ export default function EventAnalysisPage() {
               )}
             </div>
           )}
+          </div>
         </div>
 
         {/* RCA Flow Sidebar */}

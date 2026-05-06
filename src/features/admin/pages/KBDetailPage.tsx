@@ -9,6 +9,7 @@ import { KBArticle } from '@/shared/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion } from 'framer-motion';
+import { getPunchyTitle } from '@/shared/lib/utils';
 
 function escapePlaceholders(md: string): string {
     return md.replace(/<([a-zA-Z][a-zA-Z0-9_-]*)>/g, (_, tag) => `\`<${tag}>\``);
@@ -79,12 +80,17 @@ export default function KBDetailPage() {
                             )}
                         </div>
 
-                        <h1 className="text-lg lg:text-xl font-bold tracking-tight text-foreground leading-snug flex items-center gap-2">
-                            <div className="p-1.5 bg-primary/10 rounded-lg w-fit shrink-0">
-                                <BookOpen className="h-5 w-5 text-primary" />
-                            </div>
-                            {article.title}
-                        </h1>
+                        <div className="space-y-1">
+                            <h1 className="text-xl lg:text-2xl font-black tracking-tight text-primary leading-tight flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-xl w-fit shrink-0">
+                                    <BookOpen className="h-6 w-6 text-primary" />
+                                </div>
+                                {getPunchyTitle(article.title, article.tags)}
+                            </h1>
+                            <p className="text-sm font-medium text-muted-foreground/80 italic pl-14">
+                                {article.title}
+                            </p>
+                        </div>
 
                         <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 bg-slate-500/5 px-3 py-1.5 rounded-lg border border-slate-500/10 w-fit">
                             <span className="flex items-center gap-1.5"><Tag className="h-3 w-3 text-primary" /> {article.id}</span>

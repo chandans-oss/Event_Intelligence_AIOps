@@ -138,10 +138,10 @@ export default function Events() {
           if (event.source !== filterCategory) return false;
         }
         // AI
-        if (filterCategory === 'OnlyRCA' && event.aiStatus !== 'Only RCA') return false;
-        if (filterCategory === 'RcaRemediation' && event.aiStatus !== 'RCA with Remediation') return false;
-        if (filterCategory === 'RcaAuto' && event.aiStatus !== 'RCA with Auto Remediation') return false;
-        if (filterCategory === 'RcaNotFound' && event.aiStatus !== 'RCA Not Found') return false;
+        if (filterCategory === 'OnlyRCA' && (event.aiStatus !== 'Only RCA' || event.label !== 'Root')) return false;
+        if (filterCategory === 'RcaRemediation' && (event.aiStatus !== 'RCA with Remediation' || event.label !== 'Root')) return false;
+        if (filterCategory === 'RcaAuto' && (event.aiStatus !== 'RCA with Auto Remediation' || event.label !== 'Root')) return false;
+        if (filterCategory === 'RcaNotFound' && (event.aiStatus !== 'RCA Not Found' || event.label !== 'Root')) return false;
       }
 
       // History (Status) filter
@@ -259,9 +259,7 @@ export default function Events() {
 
                   const toggleCategory = () => {
                     setExpandedCategories(prev =>
-                      prev.includes(group.id)
-                        ? prev.filter(c => c !== group.id)
-                        : [...prev, group.id]
+                      prev.includes(group.id) ? [] : [group.id]
                     );
                   };
 
@@ -330,7 +328,12 @@ export default function Events() {
                             <Tooltip key={filter.label} delayDuration={0}>
                               <TooltipTrigger asChild>
                                 <button
-                                  onClick={() => setFilterCategory(filterCategory === filter.value ? null : filter.value)}
+                                  onClick={() => {
+                                    setFilterCategory(filterCategory === filter.value ? null : filter.value);
+                                    if (isStatic) {
+                                      setExpandedCategories([]);
+                                    }
+                                  }}
                                   className={cn(
                                     "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all h-8 border",
                                     filterCategory === filter.value
@@ -365,6 +368,7 @@ export default function Events() {
                 <th className="px-4 py-3 w-10"><input type="checkbox" className="rounded border-border bg-background" /></th>
                 <th className="px-4 py-3">Issue</th>
                 <th className="px-4 py-3">Severity</th>
+                <th className="px-4 py-3">RCA/Remedy</th>
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Alarm ID</th>
                 <th className="px-4 py-3">Node</th>
@@ -434,9 +438,34 @@ export default function Events() {
                         {event.clusterId && (
                           <div className="flex items-center gap-1 text-[10px] font-black text-muted-foreground/50 border border-border/30 rounded px-1.5 py-0.5 bg-muted/20">
                             <Clock className="h-2.5 w-2.5" />
-                            {/* Deterministic timer based on event ID to prevent flickering on hover */}
                             {(parseInt(event.event_id.replace(/\D/g, '')) || 15) % 60}
                           </div>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* RCA/REMEDY COLUMN (DOTS) */}
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-1">
+                        {event.label === 'Root' && [1, 2, 3].map((dotIndex) => {
+                          const status = event.aiStatus;
+                          let isActive = false;
+                          if (dotIndex === 1 && (status === 'Only RCA' || status === 'RCA with Remediation' || status === 'RCA with Auto Remediation')) isActive = true;
+                          if (dotIndex === 2 && (status === 'RCA with Remediation' || status === 'RCA with Auto Remediation')) isActive = true;
+                          if (dotIndex === 3 && status === 'RCA with Auto Remediation') isActive = true;
+                          
+                          return (
+                            <div 
+                              key={dotIndex}
+                              className={cn(
+                                "h-2.5 w-2.5 rounded-full transition-all duration-300 shadow-sm",
+                                isActive ? "bg-emerald-500 shadow-emerald-500/20" : "bg-muted/30 border border-border/50"
+                              )}
+                            />
+                          );
+                        })}
+                        {event.label !== 'Root' && (
+                          <div className="h-1 w-4 bg-muted/20 rounded-full" />
                         )}
                       </div>
                     </td>

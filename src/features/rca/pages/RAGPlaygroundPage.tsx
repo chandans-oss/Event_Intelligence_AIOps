@@ -96,7 +96,7 @@ const RAGPlaygroundPage = () => {
             },
             divider: isDark ? '#1e293b' : '#e2e8f0'
         },
-        typography: { 
+        typography: {
             fontFamily: '"Outfit", "Inter", "Roboto", "Helvetica", "Arial", sans-serif',
             h4: { fontWeight: 800, letterSpacing: '-0.02em', fontSize: '1.75rem' },
             h5: { fontWeight: 700, fontSize: '1.25rem' },
@@ -246,7 +246,7 @@ const RAGPlaygroundPage = () => {
 
                                 <Typography variant="h4" gutterBottom sx={{ fontWeight: 800 }}>Upload Incident Data</Typography>
                                 <Typography variant="body1" color="text.secondary" sx={{ maxWidth: '500px', mb: 5, lineHeight: 1.6 }}>
-                                    Upload a JSON simulation file containing incident metrics, events, and topology data to execute the IERAG2 RCA Pipeline.
+                                    Upload a JSON simulation file containing incident metrics, events, and topology data to execute the HYBRID RAG RCA Pipeline.
                                 </Typography>
 
                                 <Box display="flex" gap={2}>
@@ -351,7 +351,7 @@ const RAGPlaygroundPage = () => {
                             {results && (
                                 <Box sx={{ animation: 'fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1)' }}>
                                     <Divider sx={{ my: 6 }}><Chip label="RAG PIPELINE INSIGHTS" color="primary" sx={{ fontWeight: 800, px: 2 }} /></Divider>
-                                    
+
                                     {/* Top Row: Insights Summary */}
                                     <Grid container spacing={3} mb={4}>
                                         <Grid size={{ xs: 12, md: 4 }}>
@@ -383,25 +383,25 @@ const RAGPlaygroundPage = () => {
                                         <Grid container spacing={3}>
                                             {results.results && results.results.length > 0 ? results.results.map((r: any, i: number) => (
                                                 <Grid size={{ xs: 12, md: 6 }} key={i}>
-                                                    <Box sx={{ 
-                                                         p: 3, borderRadius: '20px', height: '100%', 
-                                                         bgcolor: i === 0 
-                                                            ? (isDark ? 'rgba(34, 197, 94, 0.05)' : 'rgba(34, 197, 94, 0.02)') 
-                                                            : (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)'), 
-                                                         border: '1px solid', 
-                                                         borderColor: i === 0 ? 'success.main' : 'divider',
-                                                         position: 'relative',
-                                                         transition: 'all 0.3s ease',
-                                                         '&:hover': { transform: 'translateY(-4px)', boxShadow: i === 0 ? '0 10px 20px rgba(34, 197, 94, 0.1)' : 'none' }
-                                                     }}>
-                                                         {i === 0 && (
-                                                             <Chip 
-                                                                label="TOP MATCH" 
-                                                                size="small" 
-                                                                color="success" 
-                                                                sx={{ position: 'absolute', top: -10, right: 20, fontWeight: 900, height: '20px', fontSize: '0.6rem' }} 
-                                                             />
-                                                         )}
+                                                    <Box sx={{
+                                                        p: 3, borderRadius: '20px', height: '100%',
+                                                        bgcolor: i === 0
+                                                            ? (isDark ? 'rgba(34, 197, 94, 0.05)' : 'rgba(34, 197, 94, 0.02)')
+                                                            : (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)'),
+                                                        border: '1px solid',
+                                                        borderColor: i === 0 ? 'success.main' : 'divider',
+                                                        position: 'relative',
+                                                        transition: 'all 0.3s ease',
+                                                        '&:hover': { transform: 'translateY(-4px)', boxShadow: i === 0 ? '0 10px 20px rgba(34, 197, 94, 0.1)' : 'none' }
+                                                    }}>
+                                                        {i === 0 && (
+                                                            <Chip
+                                                                label="TOP MATCH"
+                                                                size="small"
+                                                                color="success"
+                                                                sx={{ position: 'absolute', top: -10, right: 20, fontWeight: 900, height: '20px', fontSize: '0.6rem' }}
+                                                            />
+                                                        )}
                                                         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
                                                             <Box>
                                                                 <Typography variant="h6" fontWeight={800} color={i === 0 ? 'success.main' : 'primary'}>

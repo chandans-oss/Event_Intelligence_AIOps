@@ -12,7 +12,7 @@ import { ScrollArea } from '@/shared/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { Separator } from '@/shared/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card';
-import { cn } from '@/shared/lib/utils';
+import { cn, getPunchyTitle } from '@/shared/lib/utils';
 import { getClusterData, ClusterSpecificData } from '@/features/rca/data/clusterData';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
@@ -737,7 +737,9 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack, isEmbedd
                             <Badge className="bg-foreground text-background text-[9px] font-black px-2.5 py-1">Doc: #{i + 1}</Badge>
                             <Badge className="bg-primary/20 text-primary border-primary/20 text-[11px] font-black px-2.5 py-1 transition-all group-hover:bg-primary group-hover:text-white">{article.relevance}% Match</Badge>
                           </div>
-                          <CardTitle className="text-lg font-black tracking-tight leading-tight group-hover:text-primary transition-colors">{article.title}</CardTitle>
+                          <CardTitle className="text-lg font-black tracking-tight leading-tight group-hover:text-primary transition-colors">
+                            {getPunchyTitle(article.title)}
+                          </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6">
                           <p className="text-[13px] text-muted-foreground font-medium  opacity-80 leading-relaxed mb-6">Cross-referenced solution from central AIOps repository based on current link_congestion fingerprint.</p>

@@ -12,10 +12,13 @@ import { mockKBCategories, mockKBArticlesEnhanced, mockIntentsFull } from '@/fea
 import { KBArticle } from '@/shared/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { getPunchyTitle } from '@/shared/lib/utils';
 
 function escapePlaceholders(md: string): string {
   return md.replace(/<([a-zA-Z][a-zA-Z0-9_-]*)>/g, (_, tag) => `\`<${tag}>\``);
 }
+
+type ViewLevel = 'categories' | 'subcategories' | 'articles';
 
 type ViewLevel = 'categories' | 'subcategories' | 'articles';
 
@@ -360,8 +363,17 @@ function KBArticleCard({
           </Button>
         </div>
       </div>
-      <h3 className="font-semibold text-foreground mb-2 line-clamp-2">{article.title}</h3>
-      <p className="text-sm text-muted-foreground mb-3 line-clamp-1">{article.problem}</p>
+      <div className="mb-3">
+        <h3 className="text-base font-bold text-primary group-hover:text-primary/80 transition-colors">
+          {getPunchyTitle(article.title, article.tags)}
+        </h3>
+        <p className="text-[11px] font-medium text-muted-foreground/70 italic line-clamp-1 mt-0.5">
+          {article.title}
+        </p>
+      </div>
+      <p className="text-sm text-foreground/90 mb-3 line-clamp-2 leading-relaxed h-10">
+        {article.problem}
+      </p>
 
       {/* Tags */}
       <div className="flex flex-wrap gap-1 mb-3">

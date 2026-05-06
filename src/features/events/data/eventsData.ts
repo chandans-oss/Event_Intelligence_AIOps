@@ -363,10 +363,10 @@ export const getEventStats = (events: NetworkEvent[]) => {
   };
 
   const aiCounts = {
-    'Only RCA': events.filter(e => e.aiStatus === 'Only RCA').length,
-    'RCA with Remediation': events.filter(e => e.aiStatus === 'RCA with Remediation').length,
-    'RCA with Auto Remediation': events.filter(e => e.aiStatus === 'RCA with Auto Remediation').length,
-    'RCA Not Found': events.filter(e => e.aiStatus === 'RCA Not Found').length,
+    'Only RCA': events.filter(e => e.aiStatus === 'Only RCA' && e.label === 'Root').length,
+    'RCA with Remediation': events.filter(e => e.aiStatus === 'RCA with Remediation' && e.label === 'Root').length,
+    'RCA with Auto Remediation': events.filter(e => e.aiStatus === 'RCA with Auto Remediation' && e.label === 'Root').length,
+    'RCA Not Found': events.filter(e => e.aiStatus === 'RCA Not Found' && e.label === 'Root').length,
   };
 
   return {

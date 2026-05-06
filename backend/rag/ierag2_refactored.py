@@ -12,8 +12,10 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="repla
 # ════════════════════════════════════════════════════════════════════════════════
 import re
 import json
+import math
 import time
 import torch
+import gc
 import numpy as np
 import pickle
 import os
@@ -1067,13 +1069,12 @@ def hybrid_search_with_rerank(query_json, top_k=5, retrieve_k=30, rerank_k=15):
     ce_scores = reranker.predict(pairs, batch_size=16, show_progress_bar=False)
 
     # Combine pre-rank score + CE score
-    # CE is stronger, so give it more weight
+    # Pre-rank (evidence-based) is now prioritized over CE (semantic)
     reranked = []
     for idx, pre_score, ce_score in zip(candidate_ids, [s for _, s in candidates], ce_scores):
         # Weighted combination of scores
-        raw_final = (0.25 * pre_score) + (0.75 * float(ce_score))
+        raw_final = (0.80 * pre_score) + (0.20 * float(ce_score))
         # Sigmoid normalization to get a value between 0 and 1
-        import math
         final_score = 1 / (1 + math.exp(-raw_final))
         reranked.append((idx, final_score, float(ce_score), pre_score))
 
@@ -1163,6 +1164,12 @@ def initialize_resources():
     if model is not None:
         return
 
+    # Limit torch threads to reduce memory overhead
+    torch.set_num_threads(1)
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    gc.collect()
+
     print("Initializing pipeline resources...")
     if os.path.exists(index_path) and os.path.exists(meta_path):
         index, meta_data = load_kb_index(index_path, meta_path)
@@ -1170,8 +1177,11 @@ def initialize_resources():
         metadata = meta_data["metadata"]
         tokenized_docs = meta_data["tokenized_docs"]
         bm25 = BM25Okapi(tokenized_docs)
+        gc.collect()
         model = SentenceTransformer('all-MiniLM-L6-v2')
+        gc.collect()
         reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", max_length=512)
+        gc.collect()
     else:
         try:
             with open(KB_PATH, 'r') as f:
@@ -1200,6 +1210,7 @@ def initialize_resources():
             })
             metadata.append(item.get("metadata", {}))
 
+        gc.collect()
         model = SentenceTransformer('all-MiniLM-L6-v2')
         embeddings = model.encode([d["text"] for d in docs])
         index = faiss.IndexFlatL2(384)
@@ -1207,7 +1218,9 @@ def initialize_resources():
 
         tokenized_docs = [(d["text"] + " " + d["keywords"]).lower().split() for d in docs]
         bm25 = BM25Okapi(tokenized_docs)
+        gc.collect()
         reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", max_length=512)
+        gc.collect()
 
         os.makedirs(os.path.dirname(index_path), exist_ok=True)
         faiss.write_index(index, index_path)
@@ -1223,7 +1236,7 @@ def run_full_pipeline(logs, event, metrics, topo=None):
     # LIVE EXECUTION PROOF: This prints to your terminal every time you click the button
     from datetime import datetime
     print(f"\n[🚀 PIPELINE START] {datetime.now().strftime('%H:%M:%S.%f')[:-3]}")
-    print(f"   Analyzing: {len(logs)} Logs, {len(metrics.get('metrics', {}))} Metrics")
+    print(f"   Analyzing: {len(logs)} Logs, {len(metrics)} Metrics")
     
     initialize_resources()
     topo = topo or {}
@@ -1308,8 +1321,11 @@ def main(logs=None, event=None, metrics=None, topo=None):
         tokenized_docs = saved["tokenized_docs"]
 
         bm25 = BM25Okapi(tokenized_docs)
+        gc.collect()
         model = SentenceTransformer('all-MiniLM-L6-v2')
+        gc.collect()
         reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", max_length=512)
+        gc.collect()
     else:
         try:
             with open(KB_PATH, 'r') as f:
@@ -1348,6 +1364,7 @@ def main(logs=None, event=None, metrics=None, topo=None):
 
             metadata.append(item.get("metadata", {}))
 
+        gc.collect()
         model = SentenceTransformer('all-MiniLM-L6-v2')
         embeddings = model.encode([d["text"] for d in docs])
         index = faiss.IndexFlatL2(384)
@@ -1359,7 +1376,9 @@ def main(logs=None, event=None, metrics=None, topo=None):
         ]
         bm25 = BM25Okapi(tokenized_docs)
 
+        gc.collect()
         reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", max_length=512)
+        gc.collect()
 
         os.makedirs(os.path.dirname(index_path), exist_ok=True)
         faiss.write_index(index, index_path)

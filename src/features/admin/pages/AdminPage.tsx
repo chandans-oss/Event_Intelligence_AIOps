@@ -5,6 +5,7 @@ import { AdminSidebar, AdminSection } from '@/components/admin/AdminSidebar';
 import { RulesSection } from '@/components/admin/RulesSection';
 import { IntentsSection } from '@/components/admin/IntentsSection';
 import { KBSection } from '@/components/admin/KBSection';
+import { RAGKBSection } from '@/components/admin/RAGKBSection';
 import { AutoRemediationSection } from '@/components/admin/AutoRemediationSection';
 import { PatternPredictionContent } from '@/pages/PatternPage';
 
@@ -26,6 +27,8 @@ export default function Admin() {
         return <IntentsSection highlightIntentId={highlightIntent} />;
       case 'KB':
         return <KBSection />;
+      case 'RAGKB':
+        return <RAGKBSection />;
       case 'AutoRemediation':
         return <AutoRemediationSection />;
       default:

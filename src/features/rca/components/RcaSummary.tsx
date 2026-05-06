@@ -8,10 +8,9 @@ import { Separator } from '@/shared/components/ui/separator';
 interface RCASummaryProps {
     data: ClusterSpecificData;
     confidence?: number;
-    onViewDetailedRCA: () => void;
 }
 
-export function RCASummary({ data, confidence = 0.95, onViewDetailedRCA }: RCASummaryProps) {
+export function RCASummary({ data, confidence = 0.95 }: RCASummaryProps) {
     return (
         <div className="space-y-6">
             {/* Root Cause Description */}
@@ -26,21 +25,6 @@ export function RCASummary({ data, confidence = 0.95, onViewDetailedRCA }: RCASu
                             {data.rcaMetadata.device} • {new Date(data.rcaMetadata.timestamp).toLocaleString()}
                         </CardDescription>
                     </div>
-                    <Button 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onViewDetailedRCA();
-                        }} 
-                        variant="default" 
-                        size="sm" 
-                        className="gap-2 shadow-md"
-                        type="button"
-                    >
-                        <BrainCircuit className="h-4 w-4" />
-                        RCA Analysis Flow
-                        <ArrowRight className="h-4 w-4" />
-                    </Button>
-
                 </CardHeader>
                 <CardContent>
                     <p className="text-foreground text-lg leading-relaxed font-medium">

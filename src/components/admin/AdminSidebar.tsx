@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Shield, Lightbulb, BookOpen, Zap, ChevronRight, ChevronLeft, TrendingUp, ToggleLeft, Copy, GitBranch } from 'lucide-react';
+import { Shield, Lightbulb, BookOpen, Zap, ChevronRight, ChevronLeft, TrendingUp, ToggleLeft, Copy, GitBranch, BrainCircuit } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 
-export type AdminSection = 'Suppression' | 'Deduplication' | 'CorrelationTypes' | 'CorrelationPatterns' | 'Intents' | 'KB' | 'AutoRemediation';
+export type AdminSection = 'Suppression' | 'Deduplication' | 'CorrelationTypes' | 'CorrelationPatterns' | 'Intents' | 'KB' | 'RAGKB' | 'AutoRemediation';
 
 interface AdminSidebarProps {
   activeSection: AdminSection;
@@ -15,6 +15,7 @@ const menuItems = [
   { id: 'CorrelationTypes' as AdminSection, label: 'Correlation Types', icon: GitBranch },
   { id: 'Intents' as AdminSection, label: 'Intents Hypothesis', icon: Lightbulb },
   { id: 'KB' as AdminSection, label: 'Knowledge Base', icon: BookOpen },
+  { id: 'RAGKB' as AdminSection, label: 'KB Explorer', icon: BrainCircuit },
   { id: 'AutoRemediation' as AdminSection, label: 'Auto Remediation', icon: Zap },
 ];
 
@@ -76,8 +77,11 @@ export function AdminSidebar({ activeSection, onSectionChange }: AdminSidebarPro
                 isActive && "scale-110"
               )} />
               {!isCollapsed && (
-                <span className="flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis animate-in fade-in slide-in-from-left-2 duration-300">
+                <span className="flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis animate-in fade-in slide-in-from-left-2 duration-300 flex items-center gap-2">
                   {item.label}
+                  {item.id === 'RAGKB' && (
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold border border-emerald-500/30">NEW</span>
+                  )}
                 </span>
               )}
 

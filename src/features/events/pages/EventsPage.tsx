@@ -368,6 +368,7 @@ export default function Events() {
                 <th className="px-4 py-3 w-10"><input type="checkbox" className="rounded border-border bg-background" /></th>
                 <th className="px-4 py-3">Issue</th>
                 <th className="px-4 py-3">Severity</th>
+                <th className="px-4 py-3 w-[150px]">RCA/Remedy</th>
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Alarm ID</th>
                 <th className="px-4 py-3">Node</th>
@@ -441,44 +442,43 @@ export default function Events() {
                               {(parseInt(event.event_id.replace(/\D/g, '')) || 15) % 60}
                             </div>
                           )}
-                          
-                          {/* AI Analytics Icons Appended Beside Count */}
+
+                          {/* Restored AI Analytics Icons beside count */}
                           {event.label === 'Root' && (
                             <div className="flex items-center gap-1">
-                              {event.aiStatus === 'Only RCA' && (
-                                <TooltipProvider>
-                                  <Tooltip delayDuration={0}>
-                                    <TooltipTrigger asChild>
-                                      <Brain className="h-3.5 w-3.5 text-purple-500" />
-                                    </TooltipTrigger>
-                                    <TooltipContent className="font-bold text-[10px]">RCA Identified</TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
-                              {event.aiStatus === 'RCA with Remediation' && (
-                                <TooltipProvider>
-                                  <Tooltip delayDuration={0}>
-                                    <TooltipTrigger asChild>
-                                      <Ticket className="h-3.5 w-3.5 text-blue-500" />
-                                    </TooltipTrigger>
-                                    <TooltipContent className="font-bold text-[10px]">Remediation Available</TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
-                              {event.aiStatus === 'RCA with Auto Remediation' && (
-                                <TooltipProvider>
-                                  <Tooltip delayDuration={0}>
-                                    <TooltipTrigger asChild>
-                                      <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
-                                    </TooltipTrigger>
-                                    <TooltipContent className="font-bold text-[10px]">Auto-Remediation Active</TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
+                              {event.aiStatus === 'Only RCA' && <Brain className="h-3 w-3 text-purple-500" />}
+                              {event.aiStatus === 'RCA with Remediation' && <Ticket className="h-3 w-3 text-blue-500" />}
+                              {event.aiStatus === 'RCA with Auto Remediation' && <Sparkles className="h-3 w-3 text-emerald-500" />}
                             </div>
                           )}
                         </div>
                       </div>
+                    </td>
+
+                    {/* RCA/REMEDY COLUMN */}
+                    <td className="px-4 py-4">
+                      {event.label === 'Root' && event.aiStatus !== 'RCA Not Found' && (
+                        <Badge className={cn(
+                          "h-fit py-1 px-2.5 text-[9px] font-black uppercase border-none rounded shadow-sm flex items-center gap-2",
+                          event.aiStatus === 'Only RCA' ? "bg-purple-500/10 text-purple-500" :
+                            event.aiStatus === 'RCA with Remediation' ? "bg-blue-500/10 text-blue-500" :
+                              "bg-emerald-500/10 text-emerald-500"
+                        )}>
+                          <div className="shrink-0">
+                            {event.aiStatus === 'Only RCA' && <Brain className="h-3 w-3" />}
+                            {event.aiStatus === 'RCA with Remediation' && <Ticket className="h-3 w-3" />}
+                            {event.aiStatus === 'RCA with Auto Remediation' && <Sparkles className="h-3 w-3" />}
+                          </div>
+
+                          <span className="whitespace-nowrap">
+                            {event.aiStatus === 'Only RCA' ? 'RCA' :
+                              event.aiStatus === 'RCA with Remediation' ? 'Remedy' : 'Auto-Remedy'}
+                          </span>
+                        </Badge>
+                      )}
+                      {(event.label !== 'Root' || event.aiStatus === 'RCA Not Found') && (
+                        <div className="text-[10px] font-bold text-muted-foreground/30 px-3 tracking-widest">—</div>
+                      )}
                     </td>
 
 

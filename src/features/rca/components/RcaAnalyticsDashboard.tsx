@@ -52,6 +52,10 @@ export function RcaAnalyticsDashboard({ data, onViewDetailedRCA, onBack, onClose
 
   return (
     <div className="flex flex-col h-full bg-background/50">
+      <div className="p-4 pb-0">
+        <IncidentLifecycle data={data} />
+      </div>
+
       {/* Probable Root Causes Section */}
       <div className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-4 mb-2">
@@ -104,8 +108,8 @@ export function RcaAnalyticsDashboard({ data, onViewDetailedRCA, onBack, onClose
         </div>
 
         <div className="flex flex-row gap-6">
-          {/* Bottom Left: Diagnostics Tabs */}
-          <div className="flex-[3]">
+          {/* Bottom Diagnostics Tabs */}
+          <div className="flex-1">
             {/* Tab Navigation Section */}
             <div className="bg-transparent border-b border-slate-200 dark:border-border/50">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -153,11 +157,6 @@ export function RcaAnalyticsDashboard({ data, onViewDetailedRCA, onBack, onClose
                 {activeTab === 'analytics' && <RCAAnalytics data={data} />}
               </div>
             </div>
-          </div>
-
-          {/* Bottom Right: Incident Lifecycle Journal */}
-          <div className="flex-[1] h-fit">
-            <IncidentLifecycle data={data} />
           </div>
         </div>
       </div>
@@ -280,9 +279,9 @@ function AlternativeHypothesisCard({ cause, index, isSelected, onClick }: Altern
 
   const getConfidenceTag = (idx: number) => {
     switch (idx) {
-      case 0: return { label: 'AI HIGH', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' };
-      case 1: return { label: 'AI MEDIUM', color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' };
-      default: return { label: 'AI LOW', color: 'bg-muted text-muted-foreground border-border' };
+      case 0: return { label: 'HIGH', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' };
+      case 1: return { label: 'MEDIUM', color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' };
+      default: return { label: 'LOW', color: 'bg-muted text-muted-foreground border-border' };
     }
   };
 
@@ -321,54 +320,39 @@ function AlternativeHypothesisCard({ cause, index, isSelected, onClick }: Altern
 }
 
 function IncidentLifecycle({ data }: { data: ClusterSpecificData }) {
+  const steps = [
+    { label: 'Issue Started', time: '14:00:00', color: 'bg-slate-400', bgColor: 'bg-slate-100 dark:bg-slate-800' },
+    { label: 'Detection', time: '+2m 15s', color: 'bg-orange-500', bgColor: 'bg-orange-100 dark:bg-orange-900/30' },
+    { label: 'RCA Done', time: '+30s', color: 'bg-blue-500', bgColor: 'bg-blue-100 dark:bg-blue-900/30' },
+    { label: 'Resolution', time: '14:45:00', color: 'bg-emerald-500', bgColor: 'bg-emerald-100 dark:bg-emerald-900/30', pulse: true },
+  ];
+
   return (
-    <Card className="bg-card border-border shadow-sm rounded-xl overflow-hidden h-fit">
-      <CardHeader className="py-3 px-4 border-b border-border/50">
-        <CardTitle className="text-[12px] font-bold uppercase tracking-wider flex items-center gap-2">
-          <Clock className="h-3.5 w-3.5 text-primary" /> Incident Lifecycle
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-4">
-        <div className="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100 dark:before:bg-slate-800">
-          <div className="relative pl-8">
-            <div className="absolute left-0 top-1 h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-2 border-white dark:border-slate-950 z-10">
-              <div className="h-2 w-2 rounded-full bg-slate-400" />
-            </div>
-            <div>
-              <p className="text-[12px] font-bold text-foreground">Issue Started</p>
-              <p className="text-[10px] text-muted-foreground font-mono mt-0.5">14:00:00</p>
-            </div>
-          </div>
+    <Card className="bg-card border-border shadow-sm rounded-xl overflow-hidden">
+      <div className="bg-muted/50 px-4 py-2 border-b border-border/50">
+        <h3 className="text-[12px] font-bold uppercase tracking-wider flex items-center gap-2">
+          <Clock className="h-3.5 w-3.5 text-primary" /> Incident Life cycle
+        </h3>
+      </div>
+      <CardContent className="p-4 py-6">
+        <div className="relative flex items-center justify-between px-16">
+          {/* Connecting Line */}
+          <div className="absolute top-[12px] left-16 right-16 h-[2px] bg-slate-100 dark:bg-slate-800" />
 
-          <div className="relative pl-8">
-            <div className="absolute left-0 top-1 h-6 w-6 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center border-2 border-white dark:border-slate-950 z-10">
-              <div className="h-2 w-2 rounded-full bg-orange-500" />
+          {steps.map((step, idx) => (
+            <div key={idx} className="relative flex flex-col items-center gap-2 z-10">
+              <div className={cn(
+                "h-6 w-6 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-950 shadow-sm",
+                step.bgColor
+              )}>
+                <div className={cn("h-2 w-2 rounded-full", step.color, step.pulse && "animate-pulse")} />
+              </div>
+              <div className="text-center">
+                <p className="text-[11px] font-bold text-foreground whitespace-nowrap">{step.label}</p>
+                <p className="text-[10px] text-muted-foreground font-mono">{step.time}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-[12px] font-bold text-foreground">Detection</p>
-              <p className="text-[10px] text-muted-foreground font-mono mt-0.5">+2m 15s</p>
-            </div>
-          </div>
-
-          <div className="relative pl-8">
-            <div className="absolute left-0 top-1 h-6 w-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center border-2 border-white dark:border-slate-950 z-10">
-              <div className="h-2 w-2 rounded-full bg-blue-500" />
-            </div>
-            <div>
-              <p className="text-[12px] font-bold text-foreground">RCA Done</p>
-              <p className="text-[10px] text-muted-foreground font-mono mt-0.5">+30s</p>
-            </div>
-          </div>
-
-          <div className="relative pl-8">
-            <div className="absolute left-0 top-1 h-6 w-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center border-2 border-white dark:border-slate-950 z-10">
-              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            </div>
-            <div>
-              <p className="text-[12px] font-bold text-foreground">Resolution</p>
-              <p className="text-[10px] text-muted-foreground font-mono mt-0.5">14:45:00</p>
-            </div>
-          </div>
+          ))}
         </div>
       </CardContent>
     </Card>

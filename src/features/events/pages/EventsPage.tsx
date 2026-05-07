@@ -121,7 +121,14 @@ export default function Events() {
     return sampleNetworkEvents.filter((event) => {
       // Main Filter Logic
       if (filterCategory) {
-        // Severity
+        // Category Group Filters
+        if (filterCategory === 'severity' && !['Critical', 'Major', 'Minor'].includes(event.severity)) return false;
+        if (filterCategory === 'status' && !event.isAcknowledged && !event.ticketId && !event.businessService) return false;
+        if (filterCategory === 'association' && event.label !== 'Root' && event.priority !== 'High' && !event.clusterId) return false;
+        if (filterCategory === 'sources' && !['Trap', 'Syslog', 'Adaptive', 'Seasonal', 'NCCM', 'IPAM'].includes(event.source)) return false;
+        if (filterCategory === 'ai' && event.label !== 'Root') return false;
+
+        // Sub-filters
         if (['Critical', 'Major', 'Minor'].includes(filterCategory)) {
           if (event.severity !== filterCategory) return false;
         }
@@ -276,10 +283,16 @@ export default function Events() {
                           <Tooltip delayDuration={0}>
                             <TooltipTrigger asChild>
                               <button
-                                onClick={toggleCategory}
+                                onClick={() => {
+                                  toggleCategory();
+                                  setFilterCategory(filterCategory === group.id ? null : group.id);
+                                }}
                                 className={cn(
                                   "flex items-center gap-2 h-10 px-3 rounded-lg transition-all",
-                                  expandedCategories.includes(group.id) ? "bg-primary text-primary-foreground shadow-inner" : "hover:bg-accent text-muted-foreground"
+                                  (filterCategory === group.id || group.filters.some(f => f.value === filterCategory)) 
+                                    ? "bg-primary text-primary-foreground shadow-inner" 
+                                    : "hover:bg-accent text-muted-foreground",
+                                  expandedCategories.includes(group.id) && filterCategory !== group.id && !group.filters.some(f => f.value === filterCategory) && "bg-accent/50"
                                 )}
                               >
                                 <group.icon className="h-4 w-4" />

@@ -1,0 +1,17 @@
+{
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "basic",
+  "extraPaths": [
+    "backend/rag",
+    "backend/django_project",
+    "backend/django_project/rca_source_backend",
+    "backend/django_project/rca_source_backend/agentic_engine",
+    "backend/django_project/rca_source_backend/config"
+  ],
+  "exclude": [
+    "node_modules",
+    ".venv",
+    "dist",
+    "build"
+  ]
+}

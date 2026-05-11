@@ -49,6 +49,28 @@ const ORANGE = 'hsl(var(--severity-high))';
 const AMBER = 'hsl(var(--severity-medium))';
 const GREEN = 'hsl(var(--status-success))';
 
+const COLOR_PALETTE = [
+  '#3b82f6', // Blue
+  '#8b5cf6', // Purple
+  '#10b981', // Emerald
+  '#f59e0b', // Amber
+  '#ef4444', // Red
+  '#06b6d4', // Cyan
+  '#ec4899', // Pink
+  '#6366f1', // Indigo
+];
+
+const COLOR_PALETTE_HSL = [
+  'hsl(217 91% 60%)',
+  'hsl(262 83% 58%)',
+  'hsl(142 72% 29%)',
+  'hsl(38 92% 50%)',
+  'hsl(0 84% 60%)',
+  'hsl(189 94% 43%)',
+  'hsl(330 81% 60%)',
+  'hsl(239 84% 67%)',
+];
+
 export default function AnalyticsDashboard() {
   const { theme, resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -268,7 +290,7 @@ export default function AnalyticsDashboard() {
                 <Bar
                   data={{
                     labels: ['WiFi', 'Video', 'WAN', 'Internet', 'Voice'],
-                    datasets: [{ data: [18, 14, 12, 9, 7], backgroundColor: P, borderRadius: 4 }]
+                    datasets: [{ data: [18, 14, 12, 9, 7], backgroundColor: COLOR_PALETTE, borderRadius: 4 }]
                   }}
                   options={{
                     ...baseOptions,
@@ -289,7 +311,7 @@ export default function AnalyticsDashboard() {
                 <div className="card-title">Capacity Risk</div>
                 <div className="flex items-center gap-3">
                   <div className="cap-legend">
-                    <div className="cap-legend-item"><div className="cap-dot" style={{ background: P }}></div>Planned Capacity</div>
+                    <div className="cap-legend-item"><div className="cap-dot" style={{ background: COLOR_PALETTE[0] }}></div>Planned Capacity</div>
                     <div className="cap-legend-item"><div className="cap-dot" style={{ background: '#d1d5db' }}></div>In Use</div>
                   </div>
                   <button className="analyze-btn">Analyze & fix</button>
@@ -301,7 +323,7 @@ export default function AnalyticsDashboard() {
                     labels: ['Voice', 'Video', 'WAN', 'WiFi', 'Internet'],
                     datasets: [
                       { label: 'Planned', data: [100, 100, 100, 100, 100], backgroundColor: '#d1d5db', borderRadius: 4 },
-                      { label: 'In Use', data: [38, 42, 98, 35, 28], backgroundColor: P, borderRadius: 4 },
+                      { label: 'In Use', data: [38, 42, 98, 35, 28], backgroundColor: COLOR_PALETTE, borderRadius: 4 },
                     ]
                   }}
                   options={{
@@ -346,7 +368,7 @@ export default function AnalyticsDashboard() {
                   <Doughnut
                     data={{
                       labels: ['Voice', 'Video', 'WAN', 'WiFi', 'Internet'],
-                      datasets: [{ data: [30, 25, 20, 15, 10], backgroundColor: [P, P2, P3, P4, P5], borderWidth: 0 }]
+                      datasets: [{ data: [30, 25, 20, 15, 10], backgroundColor: COLOR_PALETTE, borderWidth: 0 }]
                     }}
                     options={{
                       cutout: '65%',
@@ -362,11 +384,11 @@ export default function AnalyticsDashboard() {
                   />
                 </div>
                 <div className="legend flex-col gap-1.5">
-                  <div className="legend-item"><div className="legend-dot" style={{ background: P }}></div>Voice</div>
-                  <div className="legend-item"><div className="legend-dot" style={{ background: P2 }}></div>Video</div>
-                  <div className="legend-item"><div className="legend-dot" style={{ background: P3 }}></div>WAN</div>
-                  <div className="legend-item"><div className="legend-dot" style={{ background: P4 }}></div>WiFi</div>
-                  <div className="legend-item"><div className="legend-dot" style={{ background: P5 }}></div>Internet</div>
+                  <div className="legend-item"><div className="legend-dot" style={{ background: COLOR_PALETTE[0] }}></div>Voice</div>
+                  <div className="legend-item"><div className="legend-dot" style={{ background: COLOR_PALETTE[1] }}></div>Video</div>
+                  <div className="legend-item"><div className="legend-dot" style={{ background: COLOR_PALETTE[2] }}></div>WAN</div>
+                  <div className="legend-item"><div className="legend-dot" style={{ background: COLOR_PALETTE[3] }}></div>WiFi</div>
+                  <div className="legend-item"><div className="legend-dot" style={{ background: COLOR_PALETTE[4] }}></div>Internet</div>
                 </div>
               </div>
             </div>
@@ -387,7 +409,7 @@ export default function AnalyticsDashboard() {
                 <Bar
                   data={{
                     labels: ['Dist2', 'Firewall', 'R4', 'DB1', 'AppSrv1', 'Core2', 'R1', 'AccessSW2', 'R2'],
-                    datasets: [{ data: [19200, 17800, 14200, 11400, 9600, 7800, 3200, 2100, 1800], backgroundColor: P, borderRadius: 4 }]
+                    datasets: [{ data: [19200, 17800, 14200, 11400, 9600, 7800, 3200, 2100, 1800], backgroundColor: COLOR_PALETTE, borderRadius: 4 }]
                   }}
                   options={{
                     ...baseOptions,
@@ -478,11 +500,11 @@ export default function AnalyticsDashboard() {
               </div>
               <div className="asset-row">
                 <div><div className="asset-name">Firewall FW-03</div><div className="asset-tags"><span className="asset-tag">Config drift</span><span className="asset-tag">Missed patches</span></div></div>
-                <div className="text-right"><span className="badge bg-[#fff3cd] text-[#92400e]">High</span><div className="text-[11px] text-[#9ca3af] mt-1">8 signals</div></div>
+                <div className="text-right"><span className="badge bg-[hsl(var(--severity-high)/0.15)] text-[hsl(var(--severity-high))] border border-[hsl(var(--severity-high)/0.2)]">High</span><div className="text-[11px] text-muted-foreground mt-1">8 signals</div></div>
               </div>
               <div className="asset-row" style={{ marginBottom: 0 }}>
                 <div><div className="asset-name">DNS Primary</div><div className="asset-tags"><span className="asset-tag">Service failure</span></div></div>
-                <div className="text-right"><span className="badge bg-[#fff3cd] text-[#92400e]">High</span><div className="text-[11px] text-[#9ca3af] mt-1">11 signals</div></div>
+                <div className="text-right"><span className="badge bg-[hsl(var(--severity-high)/0.15)] text-[hsl(var(--severity-high))] border border-[hsl(var(--severity-high)/0.2)]">High</span><div className="text-[11px] text-muted-foreground mt-1">11 signals</div></div>
               </div>
             </div>
           </div>
@@ -494,24 +516,24 @@ export default function AnalyticsDashboard() {
               </div>
               <div style={{ height: '300px', overflowY: 'auto', paddingRight: '4px' }} className="custom-scrollbar">
                 <div className="action-row">
-                  <div className="action-title"><span className="bg-[#dcfce7] text-[#16a34a] text-[9px] px-1 rounded">Auto</span>Reroute WAN traffic via backup link</div>
+                  <div className="action-title"><span className="bg-[hsl(var(--status-success)/0.2)] text-[hsl(var(--status-success))] text-[9px] px-1 rounded border border-[hsl(var(--status-success)/0.3)]">Auto</span>Reroute WAN traffic via backup link</div>
                   <div className="action-body">Activate standby WAN link BK-02 and redistribute traffic. Expected to reduce primary link utilization to 45%.</div>
-                  <div className="action-footer"><span className="text-[9px] text-[#9ca3af]">Resolved similar congestion 3× in past 6 months</span><div className="flex items-center gap-2"><span className="conf-badge">91% conf.</span><button className="exec-btn">Execute</button></div></div>
+                  <div className="action-footer"><span className="text-[9px] text-muted-foreground">Resolved similar congestion 3× in past 6 months</span><div className="flex items-center gap-2"><span className="conf-badge">91% conf.</span><button className="exec-btn">Execute</button></div></div>
                 </div>
                 <div className="action-row">
-                  <div className="action-title"><span className="bg-[#dcfce7] text-[#16a34a] text-[9px] px-1 rounded">Auto</span>Restart DNS Primary service</div>
+                  <div className="action-title"><span className="bg-[hsl(var(--status-success)/0.2)] text-[hsl(var(--status-success))] text-[9px] px-1 rounded border border-[hsl(var(--status-success)/0.3)]">Auto</span>Restart DNS Primary service</div>
                   <div className="action-body">DNS service process is unresponsive. Restart with config validation will restore resolution. (CVE-2024-1234)</div>
-                  <div className="action-footer"><span className="text-[9px] text-[#9ca3af]">Memory leak pattern detected</span><div className="flex items-center gap-2"><span className="conf-badge">85% conf.</span><button className="exec-btn">Execute</button></div></div>
+                  <div className="action-footer"><span className="text-[9px] text-muted-foreground">Memory leak pattern detected</span><div className="flex items-center gap-2"><span className="conf-badge">85% conf.</span><button className="exec-btn">Execute</button></div></div>
                 </div>
                 <div className="action-row">
-                  <div className="action-title"><span className="bg-[#fff3cd] text-[#92400e] text-[9px] px-1 rounded">Investigate</span>Audit FW-03 config changes</div>
+                  <div className="action-title"><span className="bg-[hsl(var(--severity-medium)/0.2)] text-[hsl(var(--severity-medium))] text-[9px] px-1 rounded border border-[hsl(var(--severity-medium)/0.3)]">Investigate</span>Audit FW-03 config changes</div>
                   <div className="action-body">Review ACL modifications at 13:45 UTC. Compare against golden baseline and validate change authorization.</div>
-                  <div className="action-footer"><span className="text-[9px] text-[#9ca3af]">No change ticket found for this window</span><div className="flex items-center gap-2"><span className="conf-badge">72% conf.</span><button className="exec-btn bg-[#e8e6ff]">Investigate</button></div></div>
+                  <div className="action-footer"><span className="text-[9px] text-muted-foreground">No change ticket found for this window</span><div className="flex items-center gap-2"><span className="conf-badge">72% conf.</span><button className="exec-btn bg-accent/20 border border-accent/30 text-accent-foreground">Investigate</button></div></div>
                 </div>
                 <div className="action-row" style={{ marginBottom: 0 }}>
-                  <div className="action-title"><span className="bg-[#dcfce7] text-[#16a34a] text-[9px] px-1 rounded">Auto</span>Deploy auto-failover for DNS</div>
+                  <div className="action-title"><span className="bg-[hsl(var(--status-success)/0.2)] text-[hsl(var(--status-success))] text-[9px] px-1 rounded border border-[hsl(var(--status-success)/0.3)]">Auto</span>Deploy auto-failover for DNS</div>
                   <div className="action-body">Configure health-check-based automatic failover DNS-Primary → DNS-Secondary with &lt;30s switchover.</div>
-                  <div className="action-footer"><span className="text-[9px] text-[#9ca3af]">DNS SPOF identified across 5 incidents</span><div className="flex items-center gap-2"><span className="conf-badge">94% conf.</span><button className="exec-btn">Execute</button></div></div>
+                  <div className="action-footer"><span className="text-[9px] text-muted-foreground">DNS SPOF identified across 5 incidents</span><div className="flex items-center gap-2"><span className="conf-badge">94% conf.</span><button className="exec-btn">Execute</button></div></div>
                 </div>
               </div>
             </div>
@@ -616,11 +638,11 @@ export default function AnalyticsDashboard() {
                   <span className="text-[10px] text-muted-foreground font-bold">Critical</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-[2px]" style={{ background: P }}></div>
+                  <div className="w-2.5 h-2.5 rounded-[2px]" style={{ background: ORANGE }}></div>
                   <span className="text-[10px] text-muted-foreground font-bold">High</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-[2px]" style={{ background: P2 }}></div>
+                  <div className="w-2.5 h-2.5 rounded-[2px]" style={{ background: AMBER }}></div>
                   <span className="text-[10px] text-muted-foreground font-bold">Medium</span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -640,7 +662,7 @@ export default function AnalyticsDashboard() {
                       const combined = baseVal + randVal;
                       const count = Math.floor(combined * 50) + 10;
 
-                      const color = count > 80 ? RED : count > 50 ? P : count > 20 ? P2 : 'hsl(var(--muted))';
+                      const color = count > 80 ? RED : count > 50 ? ORANGE : count > 20 ? AMBER : 'hsl(var(--muted))';
                       const textColor = (count > 20) ? '#fff' : 'hsl(var(--muted-foreground))';
 
                       return (

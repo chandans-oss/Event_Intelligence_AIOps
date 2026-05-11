@@ -35,3 +35,25 @@ export const runRagAnalysis = async (payload: any) => {
 
     return response.data;
 };
+
+export const fetchRAGKB = async () => {
+    const response = await axios.get(`${API_BASE_URL}/api/rag/kb/`);
+    return response.data;
+};
+
+export const saveRAGKBEntry = async (entry: any, isNew: boolean) => {
+    if (isNew) {
+        const response = await axios.post(`${API_BASE_URL}/api/rag/kb/`, entry);
+        return response.data;
+    } else {
+        const response = await axios.put(`${API_BASE_URL}/api/rag/kb/`, entry);
+        return response.data;
+    }
+};
+
+export const deleteRAGKBEntry = async (docId: string) => {
+    const response = await axios.delete(`${API_BASE_URL}/api/rag/kb/`, {
+        params: { id: docId }
+    });
+    return response.data;
+};

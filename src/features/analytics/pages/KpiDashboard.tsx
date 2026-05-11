@@ -109,16 +109,16 @@ const PIPELINE_STAGES = [
 
 const SANKEY_DATA = {
     nodes: [
-        { name: 'Ingest', fill: '#06B6D4' },          // 0
-        { name: 'Deduplicate', fill: '#10B981' },     // 1
-        { name: 'Suppress', fill: '#F59E0B' },        // 2
-        { name: 'Correlate', fill: '#A855F7' },       // 3
-        { name: 'RCA', fill: '#F97316' },             // 4
-        { name: 'Remediate', fill: '#3B82F6' },       // 5
-        { name: 'Dropped (Dedup)', fill: '#EF4444' }, // 6
-        { name: 'Dropped (Sup)', fill: '#EF4444' },   // 7
-        { name: 'Dropped (Corr)', fill: '#EF4444' },  // 8
-        { name: 'Dropped (RCA)', fill: '#EF4444' }    // 9
+        { name: 'Ingest', fill: 'hsl(var(--primary))' },          // 0
+        { name: 'Deduplicate', fill: 'hsl(var(--status-success))' },     // 1
+        { name: 'Suppress', fill: 'hsl(var(--severity-medium))' },        // 2
+        { name: 'Correlate', fill: 'hsl(var(--severity-high))' },       // 3
+        { name: 'RCA', fill: 'hsl(var(--severity-high))' },             // 4
+        { name: 'Remediate', fill: 'hsl(var(--primary))' },       // 5
+        { name: 'Dropped (Dedup)', fill: 'hsl(var(--severity-critical))' }, // 6
+        { name: 'Dropped (Sup)', fill: 'hsl(var(--severity-critical))' },   // 7
+        { name: 'Dropped (Corr)', fill: 'hsl(var(--severity-critical))' },  // 8
+        { name: 'Dropped (RCA)', fill: 'hsl(var(--severity-critical))' }    // 9
     ],
     links: [
         { source: 0, target: 1, value: 2482 },
@@ -175,13 +175,13 @@ export default function KpiDashboard() {
     const [selectedTrend, setSelectedTrend] = useState<any>(null);
 
     const colors = useMemo(() => ({
-        primary: isDark ? '#3b82f6' : '#2563eb',
-        success: isDark ? '#10b981' : '#059669',
-        warning: isDark ? '#f59e0b' : '#d97706',
-        error: isDark ? '#ef4444' : '#dc2626',
-        muted: isDark ? '#475569' : '#94a3b8',
-        border: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-        card: isDark ? '#111827' : '#ffffff'
+        primary: 'hsl(var(--primary))',
+        success: 'hsl(var(--status-success))',
+        warning: 'hsl(var(--severity-medium))',
+        error: 'hsl(var(--severity-critical))',
+        muted: 'hsl(var(--muted-foreground))',
+        border: 'hsl(var(--border))',
+        card: 'hsl(var(--card))'
     }), [isDark]);
 
     const kpiStats = useMemo(() => {

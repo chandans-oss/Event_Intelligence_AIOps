@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 import sys
 
 from pathlib import Path
@@ -17,6 +18,7 @@ from pathlib import Path
 CURRENT_FILE = Path(__file__).resolve()
 BACKEND_ROOT = CURRENT_FILE.parents[2]  # Goes up to: .../backend/
 RAG_DIR = BACKEND_ROOT / 'rag'
+RAG_KB_PATH = RAG_DIR / 'rca_json.json'
 RCA_BASE = BACKEND_ROOT / 'django_project' / 'rca_source_backend'
 
 # Force inject paths at top priority
@@ -26,9 +28,12 @@ sys.path.insert(0, str(RCA_BASE / 'agentic_engine'))
 sys.path.insert(0, str(RCA_BASE / 'config'))
 
 try:
-    from ierag2_refactored import run_full_pipeline
+    from ierag5_refactored import run_full_pipeline
 except ImportError:
-    run_full_pipeline = None
+    try:
+        from ierag2_refactored import run_full_pipeline
+    except ImportError:
+        run_full_pipeline = None
 
 try:
     # After adding __init__.py, this direct search should be more reliable
@@ -167,4 +172,74 @@ class RunRAGAnalysisView(APIView):
             import traceback
             traceback.print_exc()
             return Response({"error": f"Error running RAG analysis: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class RAGKBView(APIView):
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        try:
+            if not os.path.exists(RAG_KB_PATH):
+                return Response([], status=status.HTTP_200_OK)
+            with open(RAG_KB_PATH, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def post(self, request):
+        new_entry = request.data
+        if not os.path.exists(RAG_KB_PATH):
+            data = []
+        else:
+            with open(RAG_KB_PATH, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        
+        doc_id = new_entry.get('_id') or new_entry.get('doc_id')
+        if any(e.get('_id') == doc_id or e.get('doc_id') == doc_id for e in data):
+            return Response({"error": "Entry with this ID already exists"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        data.append(new_entry)
+        with open(RAG_KB_PATH, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=4)
+        return Response(new_entry, status=status.HTTP_201_CREATED)
+
+    def put(self, request):
+        updated_entry = request.data
+        doc_id = updated_entry.get('_id') or updated_entry.get('doc_id')
+        if not doc_id:
+            return Response({"error": "No ID provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        with open(RAG_KB_PATH, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        found = False
+        for i, entry in enumerate(data):
+            if entry.get('_id') == doc_id or entry.get('doc_id') == doc_id:
+                data[i] = updated_entry
+                found = True
+                break
+        
+        if not found:
+            return Response({"error": "Entry not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        with open(RAG_KB_PATH, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=4)
+        return Response(updated_entry, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        doc_id = request.query_params.get('id')
+        if not doc_id:
+            return Response({"error": "No ID provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        with open(RAG_KB_PATH, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        new_data = [e for e in data if e.get('_id') != doc_id and e.get('doc_id') != doc_id]
+        
+        if len(new_data) == len(data):
+            return Response({"error": "Entry not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        with open(RAG_KB_PATH, 'w', encoding='utf-8') as f:
+            json.dump(new_data, f, indent=4)
+        return Response({"status": "deleted"}, status=status.HTTP_200_OK)
 

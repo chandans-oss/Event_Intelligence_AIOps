@@ -28,7 +28,7 @@ export default function Admin() {
       case 'KB':
         return <KBSection />;
       case 'RAGKB':
-        return <RAGKBSection />;
+        return <RAGKBSection highlightDocId={highlightIntent} />;
       case 'AutoRemediation':
         return <AutoRemediationSection />;
       default:

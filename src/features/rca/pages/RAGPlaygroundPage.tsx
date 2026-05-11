@@ -1,439 +1,670 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme as useNextTheme } from 'next-themes';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Typography, Box, Container, Button, Paper, ThemeProvider, createTheme,
-    Grid, TextField, Divider, Chip, Card, CardContent, IconButton,
-    Table, TableBody, TableCell, TableContainer, TableRow, CircularProgress,
-    Tooltip
-} from '@mui/material';
-import {
-    LayoutDashboard, Play, FileJson, List, AlertCircle, BarChart2,
-    Upload, Trash2, CheckCircle2, Search, Brain, Activity, Shield,
-    ArrowRight, Info, Cpu, Thermometer, Wifi, Link2, Zap, FileUp, X
+    Settings, Play, FileJson, List, AlertCircle, BarChart2,
+    Upload, Search, Brain, Activity, Shield,
+    ArrowRight, Info, Cpu, Zap, X, ChevronRight,
+    ChevronDown, Database, Link as LinkIcon, Eye,
+    Maximize2, RefreshCw, Layers, Sliders, ToggleLeft,
+    CheckCircle2, Circle, ArrowDown, Terminal, Fingerprint,
+    Boxes, Network, Sparkles, Layout
 } from 'lucide-react';
 import { toast } from "sonner";
+
+import {
+    Card, CardContent, CardHeader, CardTitle, CardDescription
+} from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Slider } from "@/shared/components/ui/slider";
+import { Switch } from "@/shared/components/ui/switch";
+import { Badge } from "@/shared/components/ui/badge";
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from "@/shared/components/ui/select";
+import { ScrollArea } from "@/shared/components/ui/scroll-area";
+import { Separator } from "@/shared/components/ui/separator";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/shared/components/ui/tooltip";
 import { MainLayout } from "@/shared/components/layout/MainLayout";
 import { runRagAnalysis } from "@/api/rcaApi";
 
-// --- Types ---
-interface RootEvent {
-    _id?: any;
-    organization?: string;
-    datetime?: string;
-    is_cleared?: number;
-    probable_cause?: string;
-    ip_address?: string;
-    event_type?: string;
-    alarm_msg?: string;
-    device_type?: string;
-    managed_object_name?: string;
-    severity?: number;
-    priority?: number;
-    alarm_category?: string;
-    vendor?: string;
-    event_count?: number;
-    [key: string]: any;
-}
-
-interface RAGPayload {
-    intent_id?: string;
-    description?: string;
-    payload: {
-        raw_logs: string[];
-        root_event: RootEvent;
-        metrics_payload: Record<string, Record<string, any[]>>;
-        topology?: Record<string, any>;
-    };
-}
-
 // --- Constants ---
+
+const STAGES = [
+    { id: 'input', label: '01_INGEST', icon: FileJson },
+    { id: 'ner', label: '02_MINING', icon: Brain },
+    { id: 'search', label: '03_RETRIEVE', icon: Database },
+    { id: 'rerank', label: '04_RERANK', icon: Zap },
+    { id: 'topk', label: '05_RCA_GEN', icon: Shield }
+];
+
 const INITIAL_JSON_EXAMPLE = {
-    "intent_id": "link.down",
-    "description": "Realistic vendor data simulation",
-    "payload": {
-        "raw_logs": [
-            "2026-02-07T18:00:45.123Z Core-Router-X %SYS-3-CPUHOG: CPU hog detected - process 'BGP Scanner' took 4500ms",
-            "2026-02-07T18:02:10.567Z Core-Router-X %ENV-4-TEMP: Temperature threshold exceeded on slot 1 (CPU temp 78C)",
-            "2026-02-07T18:03:55.890Z Core-Router-X %FAN-3-FANFAIL: Fan tray 2 speed below normal",
-            "2026-02-07T18:05:20.234Z Core-Router-X %LINK-5-CHANGED: Interface Gi0/5 changed state to administratively down (unrelated port)",
-            "2026-02-07T18:07:15.678Z Core-Router-X %CPU-5-UTIL: CPU utilization 92% - high memory pressure also detected",
-            "2026-02-07T18:09:40.012Z Core-Router-X %THERMAL-2-ALERT: Chassis temperature rising rapidly",
-            "2026-02-07T18:12:05.456Z Core-Router-X info: SNMP polling to 10.0.4.14 intermittent but not fully lost"
-        ],
-        "root_event": {
-            "organization": "131135018821674340352",
-            "ip_address": "10.0.4.14",
-            "event_type": "State Change",
-            "severity": 5,
-            "alarm_msg": "Device Not Reachable",
-            "managed_object_name": "System"
-        },
-        "metrics_payload": {
-            "cpu_util": { "Core-Router-X": [75, 82, 91, 95, 93, 88] },
-            "temp_c": { "Core-Router-X": [62, 68, 74, 79, 81, 77] },
-            "fan_speed": { "Tray2": [4200, 3800, 3100, 2800, 2500, 2900] }
-        },
-        "topology": {}
-    }
+    "root_event": {
+        "managed_object_name": "Core-Router-01",
+        "alarm_msg": "Device Not Reachable",
+        "probable_cause": "Performance Threshold Breach",
+        "severity": 5,
+        "event_type": "State Change",
+        "ip_address": "10.0.4.14",
+        "device_type": "Router"
+    },
+    "metrics_payload": {
+        "cpu_util": { "Core-Router-01": [72, 78, 85, 91, 94, 96, 97, 95] },
+        "memory_util": { "Core-Router-01": [68, 75, 81, 86, 89, 92, 94] },
+        "availability": { "Core-Router-01": [100, 100, 99, 98, 95, 85, 45, 0] }
+    },
+    "raw_logs": [
+        "2026-05-07T14:14:22Z Core-Router-01 %SYS-3-CPUHOG: CPU hog detected - process BGP Scanner took 6800ms",
+        "2026-05-07T14:16:05Z Core-Router-01 %SYS-2-MEMORY: Memory usage 82% - high pressure",
+        "2026-05-07T14:21:15Z Core-Router-01 %LINEPROTO-5-UPDOWN: Line protocol on Interface Te0/0/0 changed state to down",
+        "2026-05-07T14:27:50Z Core-Router-01 Critical: Device unreachable from monitoring system"
+    ]
+};
+
+// --- Components ---
+
+const HorizontalTimeline = ({ activeId, completedIds, onStageClick, timings }: any) => {
+    return (
+        <div className="w-full flex items-center justify-between px-20 py-4 bg-card/30 border-b relative">
+            {STAGES.map((stage, idx) => {
+                const isActive = activeId === stage.id;
+                const isCompleted = completedIds.includes(stage.id);
+                const isPast = STAGES.findIndex(s => s.id === activeId) > idx;
+                
+                return (
+                    <React.Fragment key={stage.id}>
+                        <div 
+                            className="flex flex-col items-center gap-1.5 relative z-10 cursor-pointer group"
+                            onClick={() => onStageClick(stage.id)}
+                        >
+                            {/* Node */}
+                            <div className={`
+                                w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-300
+                                ${isActive ? 'bg-primary/10 border-primary text-primary' : ''}
+                                ${isCompleted || isPast ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-background border-border text-muted-foreground'}
+                            `}>
+                                {isCompleted || isPast ? (
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                ) : (
+                                    isActive ? <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> : <Circle className="w-3.5 h-3.5" />
+                                )}
+                            </div>
+                            
+                            {/* Label */}
+                            <div className="flex flex-col items-center">
+                                <span className={`text-[9px] font-bold tracking-tight uppercase ${isActive ? 'text-primary' : isCompleted || isPast ? 'text-emerald-600' : 'text-muted-foreground'}`}>
+                                    {stage.label}
+                                </span>
+                                {timings[stage.id] && (
+                                    <span className="text-[8px] font-mono text-muted-foreground">{timings[stage.id]}ms</span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Connector */}
+                        {idx < STAGES.length - 1 && (
+                            <div className="flex-1 h-[1.5px] bg-border mx-2 relative -top-4">
+                                <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: isCompleted || isPast ? '100%' : '0%' }}
+                                    className="h-full bg-emerald-500"
+                                    transition={{ duration: 0.3 }}
+                                />
+                            </div>
+                        )}
+                    </React.Fragment>
+                );
+            })}
+        </div>
+    );
 };
 
 const RAGPlaygroundPage = () => {
-    const { theme: appTheme, systemTheme } = useNextTheme();
-    const isDark = appTheme === 'dark' || (appTheme === 'system' && systemTheme === 'dark');
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const muiTheme = useMemo(() => createTheme({
-        palette: {
-            mode: isDark ? 'dark' : 'light',
-            primary: { main: '#3b82f6' },
-            background: {
-                default: 'transparent',
-                paper: isDark ? '#0f172a' : '#ffffff'
-            },
-            text: {
-                primary: isDark ? '#f8fafc' : '#0f172a',
-                secondary: isDark ? '#94a3b8' : '#64748b'
-            },
-            divider: isDark ? '#1e293b' : '#e2e8f0'
-        },
-        typography: {
-            fontFamily: '"Outfit", "Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-            h4: { fontWeight: 800, letterSpacing: '-0.02em', fontSize: '1.75rem' },
-            h5: { fontWeight: 700, fontSize: '1.25rem' },
-            h6: { fontWeight: 700, fontSize: '1.1rem' },
-            subtitle2: { fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.05em' }
-        }
-    }), [isDark]);
-
-    const [jsonInput, setJsonInput] = useState("");
-    const [parsedData, setParsedData] = useState<RAGPayload | null>(null);
-    const [results, setResults] = useState<any>(null);
+    const navigate = useNavigate();
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+    const [activeStageId, setActiveStageId] = useState('input');
+    const [completedStages, setCompletedStages] = useState<string[]>([]);
+    const [jsonInput, setJsonInput] = useState(JSON.stringify(INITIAL_JSON_EXAMPLE, null, 2));
     const [isLoading, setIsLoading] = useState(false);
-    const [showInput, setShowInput] = useState(true);
+    const [results, setResults] = useState<any>(null);
+    const [timings, setTimings] = useState<Record<string, number>>({});
+    
+    const [config, setConfig] = useState({
+        kbPath: "rca_json.json",
+        retrieveK: 30,
+        rerankK: 15,
+        topK: 5,
+        runRerank: true
+    });
 
-    const handleProcessPayload = () => {
+    const handleRunPipeline = async () => {
+        setIsLoading(true);
+        setResults(null);
+        setTimings({});
+        setCompletedStages([]);
+        
         try {
             const parsed = JSON.parse(jsonInput);
-            if (!parsed.payload || (!parsed.payload.raw_logs && !parsed.payload.root_event)) {
-                toast.error("JSON structure is invalid. Must contain 'payload' with 'raw_logs' or 'root_event'.");
-                return;
+            const payload = parsed.root_event ? parsed : { root_event: parsed, raw_logs: parsed.raw_logs || [], metrics_payload: parsed.metrics_payload || {} };
+
+            const startTs = performance.now();
+            const apiPromise = runRagAnalysis({ payload });
+
+            for (const stage of STAGES) {
+                setActiveStageId(stage.id);
+                await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
+                setTimings(prev => ({ ...prev, [stage.id]: Math.round(performance.now() - startTs) }));
+                setCompletedStages(prev => [...prev, stage.id]);
             }
-            setParsedData(parsed);
-            setShowInput(false);
-            toast.success("Payload Ingested Successfully");
-        } catch (e) {
-            toast.error("Invalid JSON format");
-        }
-    };
 
-    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const content = e.target?.result as string;
-            setJsonInput(content);
-            try {
-                const parsed = JSON.parse(content);
-                if (!parsed.payload || (!parsed.payload.raw_logs && !parsed.payload.root_event)) {
-                    toast.error("JSON structure is invalid. Must contain 'payload'.");
-                    return;
-                }
-                setParsedData(parsed);
-                setShowInput(false);
-                toast.success(`Simulation "${file.name}" Ingested & Ready`);
-            } catch (err) {
-                toast.error("Invalid JSON file format");
-            }
-        };
-        reader.readAsText(file);
-    };
-
-    const handleClear = () => {
-        setJsonInput("");
-        toast.info("Input cleared");
-    };
-
-    const handleReset = () => {
-        setParsedData(null);
-        setResults(null);
-        setShowInput(true);
-    };
-
-    const handleAnalyze = async () => {
-        if (!parsedData) return;
-        setIsLoading(true);
-        try {
-            const analysisResults = await runRagAnalysis(parsedData);
-            setResults(analysisResults);
-            toast.success("RAG Pipeline Analysis Complete");
-        } catch (error: any) {
-            console.error(error);
-            toast.error(error.response?.data?.error || "Pipeline Execution Failed");
+            const response = await apiPromise;
+            setResults(response);
+            toast.success("Analysis Complete");
+        } catch (e: any) {
+            toast.error(e.message || "Execution failed");
         } finally {
             setIsLoading(false);
         }
     };
 
+    const renderStageContent = () => {
+        let currentJson: any = {};
+        try { currentJson = JSON.parse(jsonInput); } catch (e) { currentJson = {}; }
+        const rootEvent = currentJson.root_event || currentJson;
+
+        switch (activeStageId) {
+            case 'input':
+                return (
+                    <div className="h-full flex flex-col gap-5 animate-in fade-in duration-300">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-bold flex items-center gap-2">
+                                <FileJson className="w-5 h-5 text-primary" /> EVENT INGESTION
+                            </h2>
+                            <Button variant="outline" size="sm" className="h-8 rounded-full" onClick={() => setJsonInput(JSON.stringify(INITIAL_JSON_EXAMPLE, null, 2))}>
+                                <RefreshCw className="w-3 h-3 mr-2" /> Reset
+                            </Button>
+                        </div>
+                        <div className="flex-1 grid grid-cols-2 gap-5 min-h-0">
+                            <Card className="flex flex-col bg-slate-950/5 border-border overflow-hidden">
+                                <CardHeader className="py-3 border-b bg-muted/30">
+                                    <CardTitle className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">RAW JSON PAYLOAD</CardTitle>
+                                </CardHeader>
+                                <CardContent className="flex-1 p-0">
+                                    <textarea 
+                                        className="w-full h-full p-5 bg-transparent text-foreground font-mono text-xs resize-none outline-none"
+                                        value={jsonInput}
+                                        onChange={(e) => setJsonInput(e.target.value)}
+                                        spellCheck={false}
+                                    />
+                                </CardContent>
+                            </Card>
+                            <Card className="flex flex-col border-dashed bg-muted/10">
+                                <CardHeader className="py-3 border-b">
+                                    <CardTitle className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">PAYLOAD SUMMARY</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-5 space-y-5 overflow-y-auto">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="p-4 rounded-xl border bg-card">
+                                            <p className="text-[9px] text-muted-foreground font-bold uppercase mb-1">Managed Object</p>
+                                            <p className="text-sm font-bold truncate">{rootEvent.managed_object_name || rootEvent.device || "Unknown"}</p>
+                                        </div>
+                                        <div className="p-4 rounded-xl border bg-card">
+                                            <p className="text-[9px] text-muted-foreground font-bold uppercase mb-1">IP Address</p>
+                                            <p className="text-sm font-bold text-primary">{rootEvent.ip_address || "N/A"}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-[9px] text-muted-foreground font-bold uppercase">RAW LOGS ({currentJson.raw_logs?.length || 0})</p>
+                                        <div className="space-y-1.5">
+                                            {(currentJson.raw_logs || []).slice(0, 5).map((log: string, i: number) => (
+                                                <div key={i} className="text-[10px] font-mono p-2.5 rounded-lg border bg-muted/20 truncate opacity-80">
+                                                    {log}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                );
+
+            case 'ner':
+                return (
+                    <div className="h-full flex flex-col gap-5 animate-in fade-in duration-300">
+                        <h2 className="text-xl font-bold flex items-center gap-2">
+                            <Brain className="w-5 h-5 text-primary" /> INTELLIGENT MINING
+                        </h2>
+                        {!results ? (
+                            <div className="flex-1 flex flex-col items-center justify-center border border-dashed rounded-xl bg-muted/5">
+                                <Cpu className="w-12 h-12 text-muted-foreground animate-pulse" />
+                                <p className="mt-4 text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Mining entities & log clusters</p>
+                            </div>
+                        ) : (
+                            <div className="flex-1 grid grid-cols-2 gap-5 min-h-0">
+                                <Card>
+                                    <CardHeader className="py-3 border-b">
+                                        <CardTitle className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest">EXTRACTED ENTITIES</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-5">
+                                        <div className="space-y-5">
+                                            {Object.entries(results.entities || {}).map(([key, vals]: [string, any]) => (
+                                                <div key={key} className="space-y-2">
+                                                    <p className="text-[9px] font-bold text-muted-foreground uppercase">{key}</p>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {vals.length > 0 ? vals.map((v: string) => (
+                                                            <Badge key={v} variant="secondary" className="text-[10px] font-mono">{v}</Badge>
+                                                        )) : <span className="text-[10px] text-muted-foreground italic">None</span>}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card className="flex flex-col overflow-hidden">
+                                    <CardHeader className="py-3 border-b">
+                                        <CardTitle className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest">LOG TEMPLATES</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-0 flex-1">
+                                        <ScrollArea className="h-full">
+                                            <table className="w-full text-[10px]">
+                                                <thead className="bg-muted sticky top-0 z-10">
+                                                    <tr className="text-left font-bold text-muted-foreground border-b">
+                                                        <th className="p-3">Template</th>
+                                                        <th className="p-3 text-center w-16">Count</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y">
+                                                    {(results.templates || []).map((t: any, i: number) => (
+                                                        <tr key={i} className="hover:bg-muted/50 transition-colors">
+                                                            <td className="p-3 font-mono opacity-80">{t.template}</td>
+                                                            <td className="p-3 text-center"><Badge variant="outline">{t.count}</Badge></td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </ScrollArea>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+                    </div>
+                );
+
+            case 'search':
+                return (
+                    <div className="h-full flex flex-col gap-5 animate-in fade-in duration-300">
+                        <h2 className="text-xl font-bold flex items-center gap-2">
+                            <Database className="w-5 h-5 text-primary" /> KNOWLEDGE RETRIEVAL
+                        </h2>
+                        {!results ? (
+                            <div className="flex-1 flex flex-col items-center justify-center border border-dashed rounded-xl bg-muted/5">
+                                <Search className="w-12 h-12 text-muted-foreground animate-pulse" />
+                                <p className="mt-4 text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Retrieving knowledge from index</p>
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex flex-col gap-5 min-h-0">
+                                <Card className="bg-primary/5 border-primary/20">
+                                    <CardContent className="p-5 flex items-center justify-between">
+                                        <div className="flex-1 mr-6">
+                                            <p className="text-[9px] font-bold text-primary uppercase mb-1">SEARCH QUERY</p>
+                                            <p className="text-xs font-mono text-foreground italic line-clamp-2">"{results.query?.retrieval_text}"</p>
+                                        </div>
+                                        <div className="flex gap-5 pl-5 border-l">
+                                            <div className="text-center">
+                                                <p className="text-[9px] text-muted-foreground font-bold uppercase">Vectors</p>
+                                                <p className="text-lg font-bold">30</p>
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="text-[9px] text-muted-foreground font-bold uppercase">Keyword</p>
+                                                <p className="text-lg font-bold">15</p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <ScrollArea className="flex-1">
+                                    <div className="space-y-3 pr-4 pb-4">
+                                        {results.results?.map((res: any, i: number) => (
+                                            <div key={i} className="p-4 rounded-xl border bg-card flex gap-4 hover:border-primary/30 transition-all group">
+                                                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center font-bold text-xs text-muted-foreground group-hover:text-primary transition-colors">#{i+1}</div>
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="font-bold text-sm tracking-tight">{res.doc?.raw?.title || res.doc?.raw?.rca_id}</span>
+                                                        <Badge variant="outline" className="text-[9px]">{res.doc?.raw?.category_hierarchy?.subcategory || 'Network'}</Badge>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground line-clamp-2 leading-normal">{res.doc?.raw?.description || res.doc?.raw?.root_cause_analysis}</p>
+                                                </div>
+                                                <div className="text-right pl-4 border-l min-w-[80px] flex flex-col justify-center">
+                                                    <p className="text-[9px] font-bold text-muted-foreground uppercase mb-0.5">SCORE</p>
+                                                    <p className="text-sm font-bold font-mono">{(res.hybrid_score || 0).toFixed(4)}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </ScrollArea>
+                            </div>
+                        )}
+                    </div>
+                );
+
+            case 'rerank':
+                return (
+                    <div className="h-full flex flex-col gap-5 animate-in fade-in duration-300">
+                        <h2 className="text-xl font-bold flex items-center gap-2">
+                            <Zap className="w-5 h-5 text-primary" /> AI RERANKING
+                        </h2>
+                        {!results ? (
+                            <div className="flex-1 flex flex-col items-center justify-center border border-dashed rounded-xl bg-muted/5">
+                                <Sparkles className="w-12 h-12 text-muted-foreground animate-pulse" />
+                                <p className="mt-4 text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Running Neural Reranker</p>
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex flex-col gap-6 min-h-0">
+                                <div className="grid grid-cols-3 gap-5">
+                                    {[
+                                        { label: 'Candidates', value: '15', icon: List },
+                                        { label: 'Avg Relevance', value: (results.results?.reduce((acc: any, curr: any) => acc + (curr.cross_encoder_score || 0), 0) / results.results?.length).toFixed(3), icon: Activity },
+                                        { label: 'Confidence', value: 'High', icon: Shield }
+                                    ].map((stat, i) => (
+                                        <Card key={i} className="bg-primary/5 border-primary/10">
+                                            <CardContent className="p-4 flex items-center gap-3">
+                                                <div className="p-2 rounded-lg bg-primary/10 text-primary"><stat.icon className="w-5 h-5" /></div>
+                                                <div>
+                                                    <p className="text-[9px] font-bold text-muted-foreground uppercase">{stat.label}</p>
+                                                    <p className="text-xl font-bold">{stat.value}</p>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                                <Card className="flex-1 flex flex-col overflow-hidden">
+                                    <CardHeader className="py-3 border-b">
+                                        <CardTitle className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest">RERANKING RESULTS</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-6 space-y-5 overflow-y-auto">
+                                        {results.results?.slice(0, 6).map((res: any, i: number) => (
+                                            <div key={i} className="space-y-1.5">
+                                                <div className="flex justify-between items-end">
+                                                    <span className="font-bold text-xs tracking-tight truncate max-w-[500px]">{res.doc?.raw?.title || res.doc?.raw?.rca_id}</span>
+                                                    <span className="text-primary font-bold font-mono text-xs">{(res.cross_encoder_score || 0).toFixed(4)}</span>
+                                                </div>
+                                                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                                    <motion.div 
+                                                        initial={{ width: 0 }}
+                                                        animate={{ width: `${Math.min(100, (res.cross_encoder_score || 0) * 100)}%` }}
+                                                        className="h-full bg-primary"
+                                                        transition={{ duration: 0.8 }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+                    </div>
+                );
+
+            case 'topk':
+                return (
+                    <div className="h-full flex flex-col gap-5 animate-in fade-in duration-300">
+                        <h2 className="text-xl font-bold flex items-center gap-2">
+                            <Shield className="w-5 h-5 text-primary" /> RCA CONCLUSION
+                        </h2>
+                        {!results ? (
+                            <div className="flex-1 flex flex-col items-center justify-center border border-dashed rounded-xl bg-muted/5">
+                                <Activity className="w-12 h-12 text-muted-foreground animate-pulse" />
+                                <p className="mt-4 text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Generating final outcome</p>
+                            </div>
+                        ) : (
+                            <ScrollArea className="flex-1">
+                                <div className="space-y-6 pr-4 pb-6">
+                                    {results.results?.slice(0, 3).map((res: any, i: number) => {
+                                        const confidence = res.confidence ?? (res.final_score ? res.final_score * 100 : 0);
+                                        const title = res.title || res.doc?.raw?.title || 'Root Cause Identified';
+                                        const rcaId = res.rca_id || res.doc?.raw?.rca_id || res.doc?.doc_id || 'UNKNOWN';
+                                        const analysis = res.root_cause_analysis || res.doc?.raw?.root_cause_analysis || res.doc?.raw?.description;
+                                        const hypotheses = res.doc?.raw?.hypotheses || [];
+                                        const logs = res.relevant_logs || [];
+
+                                        return (
+                                            <Card key={i} className={`overflow-hidden border-border bg-card shadow-sm ${i === 0 ? 'ring-2 ring-primary/20 ring-offset-2' : ''}`}>
+                                                <div className={`h-1 ${i === 0 ? 'bg-primary' : 'bg-muted'}`} />
+                                                <CardContent className="p-6">
+                                                    <div className="flex justify-between items-start mb-6">
+                                                        <div className="flex gap-3">
+                                                            <div className={`h-12 w-12 rounded-xl flex items-center justify-center font-bold text-lg ${i === 0 ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>#{i+1}</div>
+                                                            <div>
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <Badge className={i === 0 ? "bg-primary/10 text-primary border-primary/20" : "bg-muted text-muted-foreground"}>
+                                                                        {i === 0 ? 'RECOMMENDED' : 'ALTERNATIVE'}
+                                                                    </Badge>
+                                                                    <span className="text-[10px] text-muted-foreground font-mono">ID: {rcaId}</span>
+                                                                </div>
+                                                                <h3 className="text-lg font-bold tracking-tight">{title}</h3>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-[9px] text-muted-foreground font-bold uppercase mb-0.5">CONFIDENCE</p>
+                                                            <p className={`text-3xl font-bold ${i === 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+                                                                {confidence.toFixed(1)}%
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-8 mb-6">
+                                                        <div className="space-y-3">
+                                                            <div className="flex items-center gap-2 text-muted-foreground">
+                                                                <Info className="w-4 h-4" />
+                                                                <span className="text-[10px] font-bold uppercase tracking-wider">Analysis</span>
+                                                            </div>
+                                                            <p className="text-xs leading-relaxed text-muted-foreground">{analysis}</p>
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <div className="flex items-center gap-2 text-muted-foreground">
+                                                                {hypotheses.length > 0 ? <Fingerprint className="w-4 h-4" /> : <Terminal className="w-4 h-4" />}
+                                                                <span className="text-[10px] font-bold uppercase tracking-wider">
+                                                                    {hypotheses.length > 0 ? 'Verification Hypotheses' : 'Supporting Evidence (Logs)'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                {hypotheses.length > 0 ? (
+                                                                    hypotheses.slice(0, 2).map((h: any, j: number) => (
+                                                                        <div key={j} className="p-3 rounded-lg bg-muted/40 border border-border/50">
+                                                                            <span className="font-bold text-[11px] block mb-0.5">{h.description}</span>
+                                                                            <p className="text-[10px] text-muted-foreground line-clamp-1">{h.remediation_steps}</p>
+                                                                        </div>
+                                                                    ))
+                                                                ) : (
+                                                                    logs.slice(0, 3).map((log: any, j: number) => (
+                                                                        <div key={j} className="p-2.5 rounded-lg bg-muted/30 border border-border/50">
+                                                                            <p className="text-[10px] font-mono text-muted-foreground line-clamp-2">
+                                                                                {log.template}
+                                                                            </p>
+                                                                            <div className="flex items-center justify-end mt-1">
+                                                                                <Badge variant="outline" className="text-[8px] font-bold py-0 h-4">Score: {log.score.toFixed(3)}</Badge>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex justify-between items-center pt-4 border-t">
+                                                        <div className="flex gap-1.5">
+                                                            {(res.doc?.raw?.keywords || []).slice(0, 4).map((kw: string) => (
+                                                                <Badge key={kw} variant="secondary" className="bg-muted text-muted-foreground text-[9px] px-2 py-0">{kw}</Badge>
+                                                            ))}
+                                                        </div>
+                                                        <Button 
+                                                            variant="outline" 
+                                                            className="h-8 px-4 text-xs font-bold gap-2"
+                                                            onClick={() => navigate(`/admin?section=RAGKB&highlight=${encodeURIComponent(rcaId)}`)}
+                                                        >
+                                                            Details <Maximize2 className="w-3 h-3" />
+                                                        </Button>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        );
+                                    })}
+                                </div>
+                            </ScrollArea>
+                        )}
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
+
     return (
         <MainLayout>
-            <ThemeProvider theme={muiTheme}>
-                <Container maxWidth="xl" sx={{ py: 4, minHeight: '100vh' }}>
-                    {/* Header */}
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                        <Box display="flex" alignItems="center" gap={1.5}>
-                            <Box sx={{
-                                p: 1, borderRadius: '12px',
-                                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                                color: 'white', boxShadow: '0 8px 16px rgba(59, 130, 246, 0.3)'
-                            }}>
-                                <Brain size={24} />
-                            </Box>
-                            <Box>
-                                <Typography variant="h5">RAG Ingestion Playground</Typography>
-                            </Box>
-                        </Box>
-                        <Box display="flex" gap={2}>
-                            {parsedData && (
-                                <>
-                                    <Button variant="outlined" onClick={handleReset} sx={{ borderRadius: '10px', textTransform: 'none', px: 2, py: 0.6, fontSize: '0.85rem' }}>
-                                        Back to Input
-                                    </Button>
-                                    <Button
-                                        variant="contained"
-                                        onClick={handleAnalyze}
-                                        disabled={isLoading}
-                                        startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <Play size={16} />}
-                                        sx={{ borderRadius: '10px', px: 3, py: 0.8, fontWeight: 600, textTransform: 'none', fontSize: '0.85rem' }}
-                                    >
-                                        {isLoading ? 'Running Analysis...' : 'Run Analysis'}
-                                    </Button>
-                                </>
-                            )}
-                        </Box>
-                    </Box>
+            <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-background text-foreground">
+                
+                {/* Header */}
+                <div className="h-16 border-b flex items-center justify-between px-8 bg-card/50 backdrop-blur-sm z-20">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-primary/10">
+                            <Layout className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                            <h1 className="font-bold text-lg tracking-tight flex items-center gap-2">
+                                RAG PLAYGROUND
+                                <Badge variant="secondary" className="text-[9px] font-bold">V5 ENGINE</Badge>
+                            </h1>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Automated Root Cause Investigation</p>
+                        </div>
+                    </div>
 
-                    {/* Step 1: User Input (JSON) */}
-                    {showInput && (
-                        <Paper sx={{
-                            p: 4, borderRadius: '24px', border: '1px solid', borderColor: 'divider',
-                            position: 'relative', overflow: 'hidden',
-                            background: isDark
-                                ? 'linear-gradient(180deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.8) 100%)'
-                                : 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
-                            boxShadow: isDark ? '0 25px 50px -12px rgba(0, 0, 0, 0.5)' : '0 25px 50px -12px rgba(0, 0, 0, 0.05)'
-                        }}>
-                            <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, #3b82f6, #6366f1)' }} />
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted border">
+                            <div className={`w-1.5 h-1.5 rounded-full ${isLoading ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+                            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+                                {isLoading ? 'Processing' : 'Engine Ready'}
+                            </span>
+                        </div>
+                        <Button 
+                            className="h-9 px-6 rounded-lg bg-primary hover:bg-primary/90 text-white font-bold tracking-wide gap-2 shadow-sm transition-all" 
+                            onClick={handleRunPipeline}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
+                            RUN ANALYSIS
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className={`h-9 w-9 rounded-lg transition-colors ${!sidebarCollapsed ? 'bg-muted border-primary/50' : ''}`}
+                            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                        >
+                            <Settings className="w-4 h-4" />
+                        </Button>
+                    </div>
+                </div>
 
-                            <Box sx={{
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-                                py: 3, px: 2, borderRadius: '24px', border: '2px dashed', borderColor: isDark ? 'rgba(59, 130, 246, 0.3)' : '#e2e8f0',
-                                bgcolor: isDark ? 'rgba(0,0,0,0.1)' : 'rgba(248, 250, 252, 0.5)',
-                                transition: 'all 0.3s ease',
-                                '&:hover': {
-                                    borderColor: 'primary.main',
-                                    bgcolor: isDark ? 'rgba(59, 130, 246, 0.05)' : 'rgba(59, 130, 246, 0.02)'
-                                }
-                            }}>
-                                <Box sx={{
-                                    mb: 3, p: 3, borderRadius: '50%',
-                                    bgcolor: isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)',
-                                    color: 'primary.main'
-                                }}>
-                                    <Upload size={48} strokeWidth={1.5} />
-                                </Box>
+                {/* Timeline */}
+                <HorizontalTimeline 
+                    activeId={activeStageId}
+                    completedIds={completedStages}
+                    onStageClick={setActiveStageId}
+                    timings={timings}
+                />
 
-                                <Typography variant="h4" gutterBottom sx={{ fontWeight: 800 }}>Upload Incident Data</Typography>
-                                <Typography variant="body1" color="text.secondary" sx={{ maxWidth: '500px', mb: 5, lineHeight: 1.6 }}>
-                                    Upload a JSON simulation file containing incident metrics, events, and topology data to execute the HYBRID RAG RCA Pipeline.
-                                </Typography>
+                {/* Main View */}
+                <div className="flex-1 flex overflow-hidden relative">
+                    <div className="flex-1 p-6 overflow-hidden">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={activeStageId}
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -5 }}
+                                transition={{ duration: 0.2 }}
+                                className="h-full overflow-y-auto pr-2 scrollbar-thin"
+                            >
+                                {renderStageContent()}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
 
-                                <Box display="flex" gap={2}>
-                                    <input
-                                        type="file"
-                                        accept=".json"
-                                        style={{ display: 'none' }}
-                                        ref={fileInputRef}
-                                        onChange={handleFileUpload}
-                                    />
-                                    <Button
-                                        variant="outlined"
-                                        size="large"
-                                        startIcon={<FileJson size={20} />}
-                                        onClick={() => fileInputRef.current?.click()}
-                                        sx={{
-                                            borderRadius: '14px', px: 4, py: 1.5,
-                                            fontWeight: 700, textTransform: 'none',
-                                            borderWidth: '2px',
-                                            '&:hover': { borderWidth: '2px' }
-                                        }}
-                                    >
-                                        CHOOSE FILE
-                                    </Button>
-                                    <Button
-                                        variant="contained"
-                                        size="large"
-                                        disabled={!jsonInput || jsonInput.trim() === ""}
-                                        onClick={handleProcessPayload}
-                                        sx={{
-                                            borderRadius: '14px', px: 4, py: 1.5,
-                                            fontWeight: 700, textTransform: 'none',
-                                            boxShadow: '0 10px 20px rgba(59, 130, 246, 0.3)'
-                                        }}
-                                    >
-                                        RUN ANALYSIS
-                                    </Button>
-                                </Box>
-                            </Box>
-                        </Paper>
-                    )}
+                    {/* Sidebar */}
+                    <AnimatePresence>
+                        {!sidebarCollapsed && (
+                            <motion.div 
+                                initial={{ width: 0, opacity: 0 }}
+                                animate={{ width: 300, opacity: 1 }}
+                                exit={{ width: 0, opacity: 0 }}
+                                className="border-l bg-card/80 backdrop-blur-lg overflow-hidden relative z-20"
+                            >
+                                <div className="w-[300px] h-full flex flex-col p-6">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                                            <Sliders className="w-4 h-4 text-primary" /> Configuration
+                                        </h3>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setSidebarCollapsed(true)}>
+                                            <X className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                    <ScrollArea className="flex-1">
+                                        <div className="space-y-8">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] text-muted-foreground uppercase font-bold">Knowledge Base</Label>
+                                                <Select value={config.kbPath} onValueChange={(v) => setConfig(prev => ({ ...prev, kbPath: v }))}>
+                                                    <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="rca_json.json">Network RCA v5</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-6">
+                                                <Label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Search Parameters</Label>
+                                                {[
+                                                    { label: 'Retrieve K', key: 'retrieveK', max: 50 },
+                                                    { label: 'Rerank K', key: 'rerankK', max: 20 },
+                                                    { label: 'Top K', key: 'topK', max: 10 },
+                                                ].map((s) => (
+                                                    <div key={s.key} className="space-y-2">
+                                                        <div className="flex justify-between text-[10px] font-bold uppercase">
+                                                            <span className="text-muted-foreground">{s.label}</span>
+                                                            <span className="text-primary">{ (config as any)[s.key] }</span>
+                                                        </div>
+                                                        <Slider 
+                                                            value={[(config as any)[s.key]]} 
+                                                            max={s.max} 
+                                                            min={1} 
+                                                            onValueChange={([v]) => setConfig(prev => ({ ...prev, [s.key]: v }))} 
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="pt-6 border-t">
+                                                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+                                                    <div className="flex items-center gap-2">
+                                                        <Zap className="w-4 h-4 text-primary" />
+                                                        <span className="text-xs font-bold">AI Reranking</span>
+                                                    </div>
+                                                    <Switch checked={config.runRerank} onCheckedChange={(v) => setConfig(prev => ({ ...prev, runRerank: v }))} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </ScrollArea>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
 
-                    {/* Step 2: Visualized Ingested Data */}
-                    {parsedData && !showInput && (
-                        <Box>
-                            <Grid container spacing={3} mb={4}>
-                                {/* Logs */}
-                                <Grid size={{ xs: 12, md: 4 }}>
-                                    <Card sx={{ height: '550px', borderRadius: '24px', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
-                                        <Box p={2.5} borderBottom="1px solid" borderColor="divider" display="flex" alignItems="center" justifyContent="space-between">
-                                            <Box display="flex" alignItems="center" gap={1.5}><List size={20} color="#3b82f6" /><Typography variant="h6">Logs Ingested</Typography></Box>
-                                            <Chip label={parsedData.payload.raw_logs?.length || 0} size="small" variant="outlined" />
-                                        </Box>
-                                        <Box flex={1} overflow="auto" p={2} bgcolor={isDark ? 'rgba(0,0,0,0.1)' : '#f8fafc'}>
-                                            {parsedData.payload.raw_logs?.map((log, i) => (
-                                                <Box key={i} mb={1} p={1.5} sx={{ borderRadius: '12px', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', fontSize: '0.75rem', fontFamily: 'monospace' }}>{log}</Box>
-                                            )) || <Typography variant="caption" color="text.secondary">No logs provided</Typography>}
-                                        </Box>
-                                    </Card>
-                                </Grid>
-
-                                {/* Incident */}
-                                <Grid size={{ xs: 12, md: 4 }}>
-                                    <Card sx={{ height: '550px', borderRadius: '24px', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
-                                        <Box p={2.5} borderBottom="1px solid" borderColor="divider" display="flex" alignItems="center" gap={1.5}><AlertCircle size={20} color="#ef4444" /><Typography variant="h6">Root Event</Typography></Box>
-                                        <Box flex={1} overflow="auto" p={2}>
-                                            {parsedData.payload.root_event ? Object.entries(parsedData.payload.root_event)
-                                                .filter(([k]) => !['id', '_id', 'ID', 'organization', 'ORGANIZATION'].includes(k.toLowerCase()))
-                                                .map(([k, v]) => (
-                                                    <Box key={k} mb={2}>
-                                                        <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase', fontSize: '0.65rem' }}>{k.replace(/_/g, ' ')}</Typography>
-                                                        <Typography variant="body2" fontWeight={600} sx={{ wordBreak: 'break-all' }}>{typeof v === 'object' ? JSON.stringify(v) : String(v)}</Typography>
-                                                        <Divider sx={{ mt: 1 }} />
-                                                    </Box>
-                                                )) : <Typography variant="caption" color="text.secondary">No event details provided</Typography>}
-                                        </Box>
-                                    </Card>
-                                </Grid>
-
-                                {/* Metrics */}
-                                <Grid size={{ xs: 12, md: 4 }}>
-                                    <Card sx={{ height: '550px', borderRadius: '24px', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
-                                        <Box p={2.5} borderBottom="1px solid" borderColor="divider" display="flex" alignItems="center" gap={1.5}><BarChart2 size={20} color="#10b981" /><Typography variant="h6">Metric Telemetry</Typography></Box>
-                                        <Box flex={1} overflow="auto" p={2.5} bgcolor={isDark ? 'rgba(0,0,0,0.1)' : '#f8fafc'}>
-                                            {parsedData.payload.metrics_payload ? Object.entries(parsedData.payload.metrics_payload).map(([name, data]) => (
-                                                <Box key={name} mb={3}>
-                                                    <Typography variant="subtitle2" color="primary" fontWeight={700} mb={1} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Activity size={16} />{name}</Typography>
-                                                    {Object.entries(data).map(([dev, vals]) => (
-                                                        <Box key={dev} mb={1} p={1.5} bgcolor="background.paper" borderRadius="12px" border="1px solid" borderColor="divider">
-                                                            <Typography variant="caption" color="text.secondary" fontWeight={600}>{dev}</Typography>
-                                                            <Box display="flex" flexWrap="wrap" gap={0.5} mt={0.5}>{vals.map((v, i) => <Chip key={i} label={String(v)} size="small" sx={{ fontSize: '0.7rem' }} />)}</Box>
-                                                        </Box>
-                                                    ))}
-                                                </Box>
-                                            )) : <Typography variant="caption" color="text.secondary">No metrics provided</Typography>}
-                                        </Box>
-                                    </Card>
-                                </Grid>
-                            </Grid>
-
-                            {/* Analysis Results (Displayed after Run Analysis) */}
-                            {results && (
-                                <Box sx={{ animation: 'fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1)' }}>
-                                    <Divider sx={{ my: 6 }}><Chip label="RAG PIPELINE INSIGHTS" color="primary" sx={{ fontWeight: 800, px: 2 }} /></Divider>
-
-                                    {/* Top Row: Insights Summary */}
-                                    <Grid container spacing={3} mb={4}>
-                                        <Grid size={{ xs: 12, md: 4 }}>
-                                            <Card sx={{ p: 3, borderRadius: '24px', height: '100%', border: '1px solid', borderColor: 'divider' }}>
-                                                <Typography variant="subtitle2" fontWeight={800} color="text.secondary" gutterBottom>DOMAIN CLASSIFICATION</Typography>
-                                                <Box display="flex" flexWrap="wrap" gap={1} mt={1.5}>{results.query.inferred_domains.map((d: string) => <Chip key={d} label={d.toUpperCase()} color="primary" size="small" sx={{ fontWeight: 700, borderRadius: '6px' }} />)}</Box>
-                                            </Card>
-                                        </Grid>
-                                        <Grid size={{ xs: 12, md: 8 }}>
-                                            <Card sx={{ p: 3, borderRadius: '24px', height: '100%', border: '1px solid', borderColor: 'divider' }}>
-                                                <Typography variant="subtitle2" fontWeight={800} color="text.secondary" gutterBottom>ANOMALY DETECTION</Typography>
-                                                <Box display="flex" flexWrap="wrap" gap={2}>
-                                                    {results.anomalies?.length > 0 ? results.anomalies.map((a: any, idx: number) => (
-                                                        <Box key={idx} mt={1} p={2} borderRadius="16px" bgcolor={isDark ? 'rgba(239,68,68,0.05)' : '#fef2f2'} border="1px solid" borderColor="error.light" sx={{ minWidth: '280px', flex: 1 }}>
-                                                            <Box display="flex" justifyContent="space-between" alignItems="center"><Typography variant="body2" fontWeight={700} color="error">{a.metric}</Typography><Chip label={a.direction.toUpperCase()} size="small" color="error" sx={{ height: '20px', fontSize: '0.6rem', fontWeight: 800 }} /></Box>
-                                                            <Typography variant="caption" display="block" mt={0.5} fontWeight={600}>{a.entity}</Typography>
-                                                            <Typography variant="caption" color="text.secondary">{a.baseline} → {a.current} ({a.change_pct}%)</Typography>
-                                                            <Box mt={0.5} display="flex" justifyContent="space-between"><Typography variant="caption" fontWeight={700}>Z-Score</Typography><Typography variant="caption" fontWeight={800}>{a.z_score.toFixed(2)}</Typography></Box>
-                                                        </Box>
-                                                    )) : <Typography variant="caption" color="text.secondary">No statistical anomalies detected.</Typography>}
-                                                </Box>
-                                            </Card>
-                                        </Grid>
-                                    </Grid>
-
-                                    {/* Semantic Matches Row */}
-                                    <Paper sx={{ p: 4, borderRadius: '32px', border: '1px solid', borderColor: 'primary.main', position: 'relative', overflow: 'hidden', boxShadow: isDark ? '0 20px 40px rgba(0,0,0,0.3)' : '0 20px 40px rgba(59,130,246,0.1)' }}>
-                                        <Box display="flex" alignItems="center" gap={1.5} mb={4}><Search size={24} color="#3b82f6" /><Typography variant="h5">Knowledge Base Semantic Matches</Typography></Box>
-                                        <Grid container spacing={3}>
-                                            {results.results && results.results.length > 0 ? results.results.map((r: any, i: number) => (
-                                                <Grid size={{ xs: 12, md: 6 }} key={i}>
-                                                    <Box sx={{
-                                                        p: 3, borderRadius: '20px', height: '100%',
-                                                        bgcolor: i === 0
-                                                            ? (isDark ? 'rgba(34, 197, 94, 0.05)' : 'rgba(34, 197, 94, 0.02)')
-                                                            : (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)'),
-                                                        border: '1px solid',
-                                                        borderColor: i === 0 ? 'success.main' : 'divider',
-                                                        position: 'relative',
-                                                        transition: 'all 0.3s ease',
-                                                        '&:hover': { transform: 'translateY(-4px)', boxShadow: i === 0 ? '0 10px 20px rgba(34, 197, 94, 0.1)' : 'none' }
-                                                    }}>
-                                                        {i === 0 && (
-                                                            <Chip
-                                                                label="TOP MATCH"
-                                                                size="small"
-                                                                color="success"
-                                                                sx={{ position: 'absolute', top: -10, right: 20, fontWeight: 900, height: '20px', fontSize: '0.6rem' }}
-                                                            />
-                                                        )}
-                                                        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                                                            <Box>
-                                                                <Typography variant="h6" fontWeight={800} color={i === 0 ? 'success.main' : 'primary'}>
-                                                                    {typeof r.doc.raw.intent_id === 'string'
-                                                                        ? r.doc.raw.intent_id
-                                                                        : (r.doc.raw.category ? `${r.doc.raw.category.toUpperCase()} Analysis` : 'RCA Intent')}
-                                                                </Typography>
-                                                                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{r.doc.raw.description}</Typography>
-                                                            </Box>
-                                                            <Box textAlign="right" sx={{ minWidth: '80px' }}>
-                                                                <Typography variant="h4" color={i === 0 ? 'success.main' : 'primary'} fontWeight={800}>
-                                                                    {(r.final_score * 100).toFixed(1)}%
-                                                                </Typography>
-                                                                <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700, fontSize: '0.6rem' }}>Confidence</Typography>
-                                                            </Box>
-                                                        </Box>
-                                                        <Grid container spacing={2} mt={1}>
-                                                            <Grid size={4}><Box p={1} sx={{ textAlign: 'center', borderRight: '1px solid', borderColor: 'divider' }}><Typography variant="caption" display="block" color="text.secondary">Pre-rank</Typography><Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.75rem' }}>{r.prerank_score.toFixed(3)}</Typography></Box></Grid>
-                                                            <Grid size={4}><Box p={1} sx={{ textAlign: 'center', borderRight: '1px solid', borderColor: 'divider' }}><Typography variant="caption" display="block" color="text.secondary">Cross-Encoder</Typography><Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.75rem' }}>{r.cross_encoder_score.toFixed(3)}</Typography></Box></Grid>
-                                                            <Grid size={4}><Box p={1} sx={{ textAlign: 'center' }}><Typography variant="caption" display="block" color="text.secondary">Final</Typography><Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.75rem' }}>{r.final_score.toFixed(3)}</Typography></Box></Grid>
-                                                        </Grid>
-                                                    </Box>
-                                                </Grid>
-                                            )) : <Grid size={12}><Box textAlign="center" py={8}><Info size={48} color="#94a3b8" /><Typography mt={2} color="text.secondary">No semantic matches identified for this payload.</Typography></Box></Grid>}
-                                        </Grid>
-                                    </Paper>
-                                </Box>
-                            )}
-                        </Box>
-                    )}
-                </Container>
-            </ThemeProvider>
+            </div>
         </MainLayout>
     );
 };

@@ -1,19 +1,22 @@
 /* RCA Playground Styles - Adapted for Dark/Light Mode via CSS Vars */
 
 :root {
-    --rca-bg-secondary: #ffffff;
-    --rca-bg-tertiary: #f8fafc;
-    --rca-border-color: #e2e8f0;
-    --rca-text-primary: #1e293b;
-    --rca-text-secondary: #64748b;
+    --rca-bg-secondary: hsl(var(--background));
+    --rca-bg-tertiary: hsl(var(--muted) / 0.3);
+    --rca-border-color: hsl(var(--border));
+    --rca-text-primary: hsl(var(--foreground));
+    --rca-text-secondary: hsl(var(--muted-foreground));
+    --rca-primary: hsl(var(--primary));
+    --rca-success: hsl(var(--status-success));
+    --rca-warning: hsl(var(--severity-medium));
 }
 
 .dark {
-    --rca-bg-secondary: #12172b;
-    --rca-bg-tertiary: #1a2038;
-    --rca-border-color: #2a3354;
-    --rca-text-primary: #e8ecf5;
-    --rca-text-secondary: #8b94b0;
+    --rca-bg-secondary: hsl(var(--background));
+    --rca-bg-tertiary: hsl(var(--muted) / 0.5);
+    --rca-border-color: hsl(var(--border));
+    --rca-text-primary: hsl(var(--foreground));
+    --rca-text-secondary: hsl(var(--muted-foreground));
 }
 
 .rca-timeline-container {
@@ -47,16 +50,16 @@
 }
 
 .rca-tl-box.done {
-    border-color: #10b981;
-    color: #10b981;
-    background: rgba(16, 185, 129, 0.1);
+    border-color: var(--rca-success);
+    color: var(--rca-success);
+    background: color-mix(in srgb, var(--rca-success), transparent 90%);
 }
 
 .rca-tl-box.current {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, .15);
-    background: rgba(59, 130, 246, 0.1);
-    color: #3b82f6;
+    border-color: var(--rca-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--rca-primary), transparent 85%);
+    background: color-mix(in srgb, var(--rca-primary), transparent 90%);
+    color: var(--rca-primary);
 }
 
 .rca-tl-box.pending {
@@ -86,16 +89,16 @@
 }
 
 .rca-tl-line.done {
-    background: #10b981;
+    background: var(--rca-success);
 }
 
 /* MAIN STEPS */
 .rca-card {
     background: var(--rca-bg-secondary);
-    border-left: 5px solid #3b82f6;
+    border-left: 5px solid var(--rca-primary);
     border-radius: 12px;
     padding: 20px 24px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, .2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
     margin-bottom: 16px;
     transition: all 0.3s ease;
     border: 1px solid var(--rca-border-color);
@@ -103,13 +106,13 @@
 }
 
 .rca-card.final {
-    border-left-color: #22c55e;
-    background: rgba(34, 197, 94, 0.05);
+    border-left-color: var(--rca-success);
+    background: color-mix(in srgb, var(--rca-success), transparent 95%);
 }
 
 .rca-card.loading {
-    background: rgba(245, 158, 11, 0.1);
-    border-left-color: #f59e0b;
+    background: color-mix(in srgb, var(--rca-warning), transparent 90%);
+    border-left-color: var(--rca-warning);
     border-style: dashed;
     animation: pulse 1s infinite alternate;
 }

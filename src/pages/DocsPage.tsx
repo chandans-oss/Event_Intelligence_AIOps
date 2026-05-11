@@ -33,24 +33,24 @@ const DOC_CATEGORIES = [
         title: 'Platform Overview',
         content: (
           <div className="space-y-4">
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">Enterprise AIOps Platform</h2>
-            <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[15px]">
+            <h2 className="text-2xl font-black text-foreground mb-6 tracking-tight">Enterprise AIOps Platform</h2>
+            <p className="text-muted-foreground leading-relaxed text-[15px]">
               Welcome to the Event Analytics platform. This system provides a unified, intelligent layer that aggregates network events, correlates them systematically, and actively reduces noise to present actionable root causes to operators.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-              <div className="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-white/10 hover:border-blue-500/50 transition-colors shadow-sm">
-                <div className="h-10 w-10 bg-blue-500/10 rounded-xl flex items-center justify-center mb-4">
-                  <BrainCircuit className="h-5 w-5 text-blue-500" />
+              <div className="p-5 rounded-2xl bg-card border border-border hover:border-primary/50 transition-colors shadow-sm">
+                <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
+                  <BrainCircuit className="h-5 w-5 text-primary" />
                 </div>
-                <h3 className="text-[14px] font-black text-slate-900 dark:text-white mb-2">Automated RCA</h3>
-                <p className="text-[12px] text-slate-500 dark:text-slate-400">Leverage AI and structural topologies to instantly pinpoint the root cause of network failure conditions.</p>
+                <h3 className="text-[14px] font-black text-foreground mb-2">Automated RCA</h3>
+                <p className="text-[12px] text-muted-foreground">Leverage AI and structural topologies to instantly pinpoint the root cause of network failure conditions.</p>
               </div>
-              <div className="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-white/10 hover:border-emerald-500/50 transition-colors shadow-sm">
-                <div className="h-10 w-10 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-4">
-                  <Activity className="h-5 w-5 text-emerald-500" />
+              <div className="p-5 rounded-2xl bg-card border border-border hover:border-status-success/50 transition-colors shadow-sm">
+                <div className="h-10 w-10 bg-status-success/10 rounded-xl flex items-center justify-center mb-4">
+                  <Activity className="h-5 w-5 text-status-success" />
                 </div>
-                <h3 className="text-[14px] font-black text-slate-900 dark:text-white mb-2">Predictive Diagnostics</h3>
-                <p className="text-[12px] text-slate-500 dark:text-slate-400">Transform reactive monitoring into proactive alerts with advanced continuous predictive algorithms.</p>
+                <h3 className="text-[14px] font-black text-foreground mb-2">Predictive Diagnostics</h3>
+                <p className="text-[12px] text-muted-foreground">Transform reactive monitoring into proactive alerts with advanced continuous predictive algorithms.</p>
               </div>
             </div>
           </div>
@@ -61,29 +61,29 @@ const DOC_CATEGORIES = [
         title: 'System Architecture',
         content: (
           <div className="space-y-4">
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">Core Architecture</h2>
-            <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[15px] mb-6">
+            <h2 className="text-2xl font-black text-foreground mb-6 tracking-tight">Core Architecture</h2>
+            <p className="text-muted-foreground leading-relaxed text-[15px] mb-6">
               Our platform operates through a strict deterministic pipeline consisting of Parsing, Deduplication, Suppression, Machine Learning Correlation, and User Remediation.
             </p>
-            <div className="p-6 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 relative overflow-hidden">
+            <div className="p-6 rounded-xl bg-muted/30 border border-border relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-10">
                 <Settings size={120} />
               </div>
-              <ul className="space-y-4 relative z-10 text-sm font-medium text-slate-700 dark:text-slate-200">
+              <ul className="space-y-4 relative z-10 text-sm font-medium text-foreground">
                 <li className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">1</div>
+                  <div className="h-8 w-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</div>
                   Ingestion & Normalization
                 </li>
-                <li className="flex items-center gap-3 pl-4 border-l-2 border-blue-500/30 ml-4 py-2">
-                  <div className="h-8 w-8 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">2</div>
+                <li className="flex items-center gap-3 pl-4 border-l-2 border-primary/30 ml-4 py-2">
+                  <div className="h-8 w-8 rounded-full bg-severity-high/20 text-severity-high flex items-center justify-center font-bold">2</div>
                   Event Processing Rules (Deduplication / Suppression)
                 </li>
-                <li className="flex items-center gap-3 pl-4 border-l-2 border-purple-500/30 ml-4 py-2">
-                  <div className="h-8 w-8 rounded-full bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold">3</div>
+                <li className="flex items-center gap-3 pl-4 border-l-2 border-severity-high/30 ml-4 py-2">
+                  <div className="h-8 w-8 rounded-full bg-severity-medium/20 text-severity-medium flex items-center justify-center font-bold">3</div>
                   Live AI Correlation & Topology Mapping
                 </li>
-                <li className="flex items-center gap-3 pl-4 border-l-2 border-orange-500/30 ml-4 pt-2 pb-4">
-                  <div className="h-8 w-8 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">4</div>
+                <li className="flex items-center gap-3 pl-4 border-l-2 border-severity-medium/30 ml-4 pt-2 pb-4">
+                  <div className="h-8 w-8 rounded-full bg-status-success/20 text-status-success flex items-center justify-center font-bold">4</div>
                   Remediation & Escalation Triggering
                 </li>
               </ul>
@@ -108,8 +108,8 @@ const DOC_CATEGORIES = [
               The default landing zone. Analyzes holistic fleet health, including critical event volume across infrastructure categories and multi-domain event correlation efficiency.
             </p>
             <div className="mt-6 flex justify-center">
-              <div className="w-full h-48 bg-gradient-to-br from-indigo-500/10 to-blue-500/5 border border-indigo-500/20 rounded-2xl flex items-center justify-center">
-                <span className="text-sm font-bold text-indigo-500 uppercase tracking-widest">Global Aggregation View</span>
+              <div className="w-full h-48 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl flex items-center justify-center">
+                <span className="text-sm font-bold text-primary uppercase tracking-widest">Global Aggregation View</span>
               </div>
             </div>
           </div>
@@ -155,7 +155,7 @@ const DOC_CATEGORIES = [
             <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[15px] mb-4">
               The correlation catalog maintains dynamic signature rules generated by the AI system (e.g. tracking BGP flap sequences that inevitably result in a Route Defect event).
             </p>
-            <div className="bg-[#111827] text-white p-5 rounded-xl font-mono text-sm border border-white/10">
+            <div className="bg-zinc-950 text-zinc-100 p-5 rounded-xl font-mono text-sm border border-border">
               {'1. BGP_Peering_Down -> 2. Route_Withdrawal -> 3. Critical_SLA_Breach'}
             </div>
           </div>
@@ -190,9 +190,9 @@ const DOC_CATEGORIES = [
               Configure sliding time-windows, strict-match fields, and fuzzy-logic operators to bundle identical alarms from misconfigured alert managers.
             </p>
             <div className="mt-6 flex flex-wrap gap-2 text-xs font-bold font-mono">
-              <span className="px-3 py-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded">Identifier</span>
-              <span className="px-3 py-1 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded">Timeframe</span>
-              <span className="px-3 py-1 bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded">Severity Conflict Rules</span>
+              <span className="px-3 py-1 bg-status-success/20 text-status-success rounded">Identifier</span>
+              <span className="px-3 py-1 bg-primary/20 text-primary rounded">Timeframe</span>
+              <span className="px-3 py-1 bg-severity-high/20 text-severity-high rounded">Severity Conflict Rules</span>
             </div>
           </div>
         )
@@ -225,24 +225,24 @@ const DOC_CATEGORIES = [
             <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[15px]">
               The Remediation Sidebar provides a step-by-step diagnostic journey. It uses a right-sliding overlay to minimize context switching while resolving critical incidents.
             </p>
-            <div className="p-6 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 mt-6">
+            <div className="p-6 rounded-xl bg-muted/30 border border-border mt-6">
               <h4 className="text-sm font-bold mb-4">Core Remediation Features:</h4>
-              <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
+              <ul className="space-y-3 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
-                  <div className="h-5 w-5 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <ChevronRight size={12} className="text-blue-500" />
+                  <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <ChevronRight size={12} className="text-primary" />
                   </div>
                   <span>Real-Time Terminal Execution: Execute commands directly on target devices with immediate feedback.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <div className="h-5 w-5 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <ChevronRight size={12} className="text-blue-500" />
+                  <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <ChevronRight size={12} className="text-primary" />
                   </div>
                   <span>Ai Assistant Integration: Leverage built-in AI to summarize logs and recommend complex fixes.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <div className="h-5 w-5 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <ChevronRight size={12} className="text-blue-500" />
+                  <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <ChevronRight size={12} className="text-primary" />
                   </div>
                   <span>Verification Roadmaps: Automated checks to confirm that remediation steps have restored service health.</span>
                 </li>
@@ -263,9 +263,9 @@ export default function DocsPage() {
 
   return (
     <MainLayout>
-      <div className="flex flex-col h-full bg-slate-50 dark:bg-[#0B0F19]">
+      <div className="flex flex-col h-full bg-background">
         {/* Docs Header */}
-        <div className="h-14 border-b border-slate-200 dark:border-white/5 bg-white dark:bg-[#0B0F19] px-6 flex items-center justify-between shrink-0">
+        <div className="h-14 border-b border-border bg-card px-6 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
@@ -276,9 +276,9 @@ export default function DocsPage() {
               <ArrowLeft size={16} />
               Back
             </Button>
-            <div className="h-6 w-[1px] bg-slate-200 dark:bg-white/10" />
+            <div className="h-6 w-[1px] bg-border" />
             <div className="flex items-center gap-2">
-              <BookOpen size={18} className="text-blue-500" />
+              <BookOpen size={18} className="text-primary" />
               <h1 className="text-sm font-bold">Platform Documentation</h1>
             </div>
           </div>
@@ -296,10 +296,10 @@ export default function DocsPage() {
         <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* DOCTREE SIDEBAR */}
-        <div className="w-64 flex-shrink-0 border-r border-slate-200 dark:border-white/5 bg-white dark:bg-[#0B0F19] overflow-y-auto">
+        <div className="w-64 flex-shrink-0 border-r border-border bg-card overflow-y-auto">
           <div className="p-6">
-            <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-6 flex items-center gap-2">
-              <BookMarked size={14} className="text-blue-500" />
+            <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-6 flex items-center gap-2">
+              <BookMarked size={14} className="text-primary" />
               Documentation
             </h3>
 
@@ -324,14 +324,14 @@ export default function DocsPage() {
                           className={cn(
                             "w-full text-left py-1.5 px-3 rounded-md text-[13px] transition-all relative",
                             isActive
-                              ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold"
-                              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 font-medium"
+                              ? "bg-primary/10 text-primary font-bold"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted font-medium"
                           )}
                         >
                           {isActive && (
                             <motion.div
                               layoutId="activeDocIndicator"
-                              className="absolute left-[-13px] top-[10px] w-[3px] h-3 bg-blue-500 rounded-r-md"
+                              className="absolute left-[-13px] top-[10px] w-[3px] h-3 bg-primary rounded-r-md"
                             />
                           )}
                           {sec.title}
@@ -348,10 +348,10 @@ export default function DocsPage() {
         {/* DOC MAIN CONTENT */}
         <div className="flex-1 overflow-y-auto w-full custom-scrollbar">
           <div className="max-w-4xl mx-auto p-12 lg:p-16">
-            <div className="mb-6 flex items-center gap-3 text-[12px] font-bold text-slate-400 tracking-wider uppercase">
+            <div className="mb-6 flex items-center gap-3 text-[12px] font-bold text-muted-foreground tracking-wider uppercase">
               <span>{activeCategory.title}</span>
               <ChevronRight size={14} />
-              <span className="text-blue-500">{activeSection.title}</span>
+              <span className="text-primary">{activeSection.title}</span>
             </div>
 
             <AnimatePresence mode="wait">

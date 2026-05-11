@@ -68,7 +68,7 @@ export function RcaAnalyticsDashboard({ data, onViewDetailedRCA, onBack, onClose
 
           <Button
             onClick={onViewDetailedRCA}
-            className="h-9 bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-bold px-4 rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground text-[12px] font-bold px-4 rounded-xl flex items-center gap-2 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <BrainCircuit className="h-4 w-4" />
             <span>RCA Analysis Flow</span>
@@ -111,7 +111,7 @@ export function RcaAnalyticsDashboard({ data, onViewDetailedRCA, onBack, onClose
           {/* Bottom Diagnostics Tabs */}
           <div className="flex-1">
             {/* Tab Navigation Section */}
-            <div className="bg-transparent border-b border-slate-200 dark:border-border/50">
+            <div className="bg-transparent border-b border-border">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="h-10 w-full bg-transparent p-0 flex items-center justify-start gap-0">
                   {tabs.map((tab) => (
@@ -136,7 +136,7 @@ export function RcaAnalyticsDashboard({ data, onViewDetailedRCA, onBack, onClose
             </div>
 
             {/* Tab Content */}
-            <div className="bg-white dark:bg-card border border-slate-200 dark:border-border shadow-sm rounded-xl overflow-hidden min-h-[300px] mt-1">
+            <div className="bg-card border border-border shadow-sm rounded-xl overflow-hidden min-h-[300px] mt-1">
               <div className="p-4">
                 {activeTab === 'summary' && (
                   <RCASummary
@@ -195,8 +195,8 @@ function MainHypothesisCard({ cause, index, remedyTitle, onRemediate }: MainHypo
 
   const getConfidenceTag = (idx: number) => {
     switch (idx) {
-      case 0: return { label: 'AI High Confidence', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' };
-      case 1: return { label: 'AI Medium Confidence', color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' };
+      case 0: return { label: 'AI High Confidence', color: 'bg-primary/10 text-primary border-primary/20' };
+      case 1: return { label: 'AI Medium Confidence', color: 'bg-severity-medium/10 text-severity-medium border-severity-medium/20' };
       default: return { label: 'AI Low Confidence', color: 'bg-muted text-muted-foreground border-border' };
     }
   };
@@ -258,7 +258,7 @@ function MainHypothesisCard({ cause, index, remedyTitle, onRemediate }: MainHypo
 
         <Button
           onClick={onRemediate}
-          className="w-full h-12 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
+          className="w-full h-12 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
         >
           Remediation <ArrowRight className="h-4 w-4" />
         </Button>
@@ -279,8 +279,8 @@ function AlternativeHypothesisCard({ cause, index, isSelected, onClick }: Altern
 
   const getConfidenceTag = (idx: number) => {
     switch (idx) {
-      case 0: return { label: 'HIGH', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' };
-      case 1: return { label: 'MEDIUM', color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' };
+      case 0: return { label: 'HIGH', color: 'bg-primary/10 text-primary border-primary/20' };
+      case 1: return { label: 'MEDIUM', color: 'bg-severity-medium/10 text-severity-medium border-severity-medium/20' };
       default: return { label: 'LOW', color: 'bg-muted text-muted-foreground border-border' };
     }
   };
@@ -321,10 +321,10 @@ function AlternativeHypothesisCard({ cause, index, isSelected, onClick }: Altern
 
 function IncidentLifecycle({ data }: { data: ClusterSpecificData }) {
   const steps = [
-    { label: 'Issue Started', time: '14:00:00', color: 'bg-slate-400', bgColor: 'bg-slate-100 dark:bg-slate-800' },
-    { label: 'Detection', time: '+2m 15s', color: 'bg-orange-500', bgColor: 'bg-orange-100 dark:bg-orange-900/30' },
-    { label: 'RCA Done', time: '+30s', color: 'bg-blue-500', bgColor: 'bg-blue-100 dark:bg-blue-900/30' },
-    { label: 'Resolution', time: '14:45:00', color: 'bg-emerald-500', bgColor: 'bg-emerald-100 dark:bg-emerald-900/30', pulse: true },
+    { label: 'Issue Started', time: '14:00:00', color: 'bg-muted-foreground/40', bgColor: 'bg-muted' },
+    { label: 'Detection', time: '+2m 15s', color: 'bg-severity-medium', bgColor: 'bg-severity-medium/10' },
+    { label: 'RCA Done', time: '+30s', color: 'bg-primary', bgColor: 'bg-primary/10' },
+    { label: 'Resolution', time: '14:45:00', color: 'bg-status-success', bgColor: 'bg-status-success/10', pulse: true },
   ];
 
   return (
@@ -337,12 +337,12 @@ function IncidentLifecycle({ data }: { data: ClusterSpecificData }) {
       <CardContent className="p-4 py-6">
         <div className="relative flex items-center justify-between px-16">
           {/* Connecting Line */}
-          <div className="absolute top-[12px] left-16 right-16 h-[2px] bg-slate-100 dark:bg-slate-800" />
+          <div className="absolute top-[12px] left-16 right-16 h-[2px] bg-border" />
 
           {steps.map((step, idx) => (
             <div key={idx} className="relative flex flex-col items-center gap-2 z-10">
               <div className={cn(
-                "h-6 w-6 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-950 shadow-sm",
+                "h-6 w-6 rounded-full flex items-center justify-center border-2 border-background shadow-sm",
                 step.bgColor
               )}>
                 <div className={cn("h-2 w-2 rounded-full", step.color, step.pulse && "animate-pulse")} />

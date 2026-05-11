@@ -49,14 +49,14 @@ import { cn } from '@/shared/lib/utils';
 
 // --- MOCK DATA ---
 const BASE_KPI_STATS = [
-    { label: 'Noise Reduction', value: 82, trend: '+11% vs last period', color: '#06B6D4' },
-    { label: 'Correlation Efficiency', value: 91, trend: '+7% vs last period', color: '#F59E0B' },
-    { label: 'SLA Compliance', value: 98, trend: '+2% vs last period', color: '#10B981' },
-    { label: 'MTTR Reduction', value: 63, trend: '+15% vs last period', color: '#A855F7' },
-    { label: 'Auto-Remediation', value: 74, trend: '+15% vs last period', color: '#06B6D4' },
-    { label: 'RCA Confidence', value: 88, trend: '+9% vs last period', color: '#10B981' },
-    { label: 'Downtime Reduction', value: 57, trend: '+16% vs last period', color: '#F59E0B' },
-    { label: 'Log Error Reduction', value: 68, trend: '+16% vs last period', color: '#A855F7' }
+    { label: 'Noise Reduction', value: 82, trend: '+11% vs last period', color: 'hsl(var(--primary))' },
+    { label: 'Correlation Efficiency', value: 91, trend: '+7% vs last period', color: 'hsl(var(--severity-medium))' },
+    { label: 'SLA Compliance', value: 98, trend: '+2% vs last period', color: 'hsl(var(--status-success))' },
+    { label: 'MTTR Reduction', value: 63, trend: '+15% vs last period', color: 'hsl(var(--severity-high))' },
+    { label: 'Auto-Remediation', value: 74, trend: '+15% vs last period', color: 'hsl(var(--primary))' },
+    { label: 'RCA Confidence', value: 88, trend: '+9% vs last period', color: 'hsl(var(--status-success))' },
+    { label: 'Downtime Reduction', value: 57, trend: '+16% vs last period', color: 'hsl(var(--severity-medium))' },
+    { label: 'Log Error Reduction', value: 68, trend: '+16% vs last period', color: 'hsl(var(--severity-high))' }
 ];
 
 
@@ -91,8 +91,8 @@ const CircularProgress = ({ value, color }: { value: number, color: string }) =>
                 />
             </svg>
             <div className="absolute flex flex-col items-center justify-center">
-                <span className="text-2xl font-black text-slate-900 dark:text-white leading-none tracking-tighter">{value}</span>
-                <span className="text-[9px] font-bold text-slate-500 mt-0.5">%</span>
+                <span className="text-2xl font-black text-foreground leading-none tracking-tighter">{value}</span>
+                <span className="text-[9px] font-bold text-muted-foreground mt-0.5">%</span>
             </div>
         </div>
     );
@@ -136,11 +136,11 @@ const SANKEY_DATA = {
 
 
 const STAGE_COLORS: Record<string, string> = {
-    cyan: '#06B6D4',
-    emerald: '#10B981',
-    purple: '#A855F7',
-    orange: '#F97316',
-    blue: '#3B82F6'
+    cyan: 'hsl(var(--primary))',
+    emerald: 'hsl(var(--status-success))',
+    purple: 'hsl(var(--severity-high))',
+    orange: 'hsl(var(--severity-medium))',
+    blue: 'hsl(var(--primary))'
 };
 
 const CustomSankeyNode = ({ x, y, width, height, payload }: any) => {
@@ -167,9 +167,22 @@ const CustomSankeyLink = ({ sourceX, targetX, sourceY, targetY, sourceControlX, 
 };
 
 export default function KpiDashboard() {
+    const { resolvedTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
+
     const [selectedStage, setSelectedStage] = useState<any>(null);
     const [timeFilter, setTimeFilter] = useState('Last 24 Hours');
     const [selectedTrend, setSelectedTrend] = useState<any>(null);
+
+    const colors = useMemo(() => ({
+        primary: isDark ? '#3b82f6' : '#2563eb',
+        success: isDark ? '#10b981' : '#059669',
+        warning: isDark ? '#f59e0b' : '#d97706',
+        error: isDark ? '#ef4444' : '#dc2626',
+        muted: isDark ? '#475569' : '#94a3b8',
+        border: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+        card: isDark ? '#111827' : '#ffffff'
+    }), [isDark]);
 
     const kpiStats = useMemo(() => {
         let multi = 1;
@@ -231,14 +244,14 @@ export default function KpiDashboard() {
 
     return (
         <MainLayout>
-            <div className="p-6 space-y-8 bg-slate-50 dark:bg-[#0B0F19] min-h-screen text-slate-700 dark:text-slate-200 font-['Sora',sans-serif] relative">
+            <div className="p-6 space-y-8 bg-background min-h-screen text-foreground font-['Sora',sans-serif] relative">
 
                 {/* HEADER */}
                 <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-[#3B82F6]/10 rounded-lg border border-[#3B82F6]/20">
-                                <Activity className="h-6 w-6 text-[#3B82F6]" />
+                            <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
+                                <Activity className="h-6 w-6 text-primary" />
                             </div>
                             <div>
                                 <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white ">ROI/KPI Dashboard</h1>
@@ -254,8 +267,8 @@ export default function KpiDashboard() {
                                     className={cn(
                                         "px-4 py-1.5 text-xs font-bold rounded-md transition-all",
                                         timeFilter === filter
-                                            ? "bg-[#06B6D4] text-white shadow-sm"
-                                            : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5"
+                                            ? "bg-primary text-primary-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
                                     )}
                                 >
                                     {filter}
@@ -270,7 +283,7 @@ export default function KpiDashboard() {
                     {kpiStats.map((kpi, idx) => (
                         <Card
                             key={idx}
-                            className="bg-white dark:bg-[#111827]/50 border-slate-200 dark:border-white/5 hover:border-slate-300 dark:border-white/10 transition-all group overflow-hidden relative cursor-pointer"
+                            className="bg-card/50 border-border hover:border-primary/50 transition-all group overflow-hidden relative cursor-pointer"
                             onClick={() => setSelectedTrend(kpi)}
                         >
                             <CardContent className="p-5 flex flex-col h-full items-center justify-between min-h-[180px]">
@@ -299,12 +312,12 @@ export default function KpiDashboard() {
                 </div>
 
                 {/* 2. EVENT PROCESSING PIPELINE */}
-                <Card className="bg-white dark:bg-[#111827]/50 border-slate-200 dark:border-white/5 overflow-hidden">
-                    <CardHeader className="border-b border-slate-200 dark:border-white/5 bg-slate-100/50 dark:bg-white/[0.02] py-4">
+                <Card className="bg-card/50 border-border overflow-hidden">
+                    <CardHeader className="border-b border-border bg-muted/30 py-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#06B6D4] animate-pulse" />
-                                <CardTitle className="text-[11px] font-black tracking-[0.2em] text-slate-900 dark:text-white">Event Processing Pipeline</CardTitle>
+                                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                                <CardTitle className="text-[11px] font-black tracking-[0.2em] text-foreground">Event Processing Pipeline</CardTitle>
                             </div>
                         </div>
                     </CardHeader>
@@ -314,26 +327,26 @@ export default function KpiDashboard() {
                                 <React.Fragment key={idx}>
                                     <div className="flex-1 min-w-[140px] group cursor-pointer" onClick={() => setSelectedStage(stage)}>
                                         <div className={cn(
-                                            "p-4 rounded-xl bg-slate-50 dark:bg-[#0F172A] border transition-all duration-300 relative overflow-hidden",
-                                            "border-slate-200 dark:border-white/5 hover:border-white/40 hover:-translate-y-1 shadow-lg active:scale-95"
+                                            "p-4 rounded-xl bg-card border transition-all duration-300 relative overflow-hidden",
+                                            "border-border hover:border-primary/40 hover:-translate-y-1 shadow-lg active:scale-95"
                                         )}>
                                             {/* Glow Effect */}
                                             <div className="absolute top-0 right-0 w-12 h-12 -mr-6 -mt-6 rounded-full opacity-10 blur-xl transition-all group-hover:opacity-30" style={{ backgroundColor: STAGE_COLORS[stage.color] }} />
 
                                             <div className="space-y-3 relative z-10">
                                                 <div className="flex items-center justify-between">
-                                                    <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 tracking-wider">{stage.name}</p>
+                                                    <p className="text-[9px] font-black text-muted-foreground tracking-wider uppercase">{stage.name}</p>
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <span className="text-lg font-black tracking-tighter text-slate-900 dark:text-white" style={{ color: STAGE_COLORS[stage.color] }}>{stage.value}</span>
                                                     {stage.input && <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">{stage.input}</span>}
                                                 </div>
 
-                                                <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-white/5">
+                                                <div className="flex items-center justify-between pt-2 border-t border-border">
                                                     <div className="flex flex-col">
                                                         <span className={cn(
                                                             "text-[10px] font-black flex items-center gap-0.5",
-                                                            stage.delta.startsWith('-') ? "text-[#10B981]" : "text-[#F97316]"
+                                                            stage.delta.startsWith('-') ? "text-status-success" : "text-severity-medium"
                                                         )}>
                                                             {stage.delta.startsWith('-') ? <ArrowDownRight className="h-2.5 w-2.5" /> : <ArrowUpRight className="h-2.5 w-2.5" />}
                                                             {stage.delta.replace('-', '').replace('+', '')}
@@ -345,7 +358,7 @@ export default function KpiDashboard() {
                                     </div>
                                     {idx < PIPELINE_STAGES.length - 1 && (
                                         <div className="flex-shrink-0">
-                                            <ChevronRight className="h-5 w-5 text-slate-700" />
+                                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
                                         </div>
                                     )}
                                 </React.Fragment>
@@ -363,7 +376,7 @@ export default function KpiDashboard() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* Block 1: Overview */}
-                        <Card className="bg-[#0F172A] border-white/5 py-4">
+                        <Card className="bg-card border-border py-4 shadow-xl">
                             <CardContent className="p-6">
                                 <div className="grid grid-cols-2 gap-y-8 gap-x-4">
                                     <div className="space-y-2">
@@ -397,38 +410,38 @@ export default function KpiDashboard() {
                                 </div>
                                 <div className="mt-8">
                                     <div className="flex items-center justify-between text-xs mb-2">
-                                        <span className="text-slate-400">Overall Success</span>
-                                        <span className="text-[#10B981] font-bold">74%</span>
+                                        <span className="text-muted-foreground">Overall Success</span>
+                                        <span className="text-status-success font-bold">74%</span>
                                     </div>
-                                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                                        <div className="h-full bg-[#10B981] rounded-full" style={{ width: '74%' }} />
+                                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                        <div className="h-full bg-status-success rounded-full" style={{ width: '74%' }} />
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
                         {/* Block 2: Top Automated Fixes */}
-                        <Card className="bg-[#0F172A] border-white/5">
+                        <Card className="bg-card border-border shadow-xl">
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-bold text-white">Top Automated Fixes</CardTitle>
+                                <CardTitle className="text-sm font-bold text-foreground">Top Automated Fixes</CardTitle>
                             </CardHeader>
                             <CardContent className="p-6 pt-4 space-y-5">
                                 {[
-                                    { label: 'Auto-restart hung services', value: 90, color: 'bg-[#10B981]' },
-                                    { label: 'DNS cache flush', value: 70, color: 'bg-[#10B981]' },
-                                    { label: 'Certificate rotation', value: 50, color: 'bg-[#06B6D4]' },
-                                    { label: 'Load balancer drain', value: 35, color: 'bg-[#F59E0B]' },
-                                    { label: 'Memory limit adjustment', value: 20, color: 'bg-[#F59E0B]' },
+                                    { label: 'Auto-restart hung services', value: 90, color: 'bg-status-success' },
+                                    { label: 'DNS cache flush', value: 70, color: 'bg-status-success' },
+                                    { label: 'Certificate rotation', value: 50, color: 'bg-primary' },
+                                    { label: 'Load balancer drain', value: 35, color: 'bg-severity-medium' },
+                                    { label: 'Memory limit adjustment', value: 20, color: 'bg-severity-medium' },
                                 ].map((item, idx) => (
                                     <div key={idx} className="flex items-center gap-4">
                                         <div className="w-32 flex-shrink-0 text-right">
-                                            <span className="text-xs text-slate-400">{item.label}</span>
+                                            <span className="text-xs text-muted-foreground">{item.label}</span>
                                         </div>
                                         <div className="flex-1 flex items-center gap-3">
-                                            <div className="h-3 w-full bg-slate-800 rounded-sm">
+                                            <div className="h-3 w-full bg-muted rounded-sm">
                                                 <div className={`h-full rounded-sm ${item.color}`} style={{ width: `${item.value}%` }} />
                                             </div>
-                                            <span className="text-xs font-bold text-slate-300 w-8">{item.value}%</span>
+                                            <span className="text-xs font-bold text-foreground w-8">{item.value}%</span>
                                         </div>
                                     </div>
                                 ))}
@@ -436,20 +449,20 @@ export default function KpiDashboard() {
                         </Card>
 
                         {/* Block 3: Failures Requiring Manual Intervention */}
-                        <Card className="bg-[#0F172A] border-white/5">
+                        <Card className="bg-card border-border shadow-xl">
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-bold text-white">Failures Requiring Manual Intervention</CardTitle>
+                                <CardTitle className="text-sm font-bold text-foreground">Failures Requiring Manual Intervention</CardTitle>
                             </CardHeader>
                             <CardContent className="p-6 pt-4 space-y-3">
                                 {[
-                                    { title: 'DB failover timeout', count: 312, badge: 'CRITICAL', badgeColor: 'bg-red-500/10 text-red-500 border-red-500/20' },
-                                    { title: 'Config rollback conflict', count: 246, badge: 'HIGH', badgeColor: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
-                                    { title: 'Network partition recovery', count: 240, badge: 'HIGH', badgeColor: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
+                                    { title: 'DB failover timeout', count: 312, badge: 'CRITICAL', badgeColor: 'bg-severity-critical/10 text-severity-critical border-severity-critical/20' },
+                                    { title: 'Config rollback conflict', count: 246, badge: 'HIGH', badgeColor: 'bg-severity-high/10 text-severity-high border-severity-high/20' },
+                                    { title: 'Network partition recovery', count: 240, badge: 'HIGH', badgeColor: 'bg-severity-high/10 text-severity-high border-severity-high/20' },
                                 ].map((item, idx) => (
-                                    <div key={idx} className="p-3 bg-white/5 border border-white/5 rounded-lg flex items-center justify-between">
+                                    <div key={idx} className="p-3 bg-muted/20 border border-border rounded-lg flex items-center justify-between">
                                         <div>
-                                            <h4 className="text-xs font-bold text-white">{item.title}</h4>
-                                            <p className="text-[10px] text-slate-500 mt-1">{item.count} occurrences</p>
+                                            <h4 className="text-xs font-bold text-foreground">{item.title}</h4>
+                                            <p className="text-[10px] text-muted-foreground mt-1">{item.count} occurrences</p>
                                         </div>
                                         <div className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${item.badgeColor}`}>{item.badge}</div>
                                     </div>
@@ -460,9 +473,9 @@ export default function KpiDashboard() {
                 </div>
 
                 {/* 3. TREND CHART */}
-                <Card className="bg-white dark:bg-[#111827]/50 border-slate-200 dark:border-white/5 h-[450px]">
-                    <CardHeader className="border-b border-slate-200 dark:border-white/5 bg-slate-100/50 dark:bg-white/[0.02] py-4">
-                        <CardTitle className="text-[11px] font-black tracking-[0.2em] text-slate-900 dark:text-white">Event Volume Trend ({timeFilter})</CardTitle>
+                <Card className="bg-card border-border h-[450px] shadow-2xl">
+                    <CardHeader className="border-b border-border bg-muted/30 py-4">
+                        <CardTitle className="text-[11px] font-black tracking-[0.2em] text-foreground">Event Volume Trend ({timeFilter})</CardTitle>
                     </CardHeader>
                     <CardContent className="p-6 h-[380px]">
                         <ResponsiveContainer width="100%" height="100%">
@@ -496,12 +509,12 @@ export default function KpiDashboard() {
                                 />
                                 <Tooltip
                                     contentStyle={{
-                                        backgroundColor: '#0F172A',
-                                        borderColor: 'rgba(255,255,255,0.1)',
+                                        backgroundColor: colors.card,
+                                        borderColor: colors.border,
                                         borderRadius: '12px',
                                         fontSize: '11px',
                                         fontWeight: 'bold',
-                                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+                                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)'
                                     }}
                                     itemStyle={{ padding: '2px 0' }}
                                     formatter={(value: number) => Math.round(value)}
@@ -518,10 +531,10 @@ export default function KpiDashboard() {
                                         letterSpacing: '0.1em'
                                     }}
                                 />
-                                <Area type="monotone" dataKey="raw" name="Raw Events" stroke="#06B6D4" fill="url(#gradientRaw)" strokeWidth={3} />
-                                <Area type="monotone" dataKey="deduped" name="Deduped" stroke="#10B981" fill="url(#gradientDeduped)" strokeWidth={2} />
-                                <Area type="monotone" dataKey="suppressed" name="Suppressed" stroke="#A855F7" fill="transparent" strokeWidth={2} />
-                                <Area type="monotone" dataKey="actionable" name="Actionable" stroke="#F97316" fill="transparent" strokeWidth={2} />
+                                <Area type="monotone" dataKey="raw" name="Raw Events" stroke="hsl(var(--primary))" fill="url(#gradientRaw)" strokeWidth={3} />
+                                <Area type="monotone" dataKey="deduped" name="Deduped" stroke="hsl(var(--status-success))" fill="url(#gradientDeduped)" strokeWidth={2} />
+                                <Area type="monotone" dataKey="suppressed" name="Suppressed" stroke="hsl(var(--severity-high))" fill="transparent" strokeWidth={2} />
+                                <Area type="monotone" dataKey="actionable" name="Actionable" stroke="hsl(var(--severity-medium))" fill="transparent" strokeWidth={2} />
                             </AreaChart>
                         </ResponsiveContainer>
                     </CardContent>
@@ -534,22 +547,22 @@ export default function KpiDashboard() {
                             className="absolute inset-0 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
                             onClick={() => setSelectedTrend(null)}
                         />
-                        <Card className="relative w-full max-w-2xl bg-[#0F172A] border-white/10 shadow-3xl animate-in zoom-in-95 duration-300 overflow-hidden font-['Sora',sans-serif]">
+                        <Card className="relative w-full max-w-2xl bg-card border-border shadow-3xl animate-in zoom-in-95 duration-300 overflow-hidden font-['Sora',sans-serif]">
                             <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: selectedTrend.color }} />
-                            <CardHeader className="flex flex-row items-center justify-between py-6 bg-white/[0.02] border-b border-white/5">
+                            <CardHeader className="flex flex-row items-center justify-between py-6 bg-muted/30 border-b border-border">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 rounded-lg bg-white/5">
                                         <TrendingUp className="h-5 w-5" style={{ color: selectedTrend.color }} />
                                     </div>
                                     <div className="space-y-1">
-                                        <CardTitle className="text-xl font-black tracking-tight text-white">{selectedTrend.label} Trend</CardTitle>
-                                        <CardDescription className="text-slate-400">Historical performance mapping from the past {timeFilter}</CardDescription>
+                                        <CardTitle className="text-xl font-black tracking-tight text-foreground">{selectedTrend.label} Trend</CardTitle>
+                                        <CardDescription className="text-muted-foreground">Historical performance mapping from the past {timeFilter}</CardDescription>
                                     </div>
                                 </div>
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                                    className="rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                                     onClick={() => setSelectedTrend(null)}
                                 >
                                     <X className="h-5 w-5" />
@@ -557,13 +570,13 @@ export default function KpiDashboard() {
                             </CardHeader>
                             <CardContent className="p-8 space-y-8">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-                                        <p className="text-[10px] font-black text-slate-500 tracking-widest mb-1Uppercase">Current Value</p>
-                                        <p className="text-3xl font-black text-white">{selectedTrend.value}%</p>
+                                    <div className="p-4 rounded-xl bg-muted/20 border border-border">
+                                        <p className="text-[10px] font-black text-muted-foreground tracking-widest mb-1Uppercase">Current Value</p>
+                                        <p className="text-3xl font-black text-foreground">{selectedTrend.value}%</p>
                                     </div>
-                                    <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-                                        <p className="text-[10px] font-black text-slate-500 tracking-widest mb-1 uppercase">Reliability</p>
-                                        <p className="text-3xl font-black text-[#10B981]">99.4%</p>
+                                    <div className="p-4 rounded-xl bg-muted/20 border border-border">
+                                        <p className="text-[10px] font-black text-muted-foreground tracking-widest mb-1 uppercase">Reliability</p>
+                                        <p className="text-3xl font-black text-status-success">99.4%</p>
                                     </div>
                                 </div>
 

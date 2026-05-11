@@ -29,13 +29,13 @@ const VERIFICATION_METRICS = [
 ];
 
 const TIMELINE_DATA = [
-  { time: '14:30:00', event: 'Issue Detected', details: 'EWMA anomaly, Z-score = 3.2σ', icon: AlertCircle, color: 'text-destructive' },
+  { time: '14:30:00', event: 'Issue Detected', details: 'EWMA anomaly, Z-score = 3.2σ', icon: AlertCircle, color: 'text-severity-critical' },
   { time: '14:32:15', event: 'Root Cause Identified', details: 'Backup-Induced Congestion (93%)', icon: Activity, color: 'text-primary' },
-  { time: '14:35:00', event: 'Remediation Started', details: 'Workflow initiated by operator', icon: Play, color: 'text-blue-500' },
+  { time: '14:35:00', event: 'Remediation Started', details: 'Workflow initiated by operator', icon: Play, color: 'text-primary' },
   { time: '14:37:30', event: 'Step 1: Completed', details: 'Verified backup traffic pattern', icon: CheckCircle2, color: 'text-status-success' },
   { time: '14:39:00', event: 'Step 2: Completed', details: 'Applied QoS Traffic Shaping', icon: CheckCircle2, color: 'text-status-success' },
   { time: '14:42:15', event: 'Step 3: Completed', details: 'Rescheduled backup jobs', icon: CheckCircle2, color: 'text-status-success' },
-  { time: '14:45:00', event: 'Verification Finalized', details: 'All metrics stabilized within SLA', icon: ShieldCheck, color: 'text-emerald-500' },
+  { time: '14:45:00', event: 'Verification Finalized', details: 'All metrics stabilized within SLA', icon: ShieldCheck, color: 'text-status-success' },
 ];
 
 interface RemediationSidebarProps {
@@ -291,18 +291,18 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack, isEmbedd
                   <tbody className="divide-y divide-orange-500/10">
                     <tr>
                       <td className="px-2 py-2 font-medium">Latency</td>
-                      <td className="px-2 py-2 text-center text-rose-400 font-mono">170ms</td>
-                      <td className="px-2 py-2 text-right text-emerald-400 font-black font-mono">110ms</td>
+                      <td className="px-2 py-2 text-center text-severity-critical/80 font-mono">170ms</td>
+                      <td className="px-2 py-2 text-right text-status-success font-black font-mono">110ms</td>
                     </tr>
                     <tr>
                       <td className="px-2 py-2 font-medium">Utilization</td>
-                      <td className="px-2 py-2 text-center text-rose-400 font-mono">96%</td>
-                      <td className="px-2 py-2 text-right text-emerald-400 font-black font-mono">82%</td>
+                      <td className="px-2 py-2 text-center text-severity-critical/80 font-mono">96%</td>
+                      <td className="px-2 py-2 text-right text-status-success font-black font-mono">82%</td>
                     </tr>
                     <tr>
                       <td className="px-2 py-2 font-medium">Pkt Loss</td>
-                      <td className="px-2 py-2 text-center text-rose-400 font-mono">1.3%</td>
-                      <td className="px-2 py-2 text-right text-emerald-400 font-black font-mono">0.8%</td>
+                      <td className="px-2 py-2 text-center text-severity-critical/80 font-mono">1.3%</td>
+                      <td className="px-2 py-2 text-right text-status-success font-black font-mono">0.8%</td>
                     </tr>
                   </tbody>
                 </table>
@@ -459,8 +459,8 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack, isEmbedd
                         return null;
                       }}
                     />
-                    <Bar dataKey="before" fill="#ef4444" radius={[6, 6, 0, 0]} barSize={24} opacity={0.2} />
-                    <Bar dataKey="after" fill="#10b981" radius={[6, 6, 0, 0]} barSize={24} />
+                    <Bar dataKey="before" fill="hsl(var(--severity-critical))" radius={[6, 6, 0, 0]} barSize={24} opacity={0.2} />
+                    <Bar dataKey="after" fill="hsl(var(--status-success))" radius={[6, 6, 0, 0]} barSize={24} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -593,7 +593,7 @@ export function RemediationSidebar({ cluster, causeId, onClose, onBack, isEmbedd
 
   return (
     <div className={cn(
-        isEmbedded ? "relative w-full h-full border-none shadow-none" : "fixed inset-y-0 right-0 w-[85%] max-w-[1200px] z-50 animate-slide-in-right bg-background border-l-4 border-border shadow-[0_0_100px_rgba(0,0,0,0.5)]",
+        isEmbedded ? "relative w-full h-full border-none shadow-none" : "fixed inset-y-0 right-0 w-[85%] max-w-[1200px] z-50 animate-slide-in-right bg-background border-l-4 border-border shadow-2xl",
         "flex flex-col"
     )}>
       <div className="flex flex-col h-full">

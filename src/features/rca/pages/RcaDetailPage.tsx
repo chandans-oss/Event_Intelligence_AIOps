@@ -62,8 +62,8 @@ function SectionItem({ section }: { section: any }) {
                                 <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--rca-text-primary)' }}>{item.label}</span>
                                 <span style={{
                                     fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 700,
-                                    background: 'rgba(59,130,246,0.15)', color: '#60a5fa',
-                                    border: '1px solid rgba(59,130,246,0.3)', borderRadius: 4, padding: '1px 7px'
+                                    background: 'var(--rca-bg-tertiary)', color: 'var(--rca-primary)',
+                                    border: '1px solid var(--rca-border-color)', borderRadius: 4, padding: '1px 7px'
                                 }}>{item.displayScore}</span>
                             </div>
                             <div style={{ height: 4, background: 'rgba(0,0,0,0.2)', borderRadius: 4, overflow: 'hidden' }}>
@@ -71,7 +71,7 @@ function SectionItem({ section }: { section: any }) {
                                     height: '100%',
                                     width: `${Math.min(item.score, 100)}%`,
                                     borderRadius: 4,
-                                    background: item.score >= 80 ? '#10b981' : item.score >= 50 ? '#f59e0b' : '#3b82f6',
+                                    background: item.score >= 80 ? 'var(--rca-success)' : item.score >= 50 ? 'var(--rca-warning)' : 'var(--rca-primary)',
                                     transition: 'width 0.5s ease'
                                 }} />
                             </div>
@@ -100,8 +100,8 @@ function SectionItem({ section }: { section: any }) {
                                             {col.key === 'match' || col.key === 'score' ? (
                                                 <span style={{
                                                     fontSize: '0.75rem', fontWeight: 700, padding: '1px 7px', borderRadius: 4,
-                                                    background: parseInt(row[col.key]) > 80 ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
-                                                    color: parseInt(row[col.key]) > 80 ? '#10b981' : '#f59e0b'
+                                                    background: parseInt(row[col.key]) > 80 ? 'color-mix(in srgb, var(--rca-success), transparent 85%)' : 'color-mix(in srgb, var(--rca-warning), transparent 85%)',
+                                                    color: parseInt(row[col.key]) > 80 ? 'var(--rca-success)' : 'var(--rca-warning)'
                                                 }}>{row[col.key]}</span>
                                             ) : (
                                                 <span style={{ color: 'var(--rca-text-primary)' }}>{row[col.key]}</span>
@@ -154,7 +154,7 @@ function MetadataStepContent({ details }: { details: any }) {
                     <div style={{ fontSize: '0.88rem', color: 'var(--rca-text-primary)' }}>
                         {details.bulletPoints.map((bp: string, i: number) => (
                             <div key={i} style={{ display: 'flex', gap: 6, padding: '2px 0' }}>
-                                <span style={{ color: '#3b82f6' }}>•</span>
+                                <span style={{ color: 'var(--rca-primary)' }}>•</span>
                                 <span>{bp}</span>
                             </div>
                         ))}
@@ -191,8 +191,8 @@ function MetadataStepContent({ details }: { details: any }) {
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--rca-text-secondary)' }}>Duration:</span>
                     <span style={{
                         fontSize: '0.78rem', fontFamily: 'monospace', fontWeight: 700,
-                        background: 'rgba(16,185,129,0.15)', color: '#10b981',
-                        border: '1px solid rgba(16,185,129,0.3)', borderRadius: 4, padding: '1px 8px'
+                        background: 'color-mix(in srgb, var(--rca-success), transparent 85%)', color: 'var(--rca-success)',
+                        border: '1px solid var(--rca-border-color)', borderRadius: 4, padding: '1px 8px'
                     }}>{details.duration}</span>
                 </div>
             )}

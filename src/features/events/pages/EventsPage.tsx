@@ -50,6 +50,11 @@ export default function Events() {
   const [activeSidebar, setActiveSidebar] = useState<SidebarType>(null);
   const [selectedCauseId, setSelectedCauseId] = useState<string | null>(null);
 
+  // Reset pagination when filters or search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterCategory, searchQuery, showHistory]);
+
   const stats = useMemo(() => {
     const visibleEvents = sampleNetworkEvents.filter(e => showHistory || e.status === 'Active');
     return getEventStats(visibleEvents);
@@ -145,10 +150,14 @@ export default function Events() {
           if (event.source !== filterCategory) return false;
         }
         // AI
-        if (filterCategory === 'OnlyRCA' && (event.aiStatus !== 'Only RCA' || event.label !== 'Root')) return false;
-        if (filterCategory === 'RcaRemediation' && (event.aiStatus !== 'RCA with Remediation' || event.label !== 'Root')) return false;
-        if (filterCategory === 'RcaAuto' && (event.aiStatus !== 'RCA with Auto Remediation' || event.label !== 'Root')) return false;
-        if (filterCategory === 'RcaNotFound' && (event.aiStatus !== 'RCA Not Found' || event.label !== 'Root')) return false;
+        if (filterCategory === 'OnlyRCA' && event.aiStatus !== 'Only RCA') return false;
+        if (filterCategory === 'RcaRemediation' && event.aiStatus !== 'RCA with Remediation') return false;
+        if (filterCategory === 'RcaAuto' && event.aiStatus !== 'RCA with Auto Remediation') return false;
+        if (filterCategory === 'RcaNotFound' && event.aiStatus !== 'RCA Not Found') return false;
+
+        // Ensure AI sub-filters only show Root events (consistent with stats)
+        const aiSubFilters = ['OnlyRCA', 'RcaRemediation', 'RcaAuto', 'RcaNotFound'];
+        if (aiSubFilters.includes(filterCategory) && event.label !== 'Root') return false;
       }
 
       // History (Status) filter

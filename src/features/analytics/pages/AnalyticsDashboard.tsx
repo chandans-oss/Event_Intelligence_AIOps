@@ -16,6 +16,7 @@ import {
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { useTheme } from 'next-themes';
 
 import { RCASidebar } from '@/features/rca/components/RcaSidebar';
 import { RemediationSidebar } from '@/features/rca/components/RemediationSidebar';
@@ -36,41 +37,60 @@ ChartJS.register(
   ChartDataLabels
 );
 
-const P = '#7c6ff7', P2 = '#a89ff7', P3 = '#c4beff', P4 = '#dcdaff', P5 = '#ede9ff';
-const RED = '#f05252', ORANGE = '#f97316', GREEN = '#22c55e', AMBER = '#f59e0b';
-const T2 = '#6b7280', T3 = '#9ca3af', GRID = 'rgba(0,0,0,0.05)';
+// Semantic Colors using HSL variables from index.css
+const P = 'hsl(var(--primary))';
+const P2 = 'hsl(var(--primary) / 0.8)';
+const P3 = 'hsl(var(--primary) / 0.6)';
+const P4 = 'hsl(var(--primary) / 0.4)';
+const P5 = 'hsl(var(--primary) / 0.2)';
 
-const baseOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      backgroundColor: '#1a1a2e',
-      padding: 8,
-      titleColor: '#fff',
-      bodyColor: '#9ca3af',
-      cornerRadius: 6,
-      borderColor: 'rgba(108,99,255,0.2)',
-      borderWidth: 1
-    },
-    datalabels: {
-      display: true,
-      color: '#fff',
-      font: { weight: 'bold', size: 10 },
-      formatter: (value: any) => value
-    }
-  },
-  scales: {
-    x: { grid: { color: GRID }, ticks: { color: T3, font: { size: 10 } } },
-    y: { grid: { color: GRID }, ticks: { color: T3, font: { size: 10 } } },
-  }
-} as any;
+const RED = 'hsl(var(--severity-critical))';
+const ORANGE = 'hsl(var(--severity-high))';
+const AMBER = 'hsl(var(--severity-medium))';
+const GREEN = 'hsl(var(--status-success))';
 
 export default function AnalyticsDashboard() {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  
   const assetGaugeRef = useRef<HTMLCanvasElement>(null);
   const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null);
   const [activeSidebar, setActiveSidebar] = useState<'rca' | 'remediation' | null>(null);
+
+  const baseOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: isDark ? 'hsl(var(--popover))' : '#ffffff',
+        padding: 12,
+        titleColor: isDark ? 'hsl(var(--popover-foreground))' : 'hsl(var(--foreground))',
+        bodyColor: isDark ? 'hsl(var(--muted-foreground))' : 'hsl(var(--muted-foreground))',
+        cornerRadius: 8,
+        borderColor: 'hsl(var(--border) / 0.5)',
+        borderWidth: 1,
+        titleFont: { weight: 'bold', size: 13 },
+        bodyFont: { size: 12 }
+      },
+      datalabels: {
+        display: true,
+        color: 'hsl(var(--foreground))',
+        font: { weight: 'bold', size: 10 },
+        formatter: (value: any) => value
+      }
+    },
+    scales: {
+      x: { 
+        grid: { color: 'hsl(var(--border) / 0.3)' }, 
+        ticks: { color: 'hsl(var(--muted-foreground))', font: { size: 10, weight: '600' } } 
+      },
+      y: { 
+        grid: { color: 'hsl(var(--border) / 0.3)' }, 
+        ticks: { color: 'hsl(var(--muted-foreground))', font: { size: 10, weight: '600' } } 
+      },
+    }
+  }), [isDark]);
 
   // Map Root Cause Insights directly from mockClusters to display real data
   const rcaInsightsData = useMemo(() => {
@@ -120,9 +140,8 @@ export default function AnalyticsDashboard() {
       const canvas = assetGaugeRef.current;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        const isDark = document.documentElement.classList.contains('dark');
-        const bgTrack = isDark ? '#1e293b' : '#f3f4f6';
-        const needleColor = isDark ? '#38bdf8' : '#1a1a2e';
+        const bgTrack = isDark ? 'hsl(222 47% 15%)' : 'hsl(210 40% 96%)';
+        const needleColor = isDark ? 'hsl(210 100% 50%)' : 'hsl(222 47% 11%)';
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const cx = canvas.width / 2, cy = canvas.height * 0.8, r = canvas.width * 0.4;
@@ -131,21 +150,20 @@ export default function AnalyticsDashboard() {
         };
         // Background arc
         arc(Math.PI * 0.75, Math.PI * 2.25, bgTrack, 14);
-        // Red segment (high risk)
-        arc(Math.PI * 0.75, Math.PI * 1.3, RED, 14);
-        // Orange segment (medium)
-        arc(Math.PI * 1.3, Math.PI * 1.75, ORANGE, 14);
-        // Green segment (low)
-        arc(Math.PI * 1.75, Math.PI * 2.25, GREEN, 14);
+        // Severity segments
+        arc(Math.PI * 0.75, Math.PI * 1.3, '#f05252', 14); // Critical
+        arc(Math.PI * 1.3, Math.PI * 1.75, '#f97316', 14); // Warning
+        arc(Math.PI * 1.75, Math.PI * 2.25, '#22c55e', 14); // Success
         // Needle
         const pct = 240 / 300;
         const angle = Math.PI * 0.75 + pct * (Math.PI * 1.5);
         const nx = cx + Math.cos(angle) * (r * 0.7), ny = cy + Math.sin(angle) * (r * 0.7);
         ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(nx, ny); ctx.strokeStyle = needleColor; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(nx, ny); ctx.strokeStyle = needleColor; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
         ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fillStyle = needleColor; ctx.fill();
       }
     }
-  }, []);
+  }, [isDark]);
 
   return (
     <MainLayout>
@@ -157,46 +175,46 @@ export default function AnalyticsDashboard() {
         .grid-2-1-wide { display: grid; grid-template-columns: 1.5fr 1fr 1.5fr; gap: 16px; margin-bottom: 16px; }
         .grid-3b { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 16px; }
         .grid-2-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .card { background: hsl(var(--card)); color: hsl(var(--card-foreground)); border-radius: 14px; padding: 18px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); position: relative; border: 1px solid hsl(var(--border) / 0.5); }
+        .card { background: hsl(var(--card)); color: hsl(var(--card-foreground)); border-radius: 14px; padding: 18px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); position: relative; border: 1px solid hsl(var(--border) / 0.5); }
         .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-        .card-title { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: hsl(var(--card-foreground)); }
-        .analyze-btn { font-size: 11px; font-weight: 500; color: hsl(var(--muted-foreground)); border: 1px solid hsl(var(--border)); background: hsl(var(--card)); padding: 4px 12px; border-radius: 6px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
-        .analyze-btn:hover { background: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); border-color: hsl(var(--primary) / 0.3); }
-        .badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 600; }
-        .badge-up { background: #fee2e2; color: #dc2626; }
-        .badge-down { background: #dcfce7; color: #16a34a; }
-        .dark .badge-up { background: #991b1b40; color: #f87171; }
-        .dark .badge-down { background: #065f4640; color: #34d399; }
+        .card-title { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: hsl(var(--card-foreground)); text-transform: uppercase; letter-spacing: 0.05em; }
+        .analyze-btn { font-size: 11px; font-weight: 600; color: hsl(var(--primary)); border: 1px solid hsl(var(--primary) / 0.3); background: hsl(var(--primary) / 0.05); padding: 5px 14px; border-radius: 8px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .analyze-btn:hover { background: hsl(var(--primary) / 0.1); border-color: hsl(var(--primary) / 0.5); transform: translateY(-1px); }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+        .badge-up { background: hsl(var(--severity-critical) / 0.1); color: hsl(var(--severity-critical)); }
+        .badge-down { background: hsl(var(--status-success) / 0.1); color: hsl(var(--status-success)); }
         .kpi-block { display: flex; flex-direction: column; }
-        .kpi-label { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; color: hsl(var(--muted-foreground)); margin-bottom: 4px; }
+        .kpi-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: hsl(var(--muted-foreground)); margin-bottom: 4px; text-transform: uppercase; }
         .kpi-row { display: flex; align-items: baseline; gap: 8px; }
-        .kpi-value { font-size: 28px; font-weight: 700; color: hsl(var(--foreground)); line-height: 1; }
-        .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
-        .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: hsl(var(--muted-foreground)); }
+        .kpi-value { font-size: 28px; font-weight: 800; color: hsl(var(--foreground)); line-height: 1; }
+        .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: hsl(var(--muted-foreground)); }
         .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .cap-legend { display: flex; gap: 16px; align-items: center; }
-        .cap-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: hsl(var(--muted-foreground)); }
-        .cap-dot { width: 8px; height: 8px; border-radius: 50%; }
-        .anomaly-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid hsl(var(--border) / 0.5); }
-        .anomaly-name { font-size: 12px; font-weight: 500; color: hsl(var(--card-foreground)); display: flex; align-items: center; gap: 6px; }
-        .anomaly-dot { width: 7px; height: 7px; border-radius: 50%; }
-        .anomaly-time { font-size: 11px; color: hsl(var(--muted-foreground)); }
-        .pred-row { padding: 8px 0; border-bottom: 1px solid hsl(var(--border) / 0.5); }
-        .pred-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .pred-name { font-size: 12px; font-weight: 500; color: hsl(var(--card-foreground)); }
-        .pred-track { height: 6px; background: hsl(var(--muted)); border-radius: 3px; overflow: hidden; margin-bottom: 3px; }
+        .cap-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: hsl(var(--muted-foreground)); }
+        .cap-dot { width: 8px; height: 8px; border-radius: 2px; }
+        .anomaly-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid hsl(var(--border) / 0.3); }
+        .anomaly-name { font-size: 12px; font-weight: 600; color: hsl(var(--card-foreground)); display: flex; align-items: center; gap: 8px; }
+        .anomaly-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .anomaly-time { font-size: 10px; font-weight: 700; color: hsl(var(--muted-foreground)); font-family: monospace; }
+        .pred-row { padding: 10px 0; border-bottom: 1px solid hsl(var(--border) / 0.3); }
+        .pred-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .pred-name { font-size: 12px; font-weight: 600; color: hsl(var(--card-foreground)); }
+        .pred-track { height: 6px; background: hsl(var(--muted)); border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
         .pred-fill { height: 100%; border-radius: 3px; }
-        .pred-meta { font-size: 10px; color: hsl(var(--muted-foreground)); display: flex; justify-content: space-between; }
-        .asset-row { padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid hsl(var(--border) / 0.5); display: flex; align-items: center; justify-content: space-between; }
-        .asset-name { font-size: 12px; font-weight: 600; color: hsl(var(--card-foreground)); }
-        .asset-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 3px; }
-        .asset-tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
-        .action-row { padding: 10px 12px; background: hsl(var(--muted) / 0.3); border: 1px solid hsl(var(--border) / 0.5); border-radius: 8px; margin-bottom: 8px; }
-        .action-title { font-size: 12px; font-weight: 600; color: hsl(var(--card-foreground)); display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
-        .action-body { font-size: 11px; color: hsl(var(--muted-foreground)); line-height: 1.5; }
-        .action-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
-        .conf-badge { font-size: 10px; background: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); padding: 2px 8px; border-radius: 5px; font-weight: 600; }
-        .exec-btn { font-size: 10px; font-weight: 600; color: hsl(var(--primary)); background: hsl(var(--primary) / 0.1); border: none; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+        .pred-meta { font-size: 10px; font-weight: 600; color: hsl(var(--muted-foreground)); display: flex; justify-content: space-between; }
+        .asset-row { padding: 10px 14px; border-radius: 10px; margin-bottom: 8px; border: 1px solid hsl(var(--border) / 0.3); display: flex; align-items: center; justify-content: space-between; background: hsl(var(--muted) / 0.1); }
+        .asset-name { font-size: 12px; font-weight: 700; color: hsl(var(--card-foreground)); }
+        .asset-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+        .asset-tag { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); text-transform: uppercase; }
+        .action-row { padding: 12px 14px; background: hsl(var(--muted) / 0.15); border: 1px solid hsl(var(--border) / 0.4); border-radius: 12px; margin-bottom: 10px; transition: all 0.2s; }
+        .action-row:hover { border-color: hsl(var(--primary) / 0.4); background: hsl(var(--primary) / 0.05); }
+        .action-title { font-size: 12px; font-weight: 700; color: hsl(var(--card-foreground)); display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .action-body { font-size: 11px; color: hsl(var(--muted-foreground)); line-height: 1.6; font-weight: 500; }
+        .action-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+        .conf-badge { font-size: 9px; background: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); padding: 2px 10px; border-radius: 6px; font-weight: 800; text-transform: uppercase; }
+        .exec-btn { font-size: 10px; font-weight: 700; color: hsl(var(--primary)); background: hsl(var(--primary) / 0.1); border: none; padding: 4px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .exec-btn:hover { background: hsl(var(--primary)); color: white; }
       `}</style>
 
       <div className="dashboard-container">
@@ -211,26 +229,26 @@ export default function AnalyticsDashboard() {
 
               <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
                 {rcaInsightsData.map((item, i) => (
-                  <div key={item.id} className="bg-[#1e293b]/40 border border-[#334155]/50 rounded-xl p-3 transition-all hover:border-[#38bdf8]/30 group">
+                  <div key={item.id} className="bg-muted/30 border border-border/50 rounded-xl p-3 transition-all hover:border-primary/30 group">
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${item.sev === 'critical' ? 'bg-red-500/10 text-red-500' : item.sev === 'high' ? 'bg-orange-500/10 text-orange-500' : 'bg-yellow-500/10 text-yellow-500'}`}>{item.sev}</span>
-                        <span className="text-white font-bold text-[14px] leading-tight truncate" title={item.fullTitle}>{item.title}</span>
+                        <span className="text-foreground font-bold text-[14px] leading-tight truncate" title={item.fullTitle}>{item.title}</span>
                       </div>
                       <button 
                         onClick={() => handleAnalyze(item)}
-                        className="flex items-center gap-2 text-[#38bdf8] text-[12px] font-bold opacity-90 hover:opacity-100 transition-opacity"
+                        className="flex items-center gap-2 text-primary text-[12px] font-bold opacity-90 hover:opacity-100 transition-opacity"
                       >
                         <Brain className="h-4 w-4" />
                         Analyze
                       </button>
                     </div>
-                    <div className="flex items-center gap-4 text-[#94a3b8] text-[11px] font-medium ml-1">
+                    <div className="flex items-center gap-4 text-muted-foreground text-[11px] font-medium ml-1">
                       <div className="flex items-center gap-1.5">
-                        <Zap className="h-3 w-3 text-[#38bdf8]" />
+                        <Zap className="h-3 w-3 text-primary" />
                         {item.conf}% confidence
                       </div>
-                      <div className="flex items-center gap-1.5 underline decoration-[#38bdf8]/20">{item.evidence} evidence</div>
+                      <div className="flex items-center gap-1.5 underline decoration-primary/20">{item.evidence} evidence</div>
                       <div className="flex items-center gap-1.5">{item.services} services</div>
                     </div>
                   </div>
@@ -388,28 +406,28 @@ export default function AnalyticsDashboard() {
             </div>
           </div>
 
-          <div className="mt-4 text-[13px] font-bold text-[#1a1a2e] mb-3 tracking-tight">Intelligence & Prediction</div>
+          <div className="mt-4 text-[13px] font-bold text-foreground mb-3 tracking-tight">Intelligence & Prediction</div>
           <div className="grid-2-1 mb-4">
             <div className="card">
               <div className="card-header">
                 <div className="card-title">Active Anomalies</div>
-                <span className="bg-[#fee2e2] text-[#dc2626] text-[11px] px-2 py-1 rounded-full font-bold">4 detected</span>
+                <span className="bg-red-500/10 text-red-500 text-[11px] px-2 py-1 rounded-full font-bold">4 detected</span>
               </div>
               <div className="anomaly-row">
-                <div><div className="anomaly-name"><div className="anomaly-dot" style={{ background: RED }}></div>Unusual traffic spike on CR-01</div><div className="text-[11px] text-[#9ca3af] mt-0.5 ml-3">Outbound 340% above baseline · Flow Analytics</div></div>
-                <div className="flex flex-col items-end gap-1"><span className="badge badge-up">Critical</span><span className="anomaly-time">14:12 UTC</span></div>
+                <div><div className="anomaly-name"><div className="anomaly-dot" style={{ background: RED }}></div>Unusual traffic spike on CR-01</div><div className="text-[11px] text-muted-foreground mt-0.5 ml-3">Outbound 340% above baseline · Flow Analytics</div></div>
+                <div className="flex flex-col items-end gap-1"><span className="badge bg-red-500/10 text-red-500">Critical</span><span className="anomaly-time">14:12 UTC</span></div>
               </div>
               <div className="anomaly-row">
-                <div><div className="anomaly-name"><div className="anomaly-dot" style={{ background: ORANGE }}></div>DNS query rate anomaly</div><div className="text-[11px] text-[#9ca3af] mt-0.5 ml-3">Primary ↓78%, Secondary ↑5× · DNS Monitor</div></div>
-                <div className="flex flex-col items-end gap-1"><span className="badge bg-[#fff3cd] text-[#92400e]">High</span><span className="anomaly-time">14:18 UTC</span></div>
+                <div><div className="anomaly-name"><div className="anomaly-dot" style={{ background: ORANGE }}></div>DNS query rate anomaly</div><div className="text-[11px] text-muted-foreground mt-0.5 ml-3">Primary ↓78%, Secondary ↑5× · DNS Monitor</div></div>
+                <div className="flex flex-col items-end gap-1"><span className="badge bg-orange-500/10 text-orange-500">High</span><span className="anomaly-time">14:18 UTC</span></div>
               </div>
               <div className="anomaly-row">
-                <div><div className="anomaly-name"><div className="anomaly-dot" style={{ background: P }}></div>Authentication latency deviation</div><div className="text-[11px] text-[#9ca3af] mt-0.5 ml-3">Response 3.2× std dev above mean · APM</div></div>
-                <div className="flex flex-col items-end gap-1"><span className="badge bg-[#e0e7ff] text-[#4338ca]">Medium</span><span className="anomaly-time">14:05 UTC</span></div>
+                <div><div className="anomaly-name"><div className="anomaly-dot" style={{ background: P }}></div>Authentication latency deviation</div><div className="text-[11px] text-muted-foreground mt-0.5 ml-3">Response 3.2× std dev above mean · APM</div></div>
+                <div className="flex flex-col items-end gap-1"><span className="badge bg-primary/10 text-primary">Medium</span><span className="anomaly-time">14:05 UTC</span></div>
               </div>
               <div className="anomaly-row" style={{ border: 'none' }}>
-                <div><div className="anomaly-name"><div className="anomaly-dot" style={{ background: ORANGE }}></div>BGP route flapping detected</div><div className="text-[11px] text-[#9ca3af] mt-0.5 ml-3">CR-01 ↔ PE-02 · 12 changes in 30 min</div></div>
-                <div className="flex flex-col items-end gap-1"><span className="badge bg-[#fff3cd] text-[#92400e]">High</span><span className="anomaly-time">13:50 UTC</span></div>
+                <div><div className="anomaly-name"><div className="anomaly-dot" style={{ background: ORANGE }}></div>BGP route flapping detected</div><div className="text-[11px] text-muted-foreground mt-0.5 ml-3">CR-01 ↔ PE-02 · 12 changes in 30 min</div></div>
+                <div className="flex flex-col items-end gap-1"><span className="badge bg-orange-500/10 text-orange-500">High</span><span className="anomaly-time">13:50 UTC</span></div>
               </div>
             </div>
 
@@ -595,26 +613,26 @@ export default function AnalyticsDashboard() {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-[2px]" style={{ background: RED }}></div>
-                  <span className="text-[10px] text-muted-foreground">Critical (&gt;100)</span>
+                  <span className="text-[10px] text-muted-foreground font-bold">Critical</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-[2px]" style={{ background: P }}></div>
-                  <span className="text-[10px] text-muted-foreground">High (50-100)</span>
+                  <span className="text-[10px] text-muted-foreground font-bold">High</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-[2px]" style={{ background: P2 }}></div>
-                  <span className="text-[10px] text-muted-foreground">Medium (10-50)</span>
+                  <span className="text-[10px] text-muted-foreground font-bold">Medium</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-[2px]" style={{ background: '#f3f4f6', border: '1px solid #e5e7eb' }}></div>
-                  <span className="text-[10px] text-muted-foreground">Low (&lt;10)</span>
+                  <div className="w-2.5 h-2.5 rounded-[2px] bg-muted border border-border"></div>
+                  <span className="text-[10px] text-muted-foreground font-bold">Low</span>
                 </div>
               </div>
             </div>
             <div className="flex flex-col gap-1.5 p-2">
               {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(day => (
                 <div key={day} className="flex items-center gap-2">
-                  <span className="text-[9px] text-[#9ca3af] w-6 font-bold">{day}</span>
+                  <span className="text-[9px] text-muted-foreground w-6 font-bold">{day}</span>
                   <div className="flex flex-1 gap-1">
                     {Array.from({ length: 24 }).map((_, j) => {
                       const baseVal = Math.sin(j * 0.5);
@@ -622,8 +640,8 @@ export default function AnalyticsDashboard() {
                       const combined = baseVal + randVal;
                       const count = Math.floor(combined * 50) + 10;
 
-                      const color = count > 80 ? RED : count > 50 ? P : count > 20 ? P2 : '#f3f4f6';
-                      const textColor = (count > 20) ? '#fff' : '#64748b';
+                      const color = count > 80 ? RED : count > 50 ? P : count > 20 ? P2 : 'hsl(var(--muted))';
+                      const textColor = (count > 20) ? '#fff' : 'hsl(var(--muted-foreground))';
 
                       return (
                         <div
@@ -642,7 +660,7 @@ export default function AnalyticsDashboard() {
                 </div>
               ))}
             </div>
-            <div className="flex justify-between mt-2 text-[9px] text-[#9ca3af] pl-10 pr-2 pb-2"><span>00h</span><span>06h</span><span>12h</span><span>18h</span><span>23h</span></div>
+            <div className="flex justify-between mt-2 text-[9px] text-muted-foreground pl-10 pr-2 pb-2 font-bold font-mono"><span>00h</span><span>06h</span><span>12h</span><span>18h</span><span>23h</span></div>
           </div>
 
         </div>

@@ -6,12 +6,15 @@
     "backend/django_project",
     "backend/django_project/rca_source_backend",
     "backend/django_project/rca_source_backend/agentic_engine",
-    "backend/django_project/rca_source_backend/config"
+    "backend/django_project/rca_source_backend/config",
+    "d:/new_event_AIOps/Event_Intelligence_AIOps/backend/rag",
+    "d:/new_event_AIOps/Event_Intelligence_AIOps/backend/django_project"
   ],
   "exclude": [
     "node_modules",
     ".venv",
     "dist",
     "build"
-  ]
+  ],
+  "reportMissingModuleSource": "none"
 }

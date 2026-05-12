@@ -283,12 +283,21 @@ class RCAPipeline:
         tmpls = {}
         samples = {}
         for line in log_lines:
-            r = miner.add_log_message(line.strip())
+            line = str(line).strip()
+            if not line: continue
+            
+            # Mask timestamps for better clustering
+            masked_line = _RE_TS.sub('<TS>', line)
+            # Mask common noisy IDs
+            masked_line = _RE_IFACE.sub('<IF>', masked_line)
+            masked_line = _RE_IP.sub('<IP>', masked_line)
+            
+            r = miner.add_log_message(masked_line)
             cid = str(r["cluster_id"])
             counts[cid] += 1
             tmpls[cid] = r["template_mined"]
             if cid not in samples:
-                samples[cid] = line.strip()
+                samples[cid] = line
 
         return sorted(
             [{"cluster_id": c, "template": tmpls[c], "count": counts[c], "sample": samples[c]}
@@ -313,9 +322,13 @@ class RCAPipeline:
         results = []
         for metric_name, ents in payload.items():
             for entity_name, values in ents.items():
-                fact = self._detect_anomaly(metric_name, entity_name, values)
-                if fact.is_anomaly:
-                    results.append(fact)
+                try:
+                    fact = self._detect_anomaly(metric_name, entity_name, values)
+                    if fact.is_anomaly:
+                        results.append(fact)
+                except (ValueError, TypeError):
+                    # Skip non-numeric metrics (e.g. BGP state 'Established', oper status 'up/down')
+                    logger.debug(f"Skipping non-numeric metric: {metric_name}.{entity_name}")
         return results
 
     def _detect_anomaly(self, metric, entity, values, recent_window=5, z_threshold=2.5):

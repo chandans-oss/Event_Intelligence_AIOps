@@ -28,18 +28,21 @@ sys.path.insert(0, str(RCA_BASE / 'agentic_engine'))
 sys.path.insert(0, str(RCA_BASE / 'config'))
 
 try:
+    # pyrefly: ignore [missing-import]
     from ierag5_refactored import run_full_pipeline
 except ImportError:
     try:
+        # pyrefly: ignore [missing-import]
         from ierag2_refactored import run_full_pipeline
     except ImportError:
         run_full_pipeline = None
 
 try:
-    # After adding __init__.py, this direct search should be more reliable
+    # pyrefly: ignore [missing-import]
     from trigger_agentic_flow import trigger_agentic_flow
 except ImportError:
     try:
+        # pyrefly: ignore [missing-import]
         from rca_source_backend.agentic_engine.trigger_agentic_flow import trigger_agentic_flow
     except ImportError:
         trigger_agentic_flow = None
@@ -158,15 +161,94 @@ class RunRAGAnalysisView(APIView):
             old_cwd = os.getcwd()
             os.chdir(RAG_DIR)
             
-            # Prepare and Run Analysis
             try:
-                # The pipeline resources will be initialized once on the first call
-                # Execute the pipeline with user-provided payload
-                results = run_full_pipeline(raw_logs, root_event, metrics_payload, topology)
+                raw_output = run_full_pipeline(raw_logs, root_event, metrics_payload, topology)
             finally:
                 os.chdir(old_cwd)
 
-            return Response(results, status=status.HTTP_200_OK)
+            # --- Normalize results to match the terminal formatted output ---
+            raw_results = raw_output.get('results', [])
+            scores = [r.get('final_score', 0) for r in raw_results]
+            max_score = max(scores) if scores else 0
+            min_score = min(scores) if scores else 0
+            score_range = max(0.01, max_score - min_score)
+
+            ui_results = []
+            for rank, r in enumerate(raw_results[:3]):
+                # Unpack doc — reranker wraps it in {doc: {raw: ...}}
+                if isinstance(r.get('doc'), dict) and 'raw' in r['doc']:
+                    doc = r['doc']['raw']
+                else:
+                    doc = r.get('doc', {})
+
+                final_score = r.get('final_score', 0)
+                confidence_pct = min(
+                    95.0,
+                    round((final_score - min_score) / score_range * 100, 1)
+                )
+
+                # Build relevant logs using log_features from the result
+                log_features = r.get('log_features', [])
+                kb_title = doc.get('title', '')
+                kb_desc = doc.get('description', '')
+                kb_rca = doc.get('root_cause_analysis', '')
+                kb_text = ' '.join(filter(None, [kb_title, kb_desc, kb_rca]))
+
+                formatted_logs = []
+                if log_features and kb_text.strip():
+                    # Score each log template against the KB doc using simple keyword overlap
+                    kb_words = set(kb_text.lower().split())
+                    for log in log_features:
+                        template = log.get('template', '') or log.get('sample', '')
+                        sample = log.get('sample', template)
+                        if not template:
+                            continue
+                        log_words = set(template.lower().split())
+                        overlap = len(kb_words & log_words)
+                        score = round(overlap / max(len(log_words), 1) * 0.6 + log.get('score', 0) * 0.4, 3)
+                        formatted_logs.append({
+                            'template': template,
+                            'sample': sample,
+                            'score': score
+                        })
+                    formatted_logs.sort(key=lambda x: x['score'], reverse=True)
+                    formatted_logs = formatted_logs[:3]
+
+                ui_results.append({
+                    'rank': rank + 1,
+                    'title': doc.get('title', doc.get('description', 'N/A')),
+                    'rca_id': doc.get('rca_id', 'N/A'),
+                    'confidence': confidence_pct,
+                    'relevant_logs': formatted_logs,
+                    'root_cause_analysis': doc.get('root_cause_analysis', ''),
+                })
+
+            response = {
+                'total_results': len(ui_results),
+                'results': ui_results,
+                # Raw search results for Retrieval + Reranking stage visualizations
+                'search_results': [
+                    {
+                        'doc': r.get('doc'),  # keeps nested {raw: ...} for UI to read doc.raw.title
+                        'hybrid_score': round(r.get('prerank_score', 0), 4),
+                        'cross_encoder_score': round(r.get('cross_encoder_score', 0), 4),
+                        'final_score': round(r.get('final_score', 0), 4),
+                        'title': r.get('doc', {}).get('raw', {}).get('title', 'N/A') if isinstance(r.get('doc'), dict) else 'N/A',
+                        'rca_id': r.get('doc', {}).get('raw', {}).get('rca_id', 'N/A') if isinstance(r.get('doc'), dict) else 'N/A',
+                    }
+                    for r in raw_results
+                ],
+                # Pass through intermediate stage data for the UI walkthrough
+                'query': raw_output.get('query', {}),
+                'anomalies': raw_output.get('anomalies', []),
+                'metric_facts': raw_output.get('query', {}).get('metric_facts', []),
+                'templates': raw_output.get('templates', []),
+                'log_features': raw_output.get('query', {}).get('log_features', []),
+                'entities': raw_output.get('entities', {}),
+                'build_ms': raw_output.get('query', {}).get('build_ms', 0),
+            }
+
+            return Response(response, status=status.HTTP_200_OK)
 
         except Exception as e:
             import traceback

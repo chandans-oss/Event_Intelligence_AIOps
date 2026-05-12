@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { cn } from '@/shared/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useTheme as useNextTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,6 +10,7 @@ import {
     ChevronDown, Database, Link as LinkIcon, Eye,
     Maximize2, RefreshCw, Layers, Sliders, ToggleLeft,
     CheckCircle2, Circle, ArrowDown, Terminal, Fingerprint,
+    ArrowUpRight, ArrowDownRight,
     Boxes, Network, Sparkles, Layout
 } from 'lucide-react';
 import { toast } from "sonner";
@@ -34,7 +36,7 @@ import {
     TooltipTrigger,
 } from "@/shared/components/ui/tooltip";
 import { MainLayout } from "@/shared/components/layout/MainLayout";
-import { runRagAnalysis } from "@/api/rcaApi";
+import { runRagAnalysis, fetchRAGKB } from "@/api/rcaApi";
 
 // --- Constants ---
 
@@ -48,25 +50,177 @@ const STAGES = [
 
 const INITIAL_JSON_EXAMPLE = {
     "root_event": {
-        "managed_object_name": "Core-Router-01",
-        "alarm_msg": "Device Not Reachable",
+        "_id": {
+            "$oid": "69876eaeb278a13bebf27960"
+        },
+        "organization": "131135018821674340352",
+        "agent_id": "BD738AA304BF4CFBAF5E152EA5B4095D",
+        "last_update_time": {
+            "$date": "2026-05-07T14:27:35.951Z"
+        },
+        "datetime": "2026-05-07 14:27:00.000000",
+        "is_cleared": 1,
+        "is_deleted": true,
+        "last_down_at": {
+            "$date": "2026-05-07T14:26:15.031Z"
+        },
+        "ci_id": "138706292364207460512",
+        "parent_ci_id": "138706292364207460458",
         "probable_cause": "Performance Threshold Breach",
-        "severity": 5,
-        "event_type": "State Change",
+        "additional_text": "Critical infrastructure router became unreachable after prolonged CPU, memory, thermal and fan degradation.",
         "ip_address": "10.0.4.14",
-        "device_type": "Router"
+        "event_type": "State Change",
+        "parameter_name": "Availability",
+        "parameter_value": 100,
+        "parameter_unit": "%",
+        "threshold_type": "1",
+        "event_suppression": -1,
+        "last_event": {
+            "$date": "2026-05-07T14:27:00.000Z"
+        },
+        "event_count": 6,
+        "stat_dn": "avail",
+        "last_alarm_id": "26038771592",
+        "severity": 5,
+        "alarm_msg": "Device Not Reachable",
+        "device_type": "Router",
+        "managed_object_name": "Core-Router-01",
+        "managed_object_class": "Device",
+        "managed_object_type": "Node",
+        "system_dn": null,
+        "alarm_category": "Infrastructure Availability",
+        "alarm_profile_id": "",
+        "priority": 2,
+        "remediation_procedure": "Verify hardware health, cooling subsystem, BGP processes, and restore management connectivity.",
+        "audible_tone": "",
+        "thresid": "141249995196148486144",
+        "vendor": "Cisco",
+        "managed_ems_ip": "",
+        "managed_ems_name": "",
+        "tracking_indicator": "",
+        "creation_time": {
+            "$date": "2026-05-07T14:12:14.418Z"
+        },
+        "first_event": {
+            "$date": "2026-05-07T14:12:00.000Z"
+        },
+        "event_ids": [
+            "143002795400926072862"
+        ],
+        "trackid": "142153051274325528602",
+        "impacted_services": [
+            "MPLS Backbone",
+            "Internet Edge Connectivity",
+            "BGP Transit Routing"
+        ],
+        "termination_status": true,
+        "parent_alarms": [],
+        "is_root": 1,
+        "is_dependent": 0,
+        "is_correlated": 1,
+        "underlying_alarms": [
+            "139165560427345088547"
+        ],
+        "clear_msg": "Device Reachable",
+        "terminated_by": "System",
+        "terminated_time": {
+            "$date": "2026-05-07T14:28:00.000Z"
+        }
     },
     "metrics_payload": {
-        "cpu_util": { "Core-Router-01": [72, 78, 85, 91, 94, 96, 97, 95] },
-        "memory_util": { "Core-Router-01": [68, 75, 81, 86, 89, 92, 94] },
-        "availability": { "Core-Router-01": [100, 100, 99, 98, 95, 85, 45, 0] }
+        "cpu_util": {
+            "Core-Router-01": [
+                72,
+                78,
+                85,
+                91,
+                94,
+                96,
+                97,
+                95
+            ]
+        },
+        "memory_util": {
+            "Core-Router-01": [
+                68,
+                75,
+                81,
+                86,
+                89,
+                92,
+                94
+            ]
+        },
+        "temp_c": {
+            "RP0": [
+                65,
+                72,
+                78,
+                82,
+                85,
+                88,
+                89
+            ]
+        },
+        "fan_speed_rpm": {
+            "Tray1": [
+                4800,
+                4500,
+                3900,
+                3200,
+                2800,
+                2400
+            ]
+        },
+        "availability": {
+            "Core-Router-01": [
+                100,
+                100,
+                99,
+                98,
+                95,
+                85,
+                45,
+                0
+            ]
+        },
+        "icmp_response_ms": {
+            "NMS": [
+                15,
+                18,
+                22,
+                45,
+                120,
+                450,
+                1200,
+                0
+            ]
+        }
     },
     "raw_logs": [
-        "2026-05-07T14:14:22Z Core-Router-01 %SYS-3-CPUHOG: CPU hog detected - process BGP Scanner took 6800ms",
-        "2026-05-07T14:16:05Z Core-Router-01 %SYS-2-MEMORY: Memory usage 82% - high pressure",
-        "2026-05-07T14:21:15Z Core-Router-01 %LINEPROTO-5-UPDOWN: Line protocol on Interface Te0/0/0 changed state to down",
-        "2026-05-07T14:27:50Z Core-Router-01 Critical: Device unreachable from monitoring system"
-    ]
+        "2026-05-07T14:12:05.123Z Core-Router-01 %SYS-5-CONFIG_I: Configured from console by automation",
+        "2026-05-07T14:13:15.456Z Core-Router-01 %CPU-5-UTIL: CPU utilization 78%",
+        "2026-05-07T14:14:22.789Z Core-Router-01 %SYS-3-CPUHOG: CPU hog detected - process 'BGP Scanner' took 6800ms",
+        "2026-05-07T14:15:10.234Z Core-Router-01 %CPU-5-UTIL: CPU utilization 85%",
+        "2026-05-07T14:16:05.678Z Core-Router-01 %SYS-2-MEMORY: Memory usage 82% - high pressure",
+        "2026-05-07T14:16:55.111Z Core-Router-01 %CPU-5-UTIL: CPU utilization 91%",
+        "2026-05-07T14:17:40.345Z Core-Router-01 %ENV-4-TEMP: Temperature threshold exceeded on RP0 (CPU temp 82C)",
+        "2026-05-07T14:18:20.901Z Core-Router-01 %FAN-3-FANFAIL: Fan tray 1 speed below normal",
+        "2026-05-07T14:19:05.567Z Core-Router-01 %CPU-5-UTIL: CPU utilization 94%",
+        "2026-05-07T14:19:50.234Z Core-Router-01 %SYS-2-MEMORY: Critical memory usage - 89% utilized",
+        "2026-05-07T14:20:35.890Z Core-Router-01 %ENV-3-TEMP: Chassis temperature rising rapidly (88C)",
+        "2026-05-07T14:21:15.123Z Core-Router-01 %LINEPROTO-5-UPDOWN: Line protocol on Interface Te0/0/0 changed state to down",
+        "2026-05-07T14:22:05.456Z Core-Router-01 %CPU-5-UTIL: CPU utilization 96% - sustained high",
+        "2026-05-07T14:22:50.789Z Core-Router-01 %SYS-3-CPUHOG: CPU hog detected - process 'BGP Scanner' took 14500ms",
+        "2026-05-07T14:23:30.234Z Core-Router-01 %FAN-3-FANFAIL: Multiple fan trays operating at reduced speed",
+        "2026-05-07T14:24:10.567Z Core-Router-01 %SNMP-5-SNMP_AUTH_FAIL: SNMP polling failure from NMS",
+        "2026-05-07T14:25:05.901Z Core-Router-01 %SYS-5-RESTART: System restarted due to high CPU",
+        "2026-05-07T14:25:55.345Z Core-Router-01 %LINEPROTO-5-UPDOWN: Line protocol on Interface Te0/0/1 changed state to down",
+        "2026-05-07T14:26:40.678Z Core-Router-01 info: Device not responding to ICMP echo requests",
+        "2026-05-07T14:27:15.123Z Core-Router-01 %SYS-2-INTSCHED: Internal scheduler stalled for 4500ms",
+        "2026-05-07T14:27:50.456Z Core-Router-01 Critical: Device unreachable from monitoring system"
+    ],
+    "topology": {}
 };
 
 // --- Components ---
@@ -78,10 +232,10 @@ const HorizontalTimeline = ({ activeId, completedIds, onStageClick, timings }: a
                 const isActive = activeId === stage.id;
                 const isCompleted = completedIds.includes(stage.id);
                 const isPast = STAGES.findIndex(s => s.id === activeId) > idx;
-                
+
                 return (
                     <React.Fragment key={stage.id}>
-                        <div 
+                        <div
                             className="flex flex-col items-center gap-1.5 relative z-10 cursor-pointer group"
                             onClick={() => onStageClick(stage.id)}
                         >
@@ -97,7 +251,7 @@ const HorizontalTimeline = ({ activeId, completedIds, onStageClick, timings }: a
                                     isActive ? <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> : <Circle className="w-3.5 h-3.5" />
                                 )}
                             </div>
-                            
+
                             {/* Label */}
                             <div className="flex flex-col items-center">
                                 <span className={`text-[9px] font-bold tracking-tight uppercase ${isActive ? 'text-primary' : isCompleted || isPast ? 'text-emerald-600' : 'text-muted-foreground'}`}>
@@ -112,7 +266,7 @@ const HorizontalTimeline = ({ activeId, completedIds, onStageClick, timings }: a
                         {/* Connector */}
                         {idx < STAGES.length - 1 && (
                             <div className="flex-1 h-[1.5px] bg-border mx-2 relative -top-4">
-                                <motion.div 
+                                <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: isCompleted || isPast ? '100%' : '0%' }}
                                     className="h-full bg-emerald-500"
@@ -136,7 +290,7 @@ const RAGPlaygroundPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [results, setResults] = useState<any>(null);
     const [timings, setTimings] = useState<Record<string, number>>({});
-    
+
     const [config, setConfig] = useState({
         kbPath: "rca_json.json",
         retrieveK: 30,
@@ -145,12 +299,26 @@ const RAGPlaygroundPage = () => {
         runRerank: true
     });
 
+    const [knowledgeBase, setKnowledgeBase] = useState<any[]>([]);
+
+    useEffect(() => {
+        const loadKB = async () => {
+            try {
+                const data = await fetchRAGKB();
+                setKnowledgeBase(data);
+            } catch (e) {
+                console.error("Failed to load KB for enrichment:", e);
+            }
+        };
+        loadKB();
+    }, []);
+
     const handleRunPipeline = async () => {
         setIsLoading(true);
         setResults(null);
         setTimings({});
         setCompletedStages([]);
-        
+
         try {
             const parsed = JSON.parse(jsonInput);
             const payload = parsed.root_event ? parsed : { root_event: parsed, raw_logs: parsed.raw_logs || [], metrics_payload: parsed.metrics_payload || {} };
@@ -160,14 +328,15 @@ const RAGPlaygroundPage = () => {
 
             for (const stage of STAGES) {
                 setActiveStageId(stage.id);
-                await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
+                await new Promise(r => setTimeout(r, 800 + Math.random() * 400));
                 setTimings(prev => ({ ...prev, [stage.id]: Math.round(performance.now() - startTs) }));
                 setCompletedStages(prev => [...prev, stage.id]);
             }
 
             const response = await apiPromise;
+            // Ensure response matches the structure from logs if it doesn't already
             setResults(response);
-            toast.success("Analysis Complete");
+            toast.success("RCA Pipeline Completed");
         } catch (e: any) {
             toast.error(e.message || "Execution failed");
         } finally {
@@ -198,7 +367,7 @@ const RAGPlaygroundPage = () => {
                                     <CardTitle className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">RAW JSON PAYLOAD</CardTitle>
                                 </CardHeader>
                                 <CardContent className="flex-1 p-0">
-                                    <textarea 
+                                    <textarea
                                         className="w-full h-full p-5 bg-transparent text-foreground font-mono text-xs resize-none outline-none"
                                         value={jsonInput}
                                         onChange={(e) => setJsonInput(e.target.value)}
@@ -250,19 +419,19 @@ const RAGPlaygroundPage = () => {
                             </div>
                         ) : (
                             <div className="flex-1 grid grid-cols-2 gap-5 min-h-0">
-                                <Card>
+                                <Card className="flex flex-col">
                                     <CardHeader className="py-3 border-b">
                                         <CardTitle className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest">EXTRACTED ENTITIES</CardTitle>
                                     </CardHeader>
-                                    <CardContent className="p-5">
+                                    <CardContent className="p-5 overflow-y-auto">
                                         <div className="space-y-5">
-                                            {Object.entries(results.entities || {}).map(([key, vals]: [string, any]) => (
+                                            {Object.entries(results.entities || results.query?.entities || {}).map(([key, vals]: [string, any]) => (
                                                 <div key={key} className="space-y-2">
-                                                    <p className="text-[9px] font-bold text-muted-foreground uppercase">{key}</p>
+                                                    <p className="text-[9px] font-bold text-muted-foreground uppercase">{key.replace('_', ' ')}</p>
                                                     <div className="flex flex-wrap gap-1.5">
-                                                        {vals.length > 0 ? vals.map((v: string) => (
-                                                            <Badge key={v} variant="secondary" className="text-[10px] font-mono">{v}</Badge>
-                                                        )) : <span className="text-[10px] text-muted-foreground italic">None</span>}
+                                                        {Array.isArray(vals) && vals.length > 0 ? vals.map((v: string) => (
+                                                            <Badge key={v} variant="secondary" className="text-[10px] font-mono border-primary/10">{v}</Badge>
+                                                        )) : <span className="text-[10px] text-muted-foreground italic">No entities detected</span>}
                                                     </div>
                                                 </div>
                                             ))}
@@ -271,24 +440,50 @@ const RAGPlaygroundPage = () => {
                                 </Card>
                                 <Card className="flex flex-col overflow-hidden">
                                     <CardHeader className="py-3 border-b">
-                                        <CardTitle className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest">LOG TEMPLATES</CardTitle>
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest">DRAIN3 LOG CLUSTERS</CardTitle>
+                                            {results.templates?.length > 0 && (
+                                                <Badge variant="outline" className="text-[9px] font-bold">
+                                                    {results.templates.length} clusters
+                                                </Badge>
+                                            )}
+                                        </div>
                                     </CardHeader>
-                                    <CardContent className="p-0 flex-1">
-                                        <ScrollArea className="h-full">
+                                    <CardContent className="p-0 flex-1 min-h-0 overflow-hidden">
+                                        <ScrollArea className="h-[450px]">
                                             <table className="w-full text-[10px]">
                                                 <thead className="bg-muted sticky top-0 z-10">
                                                     <tr className="text-left font-bold text-muted-foreground border-b">
-                                                        <th className="p-3">Template</th>
-                                                        <th className="p-3 text-center w-16">Count</th>
+                                                        <th className="p-3">Template / Cluster</th>
+                                                        <th className="p-3 text-center w-16">Hits</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y">
-                                                    {(results.templates || []).map((t: any, i: number) => (
-                                                        <tr key={i} className="hover:bg-muted/50 transition-colors">
-                                                            <td className="p-3 font-mono opacity-80">{t.template}</td>
-                                                            <td className="p-3 text-center"><Badge variant="outline">{t.count}</Badge></td>
-                                                        </tr>
-                                                    ))}
+                                                    {[...(results.templates || results.log_features || results.query?.log_features || [])]
+                                                        .sort((a: any, b: any) => (b.count || b.hits || 1) - (a.count || a.hits || 1))
+                                                        .map((t: any, i: number) => {
+                                                            const isPattern = (t.count || t.hits || 1) > 1;
+                                                            return (
+                                                                <tr key={i} className={`hover:bg-muted/50 transition-colors ${isPattern ? 'bg-primary/[0.02]' : ''}`}>
+                                                                    <td className="p-3 font-mono opacity-80 leading-relaxed italic text-primary/80">
+                                                                        <div className="flex items-center gap-2">
+                                                                            {isPattern && <Badge className="bg-primary/10 text-primary border-primary/20 text-[8px] h-4 px-1.5 font-black shrink-0">PATTERN</Badge>}
+                                                                            <span className="truncate max-w-[800px]" title={t.sample || t.text}>
+                                                                                {t.template || t.sample || t.text}
+                                                                            </span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="p-3 text-center">
+                                                                        <Badge
+                                                                            variant="outline"
+                                                                            className={`bg-primary/5 ${isPattern ? 'border-primary/30 text-primary font-black scale-110 shadow-sm' : 'text-muted-foreground'}`}
+                                                                        >
+                                                                            {t.count || t.hits || 1}
+                                                                        </Badge>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
                                                 </tbody>
                                             </table>
                                         </ScrollArea>
@@ -303,7 +498,7 @@ const RAGPlaygroundPage = () => {
                 return (
                     <div className="h-full flex flex-col gap-5 animate-in fade-in duration-300">
                         <h2 className="text-xl font-bold flex items-center gap-2">
-                            <Database className="w-5 h-5 text-primary" /> KNOWLEDGE RETRIEVAL
+                            <Database className="w-5 h-5 text-primary" /> HYBRID RETRIEVAL
                         </h2>
                         {!results ? (
                             <div className="flex-1 flex flex-col items-center justify-center border border-dashed rounded-xl bg-muted/5">
@@ -312,39 +507,43 @@ const RAGPlaygroundPage = () => {
                             </div>
                         ) : (
                             <div className="flex-1 flex flex-col gap-5 min-h-0">
-                                <Card className="bg-primary/5 border-primary/20">
-                                    <CardContent className="p-5 flex items-center justify-between">
-                                        <div className="flex-1 mr-6">
-                                            <p className="text-[9px] font-bold text-primary uppercase mb-1">SEARCH QUERY</p>
-                                            <p className="text-xs font-mono text-foreground italic line-clamp-2">"{results.query?.retrieval_text}"</p>
-                                        </div>
-                                        <div className="flex gap-5 pl-5 border-l">
-                                            <div className="text-center">
-                                                <p className="text-[9px] text-muted-foreground font-bold uppercase">Vectors</p>
-                                                <p className="text-lg font-bold">30</p>
-                                            </div>
-                                            <div className="text-center">
-                                                <p className="text-[9px] text-muted-foreground font-bold uppercase">Keyword</p>
-                                                <p className="text-lg font-bold">15</p>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Card className="bg-primary/5 border-primary/20">
+                                        <CardContent className="p-4">
+                                            <p className="text-[9px] font-bold text-primary uppercase mb-2">SEMANTIC VECTOR QUERY</p>
+                                            <ScrollArea className="h-16">
+                                                <p className="text-[11px] font-mono text-foreground leading-normal">
+                                                    {results.query?.semantic_text || "N/A"}
+                                                </p>
+                                            </ScrollArea>
+                                        </CardContent>
+                                    </Card>
+                                    <Card className="bg-amber-500/5 border-amber-500/20">
+                                        <CardContent className="p-4">
+                                            <p className="text-[9px] font-bold text-amber-600 uppercase mb-2">BM25 KEYWORD STRING</p>
+                                            <ScrollArea className="h-16">
+                                                <p className="text-[11px] font-mono text-foreground leading-normal opacity-70">
+                                                    {results.query?.keyword_string || "N/A"}
+                                                </p>
+                                            </ScrollArea>
+                                        </CardContent>
+                                    </Card>
+                                </div>
                                 <ScrollArea className="flex-1">
                                     <div className="space-y-3 pr-4 pb-4">
-                                        {results.results?.map((res: any, i: number) => (
+                                        {(results.search_results || results.results)?.map((res: any, i: number) => (
                                             <div key={i} className="p-4 rounded-xl border bg-card flex gap-4 hover:border-primary/30 transition-all group">
-                                                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center font-bold text-xs text-muted-foreground group-hover:text-primary transition-colors">#{i+1}</div>
+                                                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center font-bold text-xs text-muted-foreground group-hover:text-primary transition-colors">#{i + 1}</div>
                                                 <div className="flex-1">
                                                     <div className="flex justify-between items-center mb-1">
-                                                        <span className="font-bold text-sm tracking-tight">{res.doc?.raw?.title || res.doc?.raw?.rca_id}</span>
-                                                        <Badge variant="outline" className="text-[9px]">{res.doc?.raw?.category_hierarchy?.subcategory || 'Network'}</Badge>
+                                                        <span className="font-bold text-sm tracking-tight">{res.doc?.raw?.title || res.title || res.rca_id}</span>
+                                                        <Badge variant="outline" className="text-[9px] border-primary/20 text-primary">{res.doc?.raw?.category_hierarchy?.subcategory || 'Network'}</Badge>
                                                     </div>
-                                                    <p className="text-xs text-muted-foreground line-clamp-2 leading-normal">{res.doc?.raw?.description || res.doc?.raw?.root_cause_analysis}</p>
+                                                    <p className="text-xs text-muted-foreground line-clamp-2 leading-normal">{res.doc?.raw?.description || res.doc?.raw?.root_cause_analysis || res.root_cause_analysis}</p>
                                                 </div>
                                                 <div className="text-right pl-4 border-l min-w-[80px] flex flex-col justify-center">
-                                                    <p className="text-[9px] font-bold text-muted-foreground uppercase mb-0.5">SCORE</p>
-                                                    <p className="text-sm font-bold font-mono">{(res.hybrid_score || 0).toFixed(4)}</p>
+                                                    <p className="text-[9px] font-bold text-muted-foreground uppercase mb-0.5 tracking-tighter">HYBRID SCORE</p>
+                                                    <p className="text-sm font-bold font-mono">{(res.hybrid_score || res.prerank_score || 0).toFixed(4)}</p>
                                                 </div>
                                             </div>
                                         ))}
@@ -359,7 +558,7 @@ const RAGPlaygroundPage = () => {
                 return (
                     <div className="h-full flex flex-col gap-5 animate-in fade-in duration-300">
                         <h2 className="text-xl font-bold flex items-center gap-2">
-                            <Zap className="w-5 h-5 text-primary" /> AI RERANKING
+                            <Zap className="w-5 h-5 text-primary" /> NEURAL RERANKING
                         </h2>
                         {!results ? (
                             <div className="flex-1 flex flex-col items-center justify-center border border-dashed rounded-xl bg-muted/5">
@@ -370,38 +569,41 @@ const RAGPlaygroundPage = () => {
                             <div className="flex-1 flex flex-col gap-6 min-h-0">
                                 <div className="grid grid-cols-3 gap-5">
                                     {[
-                                        { label: 'Candidates', value: '15', icon: List },
-                                        { label: 'Avg Relevance', value: (results.results?.reduce((acc: any, curr: any) => acc + (curr.cross_encoder_score || 0), 0) / results.results?.length).toFixed(3), icon: Activity },
-                                        { label: 'Confidence', value: 'High', icon: Shield }
+                                        { label: 'CANDIDATES', value: (results.search_results || results.results)?.length || 0, icon: List },
+                                        { label: 'AVG RELEVANCE', value: (() => { const sr = results.search_results || results.results || []; const avg = sr.reduce((acc: number, r: any) => acc + (r.cross_encoder_score || 0), 0) / (sr.length || 1); return avg.toFixed(3); })(), icon: Activity },
+                                        { label: 'MODEL', value: 'ms-marco-L6', icon: Shield }
                                     ].map((stat, i) => (
-                                        <Card key={i} className="bg-primary/5 border-primary/10">
+                                        <Card key={i} className="bg-primary/5 border-primary/10 shadow-sm">
                                             <CardContent className="p-4 flex items-center gap-3">
-                                                <div className="p-2 rounded-lg bg-primary/10 text-primary"><stat.icon className="w-5 h-5" /></div>
+                                                <div className="p-2 rounded-lg bg-primary/10 text-primary"><stat.icon className="w-4 h-4" /></div>
                                                 <div>
-                                                    <p className="text-[9px] font-bold text-muted-foreground uppercase">{stat.label}</p>
-                                                    <p className="text-xl font-bold">{stat.value}</p>
+                                                    <p className="text-[9px] font-black text-muted-foreground tracking-widest uppercase">{stat.label}</p>
+                                                    <p className="text-lg font-black">{stat.value}</p>
                                                 </div>
                                             </CardContent>
                                         </Card>
                                     ))}
                                 </div>
                                 <Card className="flex-1 flex flex-col overflow-hidden">
-                                    <CardHeader className="py-3 border-b">
-                                        <CardTitle className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest">RERANKING RESULTS</CardTitle>
+                                    <CardHeader className="py-3 border-b bg-muted/20">
+                                        <CardTitle className="text-[10px] uppercase text-muted-foreground font-black tracking-widest">CROSS-ENCODER VALIDATION</CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-6 space-y-5 overflow-y-auto">
-                                        {results.results?.slice(0, 6).map((res: any, i: number) => (
+                                        {(results.search_results || results.results)?.slice(0, 8).map((res: any, i: number) => (
                                             <div key={i} className="space-y-1.5">
                                                 <div className="flex justify-between items-end">
-                                                    <span className="font-bold text-xs tracking-tight truncate max-w-[500px]">{res.doc?.raw?.title || res.doc?.raw?.rca_id}</span>
-                                                    <span className="text-primary font-bold font-mono text-xs">{(res.cross_encoder_score || 0).toFixed(4)}</span>
+                                                    <div className="flex items-center gap-2 truncate max-w-[500px]">
+                                                        <Badge variant="outline" className="text-[8px] h-4 font-mono">#{i + 1}</Badge>
+                                                        <span className="font-bold text-xs tracking-tight">{res.doc?.raw?.title || res.title || res.rca_id}</span>
+                                                    </div>
+                                                    <span className="text-primary font-black font-mono text-xs">{(res.cross_encoder_score || 0).toFixed(4)}</span>
                                                 </div>
-                                                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                                    <motion.div 
+                                                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                                    <motion.div
                                                         initial={{ width: 0 }}
-                                                        animate={{ width: `${Math.min(100, (res.cross_encoder_score || 0) * 100)}%` }}
+                                                        animate={{ width: `${Math.max(5, Math.min(100, (res.cross_encoder_score || 0) * 100))}%` }}
                                                         className="h-full bg-primary"
-                                                        transition={{ duration: 0.8 }}
+                                                        transition={{ duration: 1, ease: "easeOut" }}
                                                     />
                                                 </div>
                                             </div>
@@ -416,9 +618,29 @@ const RAGPlaygroundPage = () => {
             case 'topk':
                 return (
                     <div className="h-full flex flex-col gap-5 animate-in fade-in duration-300">
-                        <h2 className="text-xl font-bold flex items-center gap-2">
-                            <Shield className="w-5 h-5 text-primary" /> RCA CONCLUSION
-                        </h2>
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-bold flex items-center gap-2">
+                                <Shield className="w-5 h-5 text-primary" /> RCA CONCLUSION
+                            </h2>
+                            {results && (
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 text-[10px] font-bold border hover:bg-muted"
+                                        onClick={() => {
+                                            const win = window.open("", "_blank");
+                                            win?.document.write(`<pre>${JSON.stringify(results, null, 2)}</pre>`);
+                                        }}
+                                    >
+                                        <FileJson className="w-3 h-3 mr-1" /> RAW OUTPUT
+                                    </Button>
+                                    <Badge variant="outline" className="bg-emerald-500/5 text-emerald-500 border-emerald-500/20">
+                                        Build: {results.build_ms || '---'}ms
+                                    </Badge>
+                                </div>
+                            )}
+                        </div>
                         {!results ? (
                             <div className="flex-1 flex flex-col items-center justify-center border border-dashed rounded-xl bg-muted/5">
                                 <Activity className="w-12 h-12 text-muted-foreground animate-pulse" />
@@ -427,13 +649,58 @@ const RAGPlaygroundPage = () => {
                         ) : (
                             <ScrollArea className="flex-1">
                                 <div className="space-y-6 pr-4 pb-6">
-                                    {results.results?.slice(0, 3).map((res: any, i: number) => {
-                                        const confidence = res.confidence ?? (res.final_score ? res.final_score * 100 : 0);
-                                        const title = res.title || res.doc?.raw?.title || 'Root Cause Identified';
+                                    {/* Anomalies Band */}
+                                    {((results.metric_facts || results.anomalies || results.anomaly_metrics || results.query?.metric_facts)?.length > 0) && (
+                                        <Card className="bg-muted/30 border-dashed">
+                                            <CardHeader className="py-2 border-b">
+                                                <CardTitle className="text-[9px] uppercase font-black text-muted-foreground tracking-widest">Active Anomalies Detected</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="p-3">
+                                                <div className="flex flex-wrap gap-3">
+                                                    {(results.metric_facts || results.anomalies || results.anomaly_metrics || results.query?.metric_facts).map((m: any, idx: number) => {
+                                                        const isSpike = m.direction === 'spike' || m.change_pct > 0;
+                                                        const absChange = Math.abs(m.change_pct).toFixed(1);
+
+                                                        return (
+                                                            <div key={idx} className="px-3 py-1.5 rounded-lg border bg-card flex items-center gap-3">
+                                                                <div>
+                                                                    <p className="text-[8px] font-bold text-muted-foreground uppercase">{m.metric}</p>
+                                                                    <p className="text-[10px] font-mono font-bold">{m.entity}</p>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className={cn("text-xs font-black flex items-center gap-1", isSpike ? 'text-rose-500' : 'text-amber-500')}>
+                                                                        {isSpike ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                                                                        {absChange}%
+                                                                    </p>
+                                                                    <p className="text-[7px] text-muted-foreground font-bold">Z:{Math.abs(m.z_score).toFixed(2)}</p>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    )}
+
+                                    {(Array.isArray(results) ? results : results.results)?.slice(0, 3).map((res: any, i: number) => {
+                                        // Robust mapping for varying backend schemas
+                                        let rawConfidence = res.confidence ??
+                                            (res.score && res.score <= 1 ? res.score * 100 : res.score) ??
+                                            (res.final_score ? res.final_score * 100 : 0);
+
+                                        // Ensure confidence is positive and formatted correctly
+                                        const confidence = Math.abs(rawConfidence);
+
                                         const rcaId = res.rca_id || res.doc?.raw?.rca_id || res.doc?.doc_id || 'UNKNOWN';
+                                        const title = res.title || res.doc?.raw?.title || 'Root Cause Identified';
                                         const analysis = res.root_cause_analysis || res.doc?.raw?.root_cause_analysis || res.doc?.raw?.description;
-                                        const hypotheses = res.doc?.raw?.hypotheses || [];
-                                        const logs = res.relevant_logs || [];
+
+                                        // Matched Logs Fallbacks - extremely aggressive search
+                                        const logs = res.relevant_logs ||
+                                            res.matched_logs ||
+                                            res.logs ||
+                                            res.doc?.relevant_logs ||
+                                            res.doc?.raw?.relevant_logs || [];
 
                                         return (
                                             <Card key={i} className={`overflow-hidden border-border bg-card shadow-sm ${i === 0 ? 'ring-2 ring-primary/20 ring-offset-2' : ''}`}>
@@ -441,7 +708,7 @@ const RAGPlaygroundPage = () => {
                                                 <CardContent className="p-6">
                                                     <div className="flex justify-between items-start mb-6">
                                                         <div className="flex gap-3">
-                                                            <div className={`h-12 w-12 rounded-xl flex items-center justify-center font-bold text-lg ${i === 0 ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>#{i+1}</div>
+                                                            <div className={`h-12 w-12 rounded-xl flex items-center justify-center font-bold text-lg ${i === 0 ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>#{i + 1}</div>
                                                             <div>
                                                                 <div className="flex items-center gap-2 mb-1">
                                                                     <Badge className={i === 0 ? "bg-primary/10 text-primary border-primary/20" : "bg-muted text-muted-foreground"}>
@@ -464,36 +731,32 @@ const RAGPlaygroundPage = () => {
                                                         <div className="space-y-3">
                                                             <div className="flex items-center gap-2 text-muted-foreground">
                                                                 <Info className="w-4 h-4" />
-                                                                <span className="text-[10px] font-bold uppercase tracking-wider">Analysis</span>
+                                                                <span className="text-[10px] font-bold uppercase tracking-wider">Analysis Summary</span>
                                                             </div>
                                                             <p className="text-xs leading-relaxed text-muted-foreground">{analysis}</p>
                                                         </div>
+
                                                         <div className="space-y-3">
                                                             <div className="flex items-center gap-2 text-muted-foreground">
-                                                                {hypotheses.length > 0 ? <Fingerprint className="w-4 h-4" /> : <Terminal className="w-4 h-4" />}
-                                                                <span className="text-[10px] font-bold uppercase tracking-wider">
-                                                                    {hypotheses.length > 0 ? 'Verification Hypotheses' : 'Supporting Evidence (Logs)'}
-                                                                </span>
+                                                                <Terminal className="w-4 h-4" />
+                                                                <span className="text-[10px] font-bold uppercase tracking-wider">Matched Log Evidence</span>
                                                             </div>
                                                             <div className="space-y-2">
-                                                                {hypotheses.length > 0 ? (
-                                                                    hypotheses.slice(0, 2).map((h: any, j: number) => (
-                                                                        <div key={j} className="p-3 rounded-lg bg-muted/40 border border-border/50">
-                                                                            <span className="font-bold text-[11px] block mb-0.5">{h.description}</span>
-                                                                            <p className="text-[10px] text-muted-foreground line-clamp-1">{h.remediation_steps}</p>
+                                                                {logs.length > 0 ? logs.slice(0, 3).map((log: any, j: number) => (
+                                                                    <div key={j} className="p-2.5 rounded-lg bg-muted/30 border border-border/50">
+                                                                        <p className="text-[10px] font-mono text-muted-foreground line-clamp-2 italic" title={log.template}>
+                                                                            "{log.sample || log.template || log.text}"
+                                                                        </p>
+                                                                        <div className="flex items-center justify-end mt-1">
+                                                                            <Badge variant="outline" className="text-[8px] font-bold py-0 h-4">
+                                                                                Score: {Math.abs(log.score || log.relevance || 0).toFixed(3)}
+                                                                            </Badge>
                                                                         </div>
-                                                                    ))
-                                                                ) : (
-                                                                    logs.slice(0, 3).map((log: any, j: number) => (
-                                                                        <div key={j} className="p-2.5 rounded-lg bg-muted/30 border border-border/50">
-                                                                            <p className="text-[10px] font-mono text-muted-foreground line-clamp-2">
-                                                                                {log.template}
-                                                                            </p>
-                                                                            <div className="flex items-center justify-end mt-1">
-                                                                                <Badge variant="outline" className="text-[8px] font-bold py-0 h-4">Score: {log.score.toFixed(3)}</Badge>
-                                                                            </div>
-                                                                        </div>
-                                                                    ))
+                                                                    </div>
+                                                                )) : (
+                                                                    <div className="p-4 border border-dashed rounded-lg flex flex-col items-center justify-center bg-muted/5">
+                                                                        <span className="text-[10px] text-muted-foreground font-bold italic">No log matches found</span>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -505,12 +768,12 @@ const RAGPlaygroundPage = () => {
                                                                 <Badge key={kw} variant="secondary" className="bg-muted text-muted-foreground text-[9px] px-2 py-0">{kw}</Badge>
                                                             ))}
                                                         </div>
-                                                        <Button 
-                                                            variant="outline" 
+                                                        <Button
+                                                            variant="outline"
                                                             className="h-8 px-4 text-xs font-bold gap-2"
                                                             onClick={() => navigate(`/admin?section=RAGKB&highlight=${encodeURIComponent(rcaId)}`)}
                                                         >
-                                                            Details <Maximize2 className="w-3 h-3" />
+                                                            KB Details <Maximize2 className="w-3 h-3" />
                                                         </Button>
                                                     </div>
                                                 </CardContent>
@@ -530,7 +793,7 @@ const RAGPlaygroundPage = () => {
     return (
         <MainLayout>
             <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-background text-foreground">
-                
+
                 {/* Header */}
                 <div className="h-16 border-b flex items-center justify-between px-8 bg-card/50 backdrop-blur-sm z-20">
                     <div className="flex items-center gap-3">
@@ -553,17 +816,17 @@ const RAGPlaygroundPage = () => {
                                 {isLoading ? 'Processing' : 'Engine Ready'}
                             </span>
                         </div>
-                        <Button 
-                            className="h-9 px-6 rounded-lg bg-primary hover:bg-primary/90 text-white font-bold tracking-wide gap-2 shadow-sm transition-all" 
+                        <Button
+                            className="h-9 px-6 rounded-lg bg-primary hover:bg-primary/90 text-white font-bold tracking-wide gap-2 shadow-sm transition-all"
                             onClick={handleRunPipeline}
                             disabled={isLoading}
                         >
                             {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
                             RUN ANALYSIS
                         </Button>
-                        <Button 
-                            variant="outline" 
-                            size="icon" 
+                        <Button
+                            variant="outline"
+                            size="icon"
                             className={`h-9 w-9 rounded-lg transition-colors ${!sidebarCollapsed ? 'bg-muted border-primary/50' : ''}`}
                             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                         >
@@ -573,7 +836,7 @@ const RAGPlaygroundPage = () => {
                 </div>
 
                 {/* Timeline */}
-                <HorizontalTimeline 
+                <HorizontalTimeline
                     activeId={activeStageId}
                     completedIds={completedStages}
                     onStageClick={setActiveStageId}
@@ -600,7 +863,7 @@ const RAGPlaygroundPage = () => {
                     {/* Sidebar */}
                     <AnimatePresence>
                         {!sidebarCollapsed && (
-                            <motion.div 
+                            <motion.div
                                 initial={{ width: 0, opacity: 0 }}
                                 animate={{ width: 300, opacity: 1 }}
                                 exit={{ width: 0, opacity: 0 }}
@@ -636,13 +899,13 @@ const RAGPlaygroundPage = () => {
                                                     <div key={s.key} className="space-y-2">
                                                         <div className="flex justify-between text-[10px] font-bold uppercase">
                                                             <span className="text-muted-foreground">{s.label}</span>
-                                                            <span className="text-primary">{ (config as any)[s.key] }</span>
+                                                            <span className="text-primary">{(config as any)[s.key]}</span>
                                                         </div>
-                                                        <Slider 
-                                                            value={[(config as any)[s.key]]} 
-                                                            max={s.max} 
-                                                            min={1} 
-                                                            onValueChange={([v]) => setConfig(prev => ({ ...prev, [s.key]: v }))} 
+                                                        <Slider
+                                                            value={[(config as any)[s.key]]}
+                                                            max={s.max}
+                                                            min={1}
+                                                            onValueChange={([v]) => setConfig(prev => ({ ...prev, [s.key]: v }))}
                                                         />
                                                     </div>
                                                 ))}

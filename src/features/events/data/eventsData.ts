@@ -59,39 +59,39 @@ const safeISO = (ts: string) => {
 
 export const sampleNetworkEvents: NetworkEvent[] = [
   // --- Noise Events (To push the pattern down) ---
-  { 
-    event_id: 'EVT-B-101', 
-    device: 'edge-router-01', 
-    event_code: 'THROTTLE_DETECTED', 
-    timestamp: new Date(Date.now() - 3600000).toISOString(), 
-    severity: 'Minor', 
-    metric: 'throughput', 
-    value: '75 Mbps', 
-    site: 'DC3', 
-    region: 'EMEA', 
-    rack: 'K1', 
-    message: 'Traffic throttle detected on edge link', 
-    label: 'Child', 
-    status: 'Active', 
+  {
+    event_id: 'EVT-B-101',
+    device: 'edge-router-01',
+    event_code: 'THROTTLE_DETECTED',
+    timestamp: new Date(Date.now() - 3600000).toISOString(),
+    severity: 'Minor',
+    metric: 'throughput',
+    value: '75 Mbps',
+    site: 'DC3',
+    region: 'EMEA',
+    rack: 'K1',
+    message: 'Traffic throttle detected on edge link',
+    label: 'Child',
+    status: 'Active',
     correlationLabels: ['Temporal Correlation', 'Dynamic Rule Correlation'],
     source: 'Trap',
     aiStatus: 'RCA Not Found',
     priority: 'Low'
   },
-  { 
-    event_id: 'EVT-B-102', 
-    device: 'edge-router-02', 
-    event_code: 'BDP_THROUGHPUT_DROP', 
-    timestamp: new Date(Date.now() - 7200000).toISOString(), 
-    severity: 'Major', 
-    metric: 'throughput', 
-    value: '70 Mbps', 
-    site: 'DC3', 
-    region: 'EMEA', 
-    rack: 'K2', 
-    message: 'BDP drop detected on edge link', 
-    label: 'Child', 
-    status: 'Active', 
+  {
+    event_id: 'EVT-B-102',
+    device: 'edge-router-02',
+    event_code: 'BDP_THROUGHPUT_DROP',
+    timestamp: new Date(Date.now() - 7200000).toISOString(),
+    severity: 'Major',
+    metric: 'throughput',
+    value: '70 Mbps',
+    site: 'DC3',
+    region: 'EMEA',
+    rack: 'K2',
+    message: 'BDP drop detected on edge link',
+    label: 'Child',
+    status: 'Active',
     correlationLabels: ['Topological Correlation', 'Causal / Rule-based Correlation'],
     source: 'Syslog',
     aiStatus: 'Only RCA',
@@ -287,13 +287,13 @@ export const sampleNetworkEvents: NetworkEvent[] = [
     const priorities: NetworkEvent['priority'][] = ['High', 'Medium', 'Low'];
     const businessServices = ['Core Banking', 'E-Commerce Checkout', 'Customer Portal', 'SAP ERP', 'Voice Gateway', 'Inventory API'];
     const devices = ['core-router-01', 'dist-switch-05', 'edge-gateway-02', 'app-server-12', 'db-cluster-01', 'firewall-primary'];
-    
+
     const source = sources[i % sources.length];
     const aiStatus = aiStatuses[i % aiStatuses.length];
     const severity = severities[i % severities.length];
     const priority = priorities[i % priorities.length];
     const isRoot = i % 12 === 0;
-    
+
     return {
       event_id: `EVT-GEN-${1000 + i}`,
       device: devices[i % devices.length],
@@ -308,7 +308,7 @@ export const sampleNetworkEvents: NetworkEvent[] = [
       message: i % 5 === 0 ? `High latency on ${devices[i % devices.length]} interface` : `Performance threshold exceeded for ${source} source`,
       label: (isRoot ? 'Root' : 'Child') as EventLabel,
       status: (i % 7 === 0 ? 'Resolved' : 'Active') as 'Resolved' | 'Active',
-      clusterId: i % 4 === 0 ? `CLU-G-${100 + Math.floor(i/4)}` : undefined,
+      clusterId: i % 4 === 0 ? `CLU-G-${100 + Math.floor(i / 4)}` : undefined,
       correlationLabels: i % 2 === 0 ? ['Temporal Correlation'] : ['Topological Correlation'],
       source: source,
       aiStatus: aiStatus,

@@ -50,6 +50,11 @@ export default function Events() {
   const [activeSidebar, setActiveSidebar] = useState<SidebarType>(null);
   const [selectedCauseId, setSelectedCauseId] = useState<string | null>(null);
 
+  // Column visibility
+  const [showColSettings, setShowColSettings] = useState(false);
+  const [showRcaRemedyCol, setShowRcaRemedyCol] = useState(true);
+  const [showStatusCol, setShowStatusCol] = useState(true);
+
   // Reset pagination when filters or search change
   useEffect(() => {
     setCurrentPage(1);
@@ -235,7 +240,81 @@ export default function Events() {
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground"><LayoutList className="h-4 w-4" /></Button>
                 <Button variant="secondary" size="icon" className="h-8 w-8 shadow-sm text-primary"><LayoutGrid className="h-4 w-4" /></Button>
               </div>
-              <Button variant="outline" size="icon" className="h-10 w-10 border-border text-primary ml-2"><Settings className="h-4 w-4" /></Button>
+              {/* Settings button with column-visibility popover */}
+              <div className="relative ml-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className={cn(
+                    "h-10 w-10 border-border text-primary",
+                    showColSettings && "bg-primary/10 border-primary/40 ring-1 ring-primary/20"
+                  )}
+                  onClick={() => setShowColSettings(v => !v)}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+
+                {showColSettings && (
+                  <div className="absolute right-0 top-12 z-50 w-64 rounded-xl border border-border bg-card shadow-2xl overflow-hidden">
+                    {/* Popover header */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-primary/10 border-b border-border">
+                      <div className="flex items-center gap-2">
+                        <Settings className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-xs font-black text-primary tracking-wide uppercase">Column Visibility</span>
+                      </div>
+                      <button
+                        onClick={() => setShowColSettings(false)}
+                        className="h-5 w-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+
+                    {/* Toggle rows */}
+                    <div className="p-3 space-y-1">
+                      {[
+                        {
+                          id: 'rcaRemedy',
+                          label: 'RCA / Remedy',
+                          description: 'Shows AI-determined root cause & remedy badge',
+                          checked: showRcaRemedyCol,
+                          onChange: setShowRcaRemedyCol,
+                        },
+                        {
+                          id: 'status',
+                          label: 'Status',
+                          description: 'Shows 4-dot RCA pipeline progress indicator',
+                          checked: showStatusCol,
+                          onChange: setShowStatusCol,
+                        },
+                      ].map(col => (
+                        <div
+                          key={col.id}
+                          className={cn(
+                            "flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                            col.checked ? "bg-primary/5 border border-primary/10" : "hover:bg-accent/50 border border-transparent"
+                          )}
+                        >
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-foreground">{col.label}</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{col.description}</p>
+                          </div>
+                          <Switch
+                            checked={col.checked}
+                            onCheckedChange={col.onChange}
+                            className="shrink-0"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Footer hint */}
+                    <div className="px-4 py-2 border-t border-border bg-muted/30">
+                      <p className="text-[10px] text-muted-foreground">Changes apply instantly to the grid</p>
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-2 px-3 border-x border-border mx-2">
                 <span className="text-xs font-medium text-muted-foreground">History</span>
                 <Switch checked={showHistory} onCheckedChange={setShowHistory} />
@@ -298,8 +377,8 @@ export default function Events() {
                                 }}
                                 className={cn(
                                   "flex items-center gap-2 h-10 px-3 rounded-lg transition-all",
-                                  (filterCategory === group.id || group.filters.some(f => f.value === filterCategory)) 
-                                    ? "bg-primary text-primary-foreground shadow-inner" 
+                                  (filterCategory === group.id || group.filters.some(f => f.value === filterCategory))
+                                    ? "bg-primary text-primary-foreground shadow-inner"
                                     : "hover:bg-accent text-muted-foreground",
                                   expandedCategories.includes(group.id) && filterCategory !== group.id && !group.filters.some(f => f.value === filterCategory) && "bg-accent/50"
                                 )}
@@ -381,6 +460,24 @@ export default function Events() {
           </div>
         </div>
 
+        {/* Status Column Legend */}
+        <div className="px-4 py-2 border-b border-border bg-muted/30 flex items-center gap-1 flex-wrap">
+          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mr-2">Status:</span>
+          {[
+            { dot: 'bg-violet-500', label: 'RCA Started' },
+            { dot: 'bg-blue-500',   label: 'RCA Identified' },
+            { dot: 'bg-amber-500',  label: 'Remedy Identified' },
+            { dot: 'bg-emerald-500',label: 'Auto-Remedy: Success' },
+            { dot: 'bg-orange-500', label: 'Auto-Remedy: Running' },
+            { dot: 'bg-red-500',    label: 'Auto-Remedy: Failed' },
+            { dot: 'bg-muted-foreground/30', label: 'Not Reached' },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/60 border border-border/50">
+              <span className={`h-2 w-2 rounded-full shrink-0 ${item.dot}`} />
+              <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">{item.label}</span>
+            </div>
+          ))}
+        </div>
 
         {/* Table Content */}
         <div className="flex-1 overflow-auto bg-background/50">
@@ -390,7 +487,8 @@ export default function Events() {
                 <th className="px-4 py-3 w-10"><input type="checkbox" className="rounded border-border bg-background" /></th>
                 <th className="px-4 py-3">Issue</th>
                 <th className="px-4 py-3">Severity</th>
-                <th className="px-4 py-3 w-[150px]">RCA/Remedy</th>
+                {showRcaRemedyCol && <th className="px-4 py-3 w-[150px]">RCA/Remedy</th>}
+                {showStatusCol && <th className="px-4 py-3 w-[110px]">Status</th>}
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Alarm ID</th>
                 <th className="px-4 py-3">Node</th>
@@ -478,8 +576,9 @@ export default function Events() {
                     </td>
 
                     {/* RCA/REMEDY COLUMN */}
+                    {showRcaRemedyCol && (
                     <td className="px-4 py-4">
-                      {event.label === 'Root' && event.aiStatus !== 'RCA Not Found' && (
+                      {event.aiStatus && event.aiStatus !== 'RCA Not Found' && (
                         <Badge className={cn(
                           "h-fit py-1 px-2.5 text-[9px] font-black uppercase border-none rounded shadow-sm flex items-center gap-2",
                           event.aiStatus === 'Only RCA' ? "bg-purple-500/10 text-purple-500" :
@@ -491,19 +590,71 @@ export default function Events() {
                             {event.aiStatus === 'RCA with Remediation' && <Ticket className="h-3 w-3" />}
                             {event.aiStatus === 'RCA with Auto Remediation' && <Sparkles className="h-3 w-3" />}
                           </div>
-
                           <span className="whitespace-nowrap">
                             {event.aiStatus === 'Only RCA' ? 'RCA' :
                               event.aiStatus === 'RCA with Remediation' ? 'Remedy' : 'Auto-Remedy'}
                           </span>
                         </Badge>
                       )}
-                      {(event.label !== 'Root' || event.aiStatus === 'RCA Not Found') && (
+                      {(!event.aiStatus || event.aiStatus === 'RCA Not Found') && (
                         <div className="text-[10px] font-bold text-muted-foreground/30 px-3 tracking-widest">—</div>
                       )}
                     </td>
+                    )}
 
 
+
+                    {/* STATUS / RCA PIPELINE COLUMN — dots only, legend above the table */}
+                    {showStatusCol && (
+                    <td className="px-4 py-4">
+                      <TooltipProvider delayDuration={0}>
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const ai = event.aiStatus;
+                            const d1 = !!ai;
+                            const d2 = ai === 'Only RCA' || ai === 'RCA with Remediation' || ai === 'RCA with Auto Remediation';
+                            const d3 = ai === 'RCA with Remediation' || ai === 'RCA with Auto Remediation';
+                            const arm = ai === 'RCA with Auto Remediation'
+                              ? (event.rcaPipelineStatus?.autoRemediationStatus ?? 'success')
+                              : null;
+
+                            const armDot = arm === 'success' ? 'bg-emerald-500'
+                              : arm === 'running' ? 'bg-orange-500 animate-pulse'
+                              : arm === 'failed'  ? 'bg-red-500'
+                              : arm === 'pending' ? 'bg-sky-400'
+                              : 'bg-muted-foreground/20';
+
+                            const armLabel = arm === 'success' ? 'Auto-Remedy: Success'
+                              : arm === 'running' ? 'Auto-Remedy: Running'
+                              : arm === 'failed'  ? 'Auto-Remedy: Failed'
+                              : arm === 'pending' ? 'Auto-Remedy: Pending'
+                              : 'Auto-Remediation: Not Started';
+
+                            const dots = [
+                              { active: d1, color: 'bg-violet-500', label: 'RCA Started' },
+                              { active: d2, color: 'bg-blue-500',   label: 'RCA Identified' },
+                              { active: d3, color: 'bg-amber-500',  label: 'Remedy Identified' },
+                              { active: !!arm, color: armDot,       label: armLabel },
+                            ];
+
+                            return dots.map((dot, idx) => (
+                              <Tooltip key={idx}>
+                                <TooltipTrigger asChild>
+                                  <span className={cn(
+                                    'h-3 w-3 rounded-full shrink-0 cursor-default transition-transform hover:scale-125',
+                                    dot.active ? dot.color : 'bg-muted-foreground/20'
+                                  )} />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="z-[100] text-xs font-bold px-3 py-1.5">
+                                  {dot.active ? `✓ ${dot.label}` : `Pending: ${dot.label}`}
+                                </TooltipContent>
+                              </Tooltip>
+                            ));
+                          })()}
+                        </div>
+                      </TooltipProvider>
+                    </td>
+                    )}
 
                     {/* DATE COLUMN */}
                     <td className="px-4 py-4">

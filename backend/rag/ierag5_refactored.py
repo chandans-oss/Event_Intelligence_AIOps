@@ -719,19 +719,24 @@ class RCAPipeline:
         sit = []
         if root_message_terms:
             sit.append(f"Root message indicates {' '.join(root_message_terms[:6])}")
+        
+        # Add all anomalies to the situation text for better semantic matching
+        if anomalies:
+            anom_desc = []
+            for a in anomalies:
+                # Group by domain/type for cleaner summary
+                anom_desc.append(f"{a.metric} {a.direction} ({a.change_pct:+.0f}%)")
+            sit.append("Metric anomalies: " + ", ".join(anom_desc[:6]))
+
         if entities.interfaces:
             sit.append(f"Interface {', '.join(entities.interfaces[:2])} on device {device}")
-        flap_f = next((a for a in anomalies if "flap" in a.metric.lower()), None)
-        if flap_f: sit.append(f"is flapping ({flap_f.current:.0f} flaps)")
-        err_f = [a for a in anomalies if any(w in a.metric.lower() for w in ("error","crc","drop"))]
-        if err_f:
-            sit.append("with " + ", ".join(f"{a.metric} {a.direction} {a.change_pct:+.0f}%" for a in err_f[:3]))
+        
         if entities.bgp_neighbors:
             sit.append(f"BGP neighbor {', '.join(entities.bgp_neighbors[:2])} impacted")
+        
         if topology.get("downstream_count"):
             sit.append(f"{topology['downstream_count']} downstream devices affected")
-        if topology.get("redundancy_state"):
-            sit.append(f"redundancy {topology['redundancy_state']}")
+            
         if sit: parts.append("Situation: " + ". ".join(sit) + ".")
 
         if cause_list:
@@ -1395,7 +1400,7 @@ def run_full_pipeline(logs, event, metrics, topo=None):
     from datetime import datetime
     from dataclasses import asdict
 
-    print(f"\n[🚀 PIPELINE START — ierag5] {datetime.now().strftime('%H:%M:%S.%f')[:-3]}")
+    print(f"\n[PIPELINE START - ierag5] {datetime.now().strftime('%H:%M:%S.%f')[:-3]}")
     print(f"   Analysing: {len(logs)} logs, {len(metrics)} metrics")
 
     pipeline = _get_pipeline()

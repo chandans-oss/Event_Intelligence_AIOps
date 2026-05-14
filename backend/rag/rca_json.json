@@ -3102,5 +3102,428 @@
             "category": "Device",
             "subcategory": "Memory Exhaustion"
         }
+    },
+    {
+        "_id": "routing-bgp-session-down-001",
+        "rca_id": "bgp.session_down",
+        "title": "BGP Session Down - Peer Adjacency Lost",
+        "description": "BGP peering session has dropped to Idle or Active state",
+        "root_cause_analysis": "BGP neighbor adjacency has been lost. Common causes include TCP connectivity loss to the peer, hold-timer expiry due to missed keepalives, authentication mismatch (MD5 key change), route policy error causing NOTIFICATION, or underlying link failure to the peer address.",
+        "situation": {
+            "symptoms": [
+                "BGP neighbor state is Idle or Active",
+                "%BGP-5-ADJCHANGE: neighbor X.X.X.X Down",
+                "BGP route table shows peer routes withdrawn",
+                "No BGP keepalives received from peer"
+            ],
+            "negative_indicators": [
+                "All interfaces up — not a link failure",
+                "OSPF still up — only BGP affected"
+            ],
+            "metrics": [
+                {"metric": "bgp_state", "op": "eq", "value": "Idle", "weight": 0.7},
+                {"metric": "bgp_flaps", "op": "gt", "value": 0, "weight": 0.3}
+            ],
+            "log_patterns": [
+                "%BGP-5-ADJCHANGE: neighbor .* Down",
+                "BGP Notification sent",
+                "Hold timer expired",
+                "BGP session reset",
+                "peer down",
+                "neighbor unreachable"
+            ],
+            "affected_components": ["bgp_session", "routing_table"]
+        },
+        "hypotheses": [
+            {"id": "H_HOLD_TIMER", "description": "Hold timer expired due to missed keepalives", "weight": 0.35, "log_patterns": ["Hold timer expired", "keepalive"]},
+            {"id": "H_TCP_RESET", "description": "TCP session reset to peer", "weight": 0.3, "log_patterns": ["TCP reset", "connection refused"]},
+            {"id": "H_AUTH_FAIL", "description": "BGP MD5 authentication mismatch", "weight": 0.2, "log_patterns": ["authentication", "MD5"]},
+            {"id": "H_NOTIFICATION", "description": "BGP NOTIFICATION message received", "weight": 0.15, "log_patterns": ["Notification sent", "Notification received"]}
+        ],
+        "keywords": [
+            "bgp down", "bgp session", "bgp peer", "neighbor down", "adjchange",
+            "bgp idle", "bgp active", "hold timer", "keepalive", "bgp notification",
+            "peer unreachable", "bgp reset", "routing protocol down", "bgp adjacency"
+        ],
+        "render_template": "BGP session to neighbor {peer} is {state}. Top hypothesis: {top_hypothesis}.",
+        "metadata": {"domain": "routing", "severity": "critical", "created_by": "netops", "created_at": "2026-05-12T00:00:00Z", "updated_at": "2026-05-12T00:00:00Z", "version": 1, "is_latest": true, "status": "active"},
+        "category_hierarchy": {"domain": "Network", "category": "Routing", "subcategory": "BGP Session Down"}
+    },
+    {
+        "_id": "routing-bgp-flap-001",
+        "rca_id": "bgp.flap",
+        "title": "BGP Session Flapping - Repeated Up/Down Cycling",
+        "description": "BGP peer repeatedly establishing and dropping adjacency",
+        "root_cause_analysis": "BGP session is unstable and oscillating between Established and Idle/Active. This causes repeated route withdrawals and re-advertisements. Common causes: intermittent WAN link, MTU issue on the path, overloaded CPU preventing keepalive processing, or misconfigured timers.",
+        "situation": {
+            "symptoms": [
+                "BGP neighbor flapping (repeated adjchange messages)",
+                "Route churn in routing table",
+                "CPU high during flap events",
+                "Intermittent connectivity to peer address"
+            ],
+            "negative_indicators": [
+                "Stable BGP session — check bgp.session_down for permanent drop"
+            ],
+            "metrics": [
+                {"metric": "bgp_flaps", "op": "gt", "value": 2, "weight": 0.8}
+            ],
+            "log_patterns": [
+                "%BGP-5-ADJCHANGE: neighbor .* Down",
+                "%BGP-5-ADJCHANGE: neighbor .* Up",
+                "BGP session reset",
+                "flapping"
+            ],
+            "affected_components": ["bgp_session", "wan_link"]
+        },
+        "hypotheses": [
+            {"id": "H_LINK_INSTABILITY", "description": "Underlying WAN link is intermittent", "weight": 0.4, "log_patterns": ["link flap", "interface down"]},
+            {"id": "H_CPU_PRESSURE", "description": "Device CPU too busy to send keepalives", "weight": 0.3, "log_patterns": ["CPUHOG", "high cpu"]},
+            {"id": "H_MTU_PATH", "description": "Path MTU causing TCP session drops", "weight": 0.2, "log_patterns": ["mtu", "fragment"]},
+            {"id": "H_TIMER_MISMATCH", "description": "Keepalive/hold-timer mismatch", "weight": 0.1, "log_patterns": ["timer"]}
+        ],
+        "keywords": [
+            "bgp flap", "bgp flapping", "bgp unstable", "neighbor cycling", "route churn",
+            "bgp adjchange", "bgp session reset", "bgp oscillating", "bgp down up"
+        ],
+        "render_template": "BGP session to {peer} is flapping ({flap_count} times). Top hypothesis: {top_hypothesis}.",
+        "metadata": {"domain": "routing", "severity": "high", "created_by": "netops", "created_at": "2026-05-12T00:00:00Z", "updated_at": "2026-05-12T00:00:00Z", "version": 1, "is_latest": true, "status": "active"},
+        "category_hierarchy": {"domain": "Network", "category": "Routing", "subcategory": "BGP Flapping"}
+    },
+    {
+        "_id": "device-thermal-critical-001",
+        "rca_id": "device.thermal_critical",
+        "title": "Thermal Critical - Chassis Temperature Exceeded",
+        "description": "Device chassis or component temperature has exceeded safe operating threshold",
+        "root_cause_analysis": "One or more temperature sensors are reporting values above critical threshold. This is typically caused by fan failure, datacenter cooling loss, high ambient temperature, or dust blockage. Sustained overtemperature can cause hardware damage and unexpected reboots.",
+        "situation": {
+            "symptoms": [
+                "Temperature sensor exceeds threshold",
+                "%ENVM-3-TEMP or %ENV-4-TEMP alarm raised",
+                "Fan speed reduced or fan failure reported",
+                "Device may throttle CPU to reduce heat"
+            ],
+            "negative_indicators": [
+                "Temperature normal — check device.fan_failure separately"
+            ],
+            "metrics": [
+                {"metric": "temp_c", "op": "gt", "value": 75, "weight": 0.7},
+                {"metric": "fan_speed_rpm", "op": "lt", "value": 3000, "weight": 0.3}
+            ],
+            "log_patterns": [
+                "%ENVM-3-TEMP",
+                "%ENV-4-TEMP",
+                "temperature threshold exceeded",
+                "chassis temperature",
+                "thermal alarm",
+                "%FAN-3-FANFAIL",
+                "fan failure",
+                "cooling failure",
+                "overheat"
+            ],
+            "affected_components": ["thermal_sensor", "fan_tray", "chassis"]
+        },
+        "hypotheses": [
+            {"id": "H_FAN_FAIL", "description": "Fan tray failure reducing airflow", "weight": 0.4, "log_patterns": ["FANFAIL", "fan failure"]},
+            {"id": "H_COOLING_LOSS", "description": "Datacenter cooling system failure", "weight": 0.3, "log_patterns": ["temperature", "ambient"]},
+            {"id": "H_DUST_BLOCKAGE", "description": "Air filter clogged with dust", "weight": 0.2, "log_patterns": ["temperature"]},
+            {"id": "H_HIGH_LOAD", "description": "High CPU/traffic load generating excess heat", "weight": 0.1, "log_patterns": ["CPUHOG", "high cpu"]}
+        ],
+        "keywords": [
+            "temperature high", "thermal alarm", "overheat", "fan failure", "cooling failure",
+            "temp threshold", "chassis hot", "thermal critical", "temperature exceeded",
+            "ENVM-3-TEMP", "ENV-4-TEMP", "FANFAIL", "fan tray"
+        ],
+        "render_template": "Device {device} temperature is critical ({temp_c}C). Top hypothesis: {top_hypothesis}.",
+        "metadata": {"domain": "device", "severity": "critical", "created_by": "netops", "created_at": "2026-05-12T00:00:00Z", "updated_at": "2026-05-12T00:00:00Z", "version": 1, "is_latest": true, "status": "active"},
+        "category_hierarchy": {"domain": "Network", "category": "Device", "subcategory": "Thermal Critical"}
+    },
+    {
+        "_id": "routing-ospf-adjdown-001",
+        "rca_id": "routing.ospf_adjdown",
+        "title": "OSPF Adjacency Down - Neighbor Relationship Lost",
+        "description": "OSPF neighbor adjacency dropped from FULL to DOWN state",
+        "root_cause_analysis": "OSPF neighbor has gone from FULL to DOWN, causing LSA withdrawals and possible route loss. Common causes: dead interval expiry (missed hellos), MTU mismatch preventing DD exchange, area type mismatch, or authentication failure.",
+        "situation": {
+            "symptoms": [
+                "OSPF neighbor state changed from FULL to DOWN",
+                "%OSPF-5-ADJCHG: Nbr X.X.X.X from FULL to DOWN",
+                "Routes learned from that neighbor removed"
+            ],
+            "negative_indicators": [
+                "BGP also down — broader connectivity issue",
+                "Interface down — see link.down"
+            ],
+            "metrics": [
+                {"metric": "ospf_state", "op": "eq", "value": "Down", "weight": 0.8}
+            ],
+            "log_patterns": [
+                "%OSPF-5-ADJCHG",
+                "OSPF neighbor down",
+                "Dead timer expired",
+                "adjacency change",
+                "OSPF FULL to DOWN"
+            ],
+            "affected_components": ["ospf_process", "routing_table"]
+        },
+        "hypotheses": [
+            {"id": "H_DEAD_INTERVAL", "description": "Dead interval expired — hellos not received", "weight": 0.4, "log_patterns": ["Dead timer", "hello"]},
+            {"id": "H_MTU_MISMATCH", "description": "MTU mismatch preventing Database Exchange", "weight": 0.3, "log_patterns": ["mtu", "ExStart"]},
+            {"id": "H_AUTH_FAIL", "description": "OSPF authentication failure", "weight": 0.2, "log_patterns": ["authentication"]},
+            {"id": "H_AREA_MISMATCH", "description": "Area type or stub configuration mismatch", "weight": 0.1, "log_patterns": ["area"]}
+        ],
+        "keywords": [
+            "ospf down", "ospf neighbor", "ospf adjacency", "ospf full to down", "dead timer",
+            "ospf adjchg", "routing protocol down", "ospf hello", "ospf failure"
+        ],
+        "render_template": "OSPF neighbor {peer} on {device} dropped from FULL to DOWN. Top hypothesis: {top_hypothesis}.",
+        "metadata": {"domain": "routing", "severity": "critical", "created_by": "netops", "created_at": "2026-05-12T00:00:00Z", "updated_at": "2026-05-12T00:00:00Z", "version": 1, "is_latest": true, "status": "active"},
+        "category_hierarchy": {"domain": "Network", "category": "Routing", "subcategory": "OSPF Adjacency Down"}
+    },
+    {
+        "_id": "routing-ospf-corrupt-001",
+        "rca_id": "routing.ospf_corrupt",
+        "title": "OSPF LSDB Corruption - Invalid LSA Detected",
+        "description": "OSPF Link State Database corruption or invalid LSA received",
+        "root_cause_analysis": "OSPF has detected an invalid or corrupted LSA in the link state database. This can cause routing black holes and suboptimal paths. Causes include software bugs, memory corruption, or malformed LSA injection.",
+        "situation": {
+            "symptoms": [
+                "%OSPF-4-LSA_INVALID: Invalid LSA detected",
+                "OSPF process may restart to recover",
+                "Intermittent routing failures"
+            ],
+            "negative_indicators": [],
+            "metrics": [],
+            "log_patterns": [
+                "%OSPF-4-LSA_INVALID",
+                "invalid LSA",
+                "OSPF database corrupt",
+                "LSA checksum error"
+            ],
+            "affected_components": ["ospf_lsdb", "ospf_process"]
+        },
+        "hypotheses": [
+            {"id": "H_SW_BUG", "description": "Software defect generating malformed LSAs", "weight": 0.4, "log_patterns": ["LSA_INVALID"]},
+            {"id": "H_MEM_CORRUPT", "description": "Memory corruption affecting LSDB", "weight": 0.3, "log_patterns": ["parity error", "memory"]},
+            {"id": "H_INJECTED_LSA", "description": "Malformed LSA injected by misconfigured peer", "weight": 0.3, "log_patterns": ["invalid lsa"]}
+        ],
+        "keywords": [
+            "ospf corrupt", "lsa invalid", "ospf database", "lsdb error", "ospf checksum",
+            "invalid lsa", "ospf error", "routing corruption", "lsa checksum"
+        ],
+        "render_template": "OSPF LSDB corruption detected on {device}. Top hypothesis: {top_hypothesis}.",
+        "metadata": {"domain": "routing", "severity": "high", "created_by": "netops", "created_at": "2026-05-12T00:00:00Z", "updated_at": "2026-05-12T00:00:00Z", "version": 1, "is_latest": true, "status": "active"},
+        "category_hierarchy": {"domain": "Network", "category": "Routing", "subcategory": "OSPF LSDB Corrupt"}
+    },
+    {
+        "_id": "link-sfp-mismatch-001",
+        "rca_id": "link.sfp_mismatch",
+        "title": "SFP/Transceiver Mismatch - Module Type Incompatible",
+        "description": "Optical transceiver type does not match the interface or peer requirements",
+        "root_cause_analysis": "The inserted SFP/XFP/QSFP module type is incompatible with the interface configuration, speed, or the remote peer's transceiver. This prevents the link from coming up even if the module is physically seated correctly.",
+        "situation": {
+            "symptoms": [
+                "Interface remains down despite SFP inserted",
+                "%SFP-3-TYPE_MISMATCH or similar alarm",
+                "Link does not come up after cable connection"
+            ],
+            "negative_indicators": [
+                "LOS alarm — fibre cut or disconnected",
+                "Admin down — intentional shutdown"
+            ],
+            "metrics": [
+                {"metric": "oper_status", "op": "eq", "value": "down", "weight": 0.7}
+            ],
+            "log_patterns": [
+                "%SFP-3-TYPE_MISMATCH",
+                "transceiver type mismatch",
+                "SFP mismatch",
+                "module not supported",
+                "incompatible transceiver",
+                "speed mismatch"
+            ],
+            "affected_components": ["optical_transceiver", "network_interface"]
+        },
+        "hypotheses": [
+            {"id": "H_WRONG_SFP", "description": "Wrong SFP type inserted (e.g., SR vs LR)", "weight": 0.5, "log_patterns": ["TYPE_MISMATCH", "mismatch"]},
+            {"id": "H_UNSUPPORTED", "description": "Third-party SFP not on approved list", "weight": 0.3, "log_patterns": ["not supported", "unapproved"]},
+            {"id": "H_SPEED_MISMATCH", "description": "SFP speed incompatible with interface config", "weight": 0.2, "log_patterns": ["speed"]}
+        ],
+        "keywords": [
+            "sfp mismatch", "transceiver mismatch", "module mismatch", "sfp type", "incompatible sfp",
+            "sfp error", "transceiver type", "module not supported", "optic mismatch"
+        ],
+        "render_template": "SFP mismatch on {interface} at {device}. Top hypothesis: {top_hypothesis}.",
+        "metadata": {"domain": "network", "severity": "high", "created_by": "netops", "created_at": "2026-05-12T00:00:00Z", "updated_at": "2026-05-12T00:00:00Z", "version": 1, "is_latest": true, "status": "active"},
+        "category_hierarchy": {"domain": "Network", "category": "Link", "subcategory": "SFP Mismatch"}
+    },
+    {
+        "_id": "security-ddos-pps-001",
+        "rca_id": "security.ddos_pps",
+        "title": "DDoS Attack - Excessive Packet Rate (PPS Spike)",
+        "description": "Device or interface experiencing abnormally high packet-per-second rate consistent with a DDoS attack",
+        "root_cause_analysis": "Inbound traffic has exceeded normal PPS thresholds, indicating a volumetric DDoS attack or traffic flood. This causes CPU overload from interrupt processing, drops legitimate traffic, and may cause device instability.",
+        "situation": {
+            "symptoms": [
+                "PPS rate significantly above baseline",
+                "CPU high due to interrupt processing",
+                "Legitimate traffic being dropped",
+                "Interface input queue full"
+            ],
+            "negative_indicators": [
+                "Traffic is legitimate burst — check capacity planning"
+            ],
+            "metrics": [
+                {"metric": "pps_in", "op": "gt", "value": 100000, "weight": 0.7},
+                {"metric": "cpu_util", "op": "gt", "value": 80, "weight": 0.3}
+            ],
+            "log_patterns": [
+                "packet rate exceeded",
+                "PPS threshold",
+                "input queue full",
+                "traffic flood",
+                "ddos",
+                "high packet rate",
+                "interrupt storm"
+            ],
+            "affected_components": ["network_interface", "cpu", "security"]
+        },
+        "hypotheses": [
+            {"id": "H_VOLUMETRIC_DDOS", "description": "Volumetric DDoS flood (UDP/ICMP/SYN)", "weight": 0.5, "log_patterns": ["flood", "packet rate"]},
+            {"id": "H_AMPLIFICATION", "description": "DNS/NTP amplification attack", "weight": 0.3, "log_patterns": ["amplification", "dns", "ntp"]},
+            {"id": "H_INTERNAL_SCAN", "description": "Internal worm or scanner generating high PPS", "weight": 0.2, "log_patterns": ["scan", "sweep"]}
+        ],
+        "keywords": [
+            "ddos", "pps spike", "packet flood", "traffic flood", "high pps", "attack",
+            "volumetric", "bandwidth exhaustion", "input queue full", "interrupt storm", "dos attack"
+        ],
+        "render_template": "DDoS detected on {device} — PPS={pps} exceeds threshold. Top hypothesis: {top_hypothesis}.",
+        "metadata": {"domain": "security", "severity": "critical", "created_by": "netops", "created_at": "2026-05-12T00:00:00Z", "updated_at": "2026-05-12T00:00:00Z", "version": 1, "is_latest": true, "status": "active"},
+        "category_hierarchy": {"domain": "Security", "category": "Attack", "subcategory": "DDoS PPS Spike"}
+    },
+    {
+        "_id": "link-mtu-mismatch-001",
+        "rca_id": "link.mtu_mismatch",
+        "title": "MTU Mismatch - Oversized Packets Dropped",
+        "description": "Path MTU mismatch causing large packets to be silently dropped",
+        "root_cause_analysis": "An MTU mismatch exists between two endpoints or along the path. Packets larger than the smallest MTU on the path are dropped (if DF bit set) or fragmented. This causes intermittent connectivity, slow performance, and application timeouts for large transfers.",
+        "situation": {
+            "symptoms": [
+                "Ping with small packets succeeds, large packets fail",
+                "Application timeouts for bulk transfers",
+                "ICMP unreachables from intermediate hops",
+                "Packet drops on interfaces"
+            ],
+            "negative_indicators": [
+                "All pings fail — see link.down or device.unreachable"
+            ],
+            "metrics": [
+                {"metric": "mtu_drops", "op": "gt", "value": 0, "weight": 0.8}
+            ],
+            "log_patterns": [
+                "packet larger than MTU",
+                "fragmentation needed",
+                "MTU mismatch",
+                "DF bit set",
+                "packet dropped oversized"
+            ],
+            "affected_components": ["network_interface", "ip_stack"]
+        },
+        "hypotheses": [
+            {"id": "H_JUMBO_MISMATCH", "description": "Jumbo frames enabled on one end but not other", "weight": 0.4, "log_patterns": ["jumbo", "mtu"]},
+            {"id": "H_TUNNEL_OVERHEAD", "description": "Tunnel overhead reducing effective MTU", "weight": 0.35, "log_patterns": ["tunnel", "overhead"]},
+            {"id": "H_VLAN_OVERHEAD", "description": "VLAN/QinQ tags reducing effective MTU", "weight": 0.25, "log_patterns": ["vlan"]}
+        ],
+        "keywords": [
+            "mtu mismatch", "packet too large", "fragmentation", "oversized packet", "mtu drop",
+            "df bit", "path mtu", "jumbo frame", "mtu error", "black hole routing"
+        ],
+        "render_template": "MTU mismatch on path through {device}. Large packets dropped. Top hypothesis: {top_hypothesis}.",
+        "metadata": {"domain": "network", "severity": "medium", "created_by": "netops", "created_at": "2026-05-12T00:00:00Z", "updated_at": "2026-05-12T00:00:00Z", "version": 1, "is_latest": true, "status": "active"},
+        "category_hierarchy": {"domain": "Network", "category": "Link", "subcategory": "MTU Mismatch"}
+    },
+    {
+        "_id": "device-disk-full-001",
+        "rca_id": "device.disk_full",
+        "title": "Disk/Storage Full - Log Partition Exhausted",
+        "description": "Device filesystem or log partition has reached 100% utilization",
+        "root_cause_analysis": "A filesystem partition (commonly /var/log or flash:) has run out of space. This can prevent syslog from writing, cause core dumps to fail, block configuration saves, and in severe cases cause system instability or crashes.",
+        "situation": {
+            "symptoms": [
+                "Disk partition at 100% utilization",
+                "Syslog or audit log write failures",
+                "Configuration save failures",
+                "No space left on device errors"
+            ],
+            "negative_indicators": [
+                "System crash — check device.unexpected_reboot"
+            ],
+            "metrics": [
+                {"metric": "disk_util", "op": "gt", "value": 95, "weight": 0.9}
+            ],
+            "log_patterns": [
+                "no space left",
+                "disk full",
+                "filesystem full",
+                "100% full",
+                "write failed",
+                "log rotation failed"
+            ],
+            "affected_components": ["storage", "filesystem"]
+        },
+        "hypotheses": [
+            {"id": "H_LOG_GROWTH", "description": "Uncontrolled log file growth", "weight": 0.5, "log_patterns": ["log", "rotation"]},
+            {"id": "H_CORE_DUMP", "description": "Large core dump files consuming space", "weight": 0.3, "log_patterns": ["core", "dump"]},
+            {"id": "H_SMALL_PARTITION", "description": "Partition undersized for workload", "weight": 0.2, "log_patterns": ["full"]}
+        ],
+        "keywords": [
+            "disk full", "storage full", "filesystem full", "no space", "partition full",
+            "log rotation", "disk utilization", "flash full", "storage exhaustion"
+        ],
+        "render_template": "Disk partition on {device} is {disk_util}% full. Top hypothesis: {top_hypothesis}.",
+        "metadata": {"domain": "device", "severity": "high", "created_by": "netops", "created_at": "2026-05-12T00:00:00Z", "updated_at": "2026-05-12T00:00:00Z", "version": 1, "is_latest": true, "status": "active"},
+        "category_hierarchy": {"domain": "Network", "category": "Device", "subcategory": "Disk Full"}
+    },
+    {
+        "_id": "device-ntp-desync-001",
+        "rca_id": "device.ntp_desync",
+        "title": "NTP Clock Desynchronization - Stratum Loss",
+        "description": "Device NTP synchronization lost, clock drifting or stratum 16 (unsynchronized)",
+        "root_cause_analysis": "The device has lost time synchronization with its NTP servers. This can cause log correlation failures (timestamps incorrect), certificate validation errors, authentication issues, and problems with time-sensitive protocols like Kerberos and TACACS+.",
+        "situation": {
+            "symptoms": [
+                "NTP server unreachable or stratum 16",
+                "%NTP-4-UNREACH or clock unsynchronized",
+                "System clock drifting from expected time",
+                "Authentication failures due to time skew"
+            ],
+            "negative_indicators": [
+                "Clock synchronized — check NTP server health separately"
+            ],
+            "metrics": [
+                {"metric": "ntp_offset", "op": "gt", "value": 100, "weight": 0.8}
+            ],
+            "log_patterns": [
+                "%NTP-4-UNREACH",
+                "NTP server unreachable",
+                "clock unsynchronized",
+                "stratum 16",
+                "time sync failed",
+                "NTP timeout"
+            ],
+            "affected_components": ["ntp_client", "system_clock"]
+        },
+        "hypotheses": [
+            {"id": "H_NTP_UNREACHABLE", "description": "NTP server is down or unreachable", "weight": 0.5, "log_patterns": ["UNREACH", "timeout"]},
+            {"id": "H_FIREWALL_BLOCK", "description": "UDP 123 blocked by firewall/ACL", "weight": 0.3, "log_patterns": ["unreachable", "blocked"]},
+            {"id": "H_DRIFT", "description": "Large initial clock drift exceeding step threshold", "weight": 0.2, "log_patterns": ["drift", "step"]}
+        ],
+        "keywords": [
+            "ntp desync", "ntp unreachable", "clock sync", "time sync", "stratum 16",
+            "ntp failure", "clock drift", "time skew", "ntp timeout", "synchronization lost"
+        ],
+        "render_template": "NTP sync lost on {device}. Clock offset={ntp_offset}ms. Top hypothesis: {top_hypothesis}.",
+        "metadata": {"domain": "device", "severity": "medium", "created_by": "netops", "created_at": "2026-05-12T00:00:00Z", "updated_at": "2026-05-12T00:00:00Z", "version": 1, "is_latest": true, "status": "active"},
+        "category_hierarchy": {"domain": "Network", "category": "Device", "subcategory": "NTP Desync"}
     }
-]
+]

@@ -2,6 +2,7 @@ import { Toaster } from "@/shared/components/ui/toaster";
 import { Toaster as Sonner } from "@/shared/components/ui/sonner";
 import PredictionDashboard from "@/features/analytics/pages/PredictionDashboard";
 import KpiDashboard from "@/features/analytics/pages/KpiDashboard";
+import AIOpsAdvancedAnalytics from "@/features/analytics/pages/AIOpsAdvancedAnalytics";
 
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/admin" element={<Admin />} />
               <Route path="/dashboard/prediction" element={<PredictionDashboard />} />
               <Route path="/dashboard/kpi" element={<KpiDashboard />} />
+              <Route path="/dashboard/advanced" element={<AIOpsAdvancedAnalytics />} />
               <Route path="/admin/kb/:id" element={<KBDetailPage />} />
               <Route path="/playground/rca" element={<RCAPlaygroundPage />} />
               <Route path="/playground/rag" element={<RAGPlaygroundPage />} />

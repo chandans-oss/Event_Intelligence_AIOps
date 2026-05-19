@@ -74,10 +74,12 @@ const COLOR_PALETTE_HSL = [
 export default function AnalyticsDashboard() {
   const { theme, resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
-  
+
   const assetGaugeRef = useRef<HTMLCanvasElement>(null);
   const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null);
   const [activeSidebar, setActiveSidebar] = useState<'rca' | 'remediation' | null>(null);
+  const [rcaView, setRcaView] = useState<'list' | 'graph'>('graph');
+  const [hoveredRca, setHoveredRca] = useState<any>(null);
 
   const baseOptions = useMemo(() => ({
     responsive: true,
@@ -103,13 +105,13 @@ export default function AnalyticsDashboard() {
       }
     },
     scales: {
-      x: { 
-        grid: { color: 'hsl(var(--border) / 0.3)' }, 
-        ticks: { color: 'hsl(var(--muted-foreground))', font: { size: 10, weight: '600' } } 
+      x: {
+        grid: { color: 'hsl(var(--border) / 0.3)' },
+        ticks: { color: 'hsl(var(--muted-foreground))', font: { size: 10, weight: '600' } }
       },
-      y: { 
-        grid: { color: 'hsl(var(--border) / 0.3)' }, 
-        ticks: { color: 'hsl(var(--muted-foreground))', font: { size: 10, weight: '600' } } 
+      y: {
+        grid: { color: 'hsl(var(--border) / 0.3)' },
+        ticks: { color: 'hsl(var(--muted-foreground))', font: { size: 10, weight: '600' } }
       },
     }
   }), [isDark]);
@@ -125,9 +127,9 @@ export default function AnalyticsDashboard() {
 
         let rawTitle = cluster.rca?.rootCause || cluster.rootEvent.message || '';
         rawTitle = rawTitle.replace(/^\[Pattern Recognized\]:\s*/i, '');
-        
+
         const fullTitle = `${rawTitle} — ${deviceName}`;
-        
+
         // Smartly abbreviate to a clean one-liner for the dashboard UI
         let shortTitle = rawTitle;
         if (shortTitle.includes(':')) shortTitle = shortTitle.split(':')[0].trim();
@@ -247,35 +249,191 @@ export default function AnalyticsDashboard() {
             <div className="card flex flex-col min-w-0">
               <div className="card-header shrink-0">
                 <div className="card-title">Root Cause Insights</div>
+                <div className="flex bg-muted/50 rounded-md p-0.5 border border-border/50">
+                  <button 
+                    onClick={() => setRcaView('list')} 
+                    className={`px-2.5 py-1 text-[10px] font-bold rounded-sm transition-all ${rcaView === 'list' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                  >
+                    List
+                  </button>
+                  <button 
+                    onClick={() => setRcaView('graph')} 
+                    className={`px-2.5 py-1 text-[10px] font-bold rounded-sm transition-all ${rcaView === 'graph' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                  >
+                    Circular Map
+                  </button>
+                </div>
               </div>
 
-              <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
-                {rcaInsightsData.map((item, i) => (
-                  <div key={item.id} className="bg-muted/30 border border-border/50 rounded-xl p-3 transition-all hover:border-primary/30 group">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${item.sev === 'critical' ? 'bg-red-500/10 text-red-500' : item.sev === 'high' ? 'bg-orange-500/10 text-orange-500' : 'bg-yellow-500/10 text-yellow-500'}`}>{item.sev}</span>
-                        <span className="text-foreground font-bold text-[14px] leading-tight truncate" title={item.fullTitle}>{item.title}</span>
+              {rcaView === 'list' ? (
+                <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
+                  {rcaInsightsData.map((item, i) => (
+                    <div key={item.id} className="bg-muted/30 border border-border/50 rounded-xl p-3 transition-all hover:border-primary/30 group">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${item.sev === 'critical' ? 'bg-red-500/10 text-red-500' : item.sev === 'high' ? 'bg-orange-500/10 text-orange-500' : 'bg-yellow-500/10 text-yellow-500'}`}>{item.sev}</span>
+                          <span className="text-foreground font-bold text-[14px] leading-tight truncate" title={item.fullTitle}>{item.title}</span>
+                        </div>
+                        <button
+                          onClick={() => handleAnalyze(item)}
+                          className="flex items-center gap-2 text-primary text-[12px] font-bold opacity-90 hover:opacity-100 transition-opacity"
+                        >
+                          <Brain className="h-4 w-4" />
+                          Analyze
+                        </button>
                       </div>
-                      <button 
-                        onClick={() => handleAnalyze(item)}
-                        className="flex items-center gap-2 text-primary text-[12px] font-bold opacity-90 hover:opacity-100 transition-opacity"
-                      >
-                        <Brain className="h-4 w-4" />
-                        Analyze
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-4 text-muted-foreground text-[11px] font-medium ml-1">
-                      <div className="flex items-center gap-1.5">
-                        <Zap className="h-3 w-3 text-primary" />
-                        {item.conf}% confidence
+                      <div className="flex items-center gap-4 text-muted-foreground text-[11px] font-medium ml-1">
+                        <div className="flex items-center gap-1.5">
+                          <Zap className="h-3 w-3 text-primary" />
+                          {item.conf}% confidence
+                        </div>
+                        <div className="flex items-center gap-1.5 underline decoration-primary/20">{item.evidence} evidence</div>
+                        <div className="flex items-center gap-1.5">{item.services} services</div>
                       </div>
-                      <div className="flex items-center gap-1.5 underline decoration-primary/20">{item.evidence} evidence</div>
-                      <div className="flex items-center gap-1.5">{item.services} services</div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="w-full h-[280px] relative overflow-visible custom-scrollbar bg-background rounded-b-xl z-10">
+                   {/* Background layer (hidden overflow) */}
+                   <div className="absolute inset-0 overflow-hidden rounded-b-xl z-0 pointer-events-none">
+                      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, hsl(var(--primary)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+                   </div>
+                   
+                   {/* Absolute container for dynamically packed bubbles */}
+                   <div className="absolute inset-0 w-full h-full z-10">
+                      {(() => {
+                         const bubbles: any[] = [];
+                         rcaInsightsData.forEach((item, i) => {
+                            const size = Math.max(80, 165 - (i * 22)); // Scales down for future items
+                            
+                            // Severity mapped colors (Red, Orange, Teal)
+                            const getSeverityConfig = (sev: string) => {
+                               const s = sev.toLowerCase();
+                               if (s === 'critical') return { border: 'border-red-500/50', shadow: 'rgba(239, 68, 68, 0.3)', gradient: 'radial-gradient(circle at 30% 30%, rgba(239, 68, 68, 0.35), rgba(239, 68, 68, 0.05))', badge: 'bg-red-500/10 text-red-500 border-red-500/20' };
+                               if (s === 'high' || s === 'major') return { border: 'border-orange-500/50', shadow: 'rgba(249, 115, 22, 0.3)', gradient: 'radial-gradient(circle at 30% 30%, rgba(249, 115, 22, 0.35), rgba(249, 115, 22, 0.05))', badge: 'bg-orange-500/10 text-orange-500 border-orange-500/20' };
+                               return { border: 'border-teal-500/50', shadow: 'rgba(13, 148, 136, 0.3)', gradient: 'radial-gradient(circle at 30% 30%, rgba(13, 148, 136, 0.35), rgba(13, 148, 136, 0.05))', badge: 'bg-teal-500/10 text-teal-500 border-teal-500/20' };
+                            };
+                            const config = getSeverityConfig(item.sev);
+
+                            // Robust Dynamic Elliptical Circle Packing
+                            let x = 0, y = 0;
+                            if (i === 0) {
+                               x = 0; y = 0;
+                            } else {
+                               let placed = false;
+                               let r = (bubbles[0].size/2) + (size/2) + 5;
+                               while (!placed && r < 800) {
+                                  const startAngle = i * 137.5; 
+                                  for (let a = 0; a < 360; a += 15) {
+                                     const rad = (startAngle + a) * Math.PI / 180;
+                                     const testX = r * Math.cos(rad);
+                                     const testY = r * 0.65 * Math.sin(rad); // Elliptical horizontal spread
+                                     
+                                     let overlap = false;
+                                     for (let b of bubbles) {
+                                        const dist = Math.sqrt(Math.pow(testX - b.x, 2) + Math.pow(testY - b.y, 2));
+                                        const minDist = (size/2) + (b.size/2) + 16; // 16px strict safe gap
+                                        if (dist < minDist) { overlap = true; break; }
+                                     }
+                                     
+                                     if (!overlap) {
+                                        x = testX; y = testY;
+                                        placed = true;
+                                        break;
+                                     }
+                                  }
+                                  r += 10;
+                               }
+                            }
+                            
+                            bubbles.push({ x, y, size, config, item });
+                         });
+
+                         // Center the entire cluster perfectly
+                         if (bubbles.length > 0) {
+                            let minX = 0, maxX = 0, minY = 0, maxY = 0;
+                            bubbles.forEach(b => {
+                               minX = Math.min(minX, b.x - b.size/2);
+                               maxX = Math.max(maxX, b.x + b.size/2);
+                               minY = Math.min(minY, b.y - b.size/2);
+                               maxY = Math.max(maxY, b.y + b.size/2);
+                            });
+                            const offsetX = -(maxX + minX) / 2;
+                            const offsetY = -(maxY + minY) / 2;
+                            bubbles.forEach(b => {
+                               b.x += offsetX;
+                               b.y += offsetY;
+                            });
+                         }
+
+                         return bubbles.map((b) => {
+                           const fontSize = b.size >= 140 ? '13px' : b.size >= 110 ? '11px' : b.size >= 90 ? '10px' : '9px';
+                           const clamp = b.size >= 130 ? 3 : 2;
+                           
+                           // Deterministic mock values based on ID so they don't blink
+                           const idHash = b.item.id.charCodeAt(0) + b.item.id.charCodeAt(b.item.id.length - 1);
+                           const customers = (idHash % 50) + 10;
+                           const slas = (idHash % 5) + 1;
+
+                           return (
+                             <div 
+                               key={b.item.id} 
+                               className={`absolute rounded-full border flex flex-col justify-center items-center text-center shadow-lg transition-all duration-300 cursor-pointer backdrop-blur-md group hover:scale-[1.03] hover:z-50 ${b.config.border}`}
+                               style={{
+                                  width: b.size, height: b.size,
+                                  top: '50%', left: '50%',
+                                  transform: `translate(calc(-50% + ${b.x}px), calc(-50% + ${b.y}px))`,
+                                  background: b.config.gradient,
+                                  boxShadow: `inset 0 0 20px ${b.config.shadow}, 0 10px 40px rgba(0,0,0,0.15)`
+                               }}
+                               onClick={() => handleAnalyze(b.item)}
+                             >
+                                <div className="w-full h-full flex flex-col justify-center items-center overflow-hidden rounded-full p-3 transition-opacity duration-300 group-hover:opacity-40">
+                                  <h4 
+                                     className="font-bold text-foreground drop-shadow-md px-1" 
+                                     style={{ fontSize: fontSize, display: '-webkit-box', WebkitLineClamp: clamp, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                                  >
+                                     {b.item.title}
+                                  </h4>
+                                  {b.size > 90 && (
+                                     <div className={`mt-2 text-[10px] font-bold px-2.5 py-0.5 rounded-full border shadow-sm backdrop-blur-md ${b.config.badge}`}>
+                                       {b.item.conf}% Match
+                                     </div>
+                                  )}
+                                </div>
+                                
+                                {/* Fixed Corner Tooltip for Hover Details */}
+                                <div className="absolute top-[5%] left-[80%] opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none scale-75 group-hover:scale-100 z-[100] origin-top-left">
+                                   <div className="bg-popover/95 text-popover-foreground rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.3)] p-4 border border-border/50 w-[220px] text-left backdrop-blur-xl">
+                                      <div className="text-[12px] font-bold mb-3 pb-2 border-b border-border/50 text-left leading-snug whitespace-normal">
+                                         {b.item.fullTitle}
+                                      </div>
+                                      <div className="flex justify-between items-center text-[11px] mb-2">
+                                         <span className="text-muted-foreground font-medium">Services</span>
+                                         <span className="font-bold text-primary">{b.item.services}</span>
+                                      </div>
+                                      <div className="flex justify-between items-center text-[11px] mb-2">
+                                         <span className="text-muted-foreground font-medium">Customers</span>
+                                         <span className="font-bold text-foreground">{customers}</span>
+                                      </div>
+                                      <div className="flex justify-between items-center text-[11px] mb-2">
+                                         <span className="text-muted-foreground font-medium">SLA's Effected</span>
+                                         <span className="font-bold text-red-500">{slas}</span>
+                                      </div>
+                                      <div className="flex justify-between items-center text-[11px]">
+                                         <span className="text-muted-foreground font-medium">Events</span>
+                                         <span className="font-bold text-foreground">{b.item.evidence}</span>
+                                      </div>
+                                   </div>
+                                </div>
+                             </div>
+                           );
+                         });
+                      })()}
+                   </div>
+                </div>
+              )}
             </div>
 
             <div className="card flex flex-col min-w-0">
@@ -444,7 +602,7 @@ export default function AnalyticsDashboard() {
                 <div className="flex flex-col items-end gap-1"><span className="badge bg-orange-500/10 text-orange-500">High</span><span className="anomaly-time">14:18 UTC</span></div>
               </div>
               <div className="anomaly-row">
-                <div><div className="anomaly-name"><div className="anomaly-dot" style={{ background: P }}></div>Authentication latency deviation</div><div className="text-[11px] text-muted-foreground mt-0.5 ml-3">Response 3.2× std dev above mean · APM</div></div>
+                <div><div className="anomaly-name"><div className="anomaly-dot" style={{ background: 'var(--primary)' }}></div>Authentication latency deviation</div><div className="text-[11px] text-muted-foreground mt-0.5 ml-3">Response 3.2× std dev above mean · APM</div></div>
                 <div className="flex flex-col items-end gap-1"><span className="badge bg-primary/10 text-primary">Medium</span><span className="anomaly-time">14:05 UTC</span></div>
               </div>
               <div className="anomaly-row" style={{ border: 'none' }}>
@@ -547,7 +705,7 @@ export default function AnalyticsDashboard() {
                     datasets: [
                       { label: 'WAN CR-01', data: [55, 52, 49, 47, 51, 58, 67, 74, 82, 88, 91, 93, 95, 96, 98], borderColor: RED, backgroundColor: 'rgba(240, 82, 82, 0.07)', tension: 0.4, fill: true },
                       { label: 'CPU DNS', data: [44, 42, 40, 39, 43, 52, 62, 71, 78, 82, 85, 86, 87, 88, 89], borderColor: ORANGE, backgroundColor: 'rgba(249, 115, 22, 0.05)', tension: 0.4, fill: true },
-                      { label: 'Memory', data: [60, 61, 62, 63, 64, 66, 68, 70, 71, 72, 73, 73, 74, 74, 74], borderColor: P, backgroundColor: 'rgba(108, 99, 255, 0.05)', tension: 0.4, fill: true },
+                      { label: 'Memory', data: [60, 61, 62, 63, 64, 66, 68, 70, 71, 72, 73, 73, 74, 74, 74], borderColor: 'var(--primary)', backgroundColor: 'rgba(108, 99, 255, 0.05)', tension: 0.4, fill: true },
                     ]
                   }}
                   options={{
@@ -606,7 +764,7 @@ export default function AnalyticsDashboard() {
                   data={{
                     labels: ['D-13', 'D-7', 'Today'],
                     datasets: [
-                      { label: 'Changes', data: [1, 4, 3], borderColor: P, tension: 0.3 },
+                      { label: 'Changes', data: [1, 4, 3], borderColor: 'var(--primary)', tension: 0.3 },
                       { label: 'Incidents', data: [0, 3, 2], borderColor: RED, tension: 0.3 },
                     ]
                   }}

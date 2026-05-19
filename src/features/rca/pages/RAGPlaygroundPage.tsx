@@ -571,7 +571,7 @@ const RAGPlaygroundPage = () => {
                                     {[
                                         { label: 'CANDIDATES', value: (results.search_results || results.results)?.length || 0, icon: List },
                                         { label: 'AVG RELEVANCE', value: (() => { const sr = results.search_results || results.results || []; const avg = sr.reduce((acc: number, r: any) => acc + (r.cross_encoder_score || 0), 0) / (sr.length || 1); return avg.toFixed(3); })(), icon: Activity },
-                                        { label: 'MODEL', value: 'ms-marco-L6', icon: Shield }
+                                        { label: 'MODEL', value: 'cross-encoder/ms-marco-MiniLM-L-6-v2', icon: Shield }
                                     ].map((stat, i) => (
                                         <Card key={i} className="bg-primary/5 border-primary/10 shadow-sm">
                                             <CardContent className="p-4 flex items-center gap-3">

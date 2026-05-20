@@ -14,7 +14,8 @@ import {
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Cell, PieChart, Pie, Legend, RadarChart, PolarGrid,
-  PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, Line, Sankey
+  PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, Line, Sankey,
+  ScatterChart, Scatter, ZAxis, Treemap
 } from 'recharts';
 import { sampleNetworkEvents, getEventStats } from '@/features/events/data/eventsData';
 import { MOCK_PATTERNS } from '@/features/analytics/data/patternData';
@@ -107,6 +108,10 @@ export default function AIOpsAdvancedAnalytics() {
   const [hoveredSankeyLink, setHoveredSankeyLink] = useState<any>(null);
   const [hoveredSankeyNode, setHoveredSankeyNode] = useState<any>(null);
   const [hoveredPatternCell, setHoveredPatternCell] = useState<any>(null);
+  const [hoveredLogZone, setHoveredLogZone] = useState<any>(null);
+  const [hoveredMatrixCell, setHoveredMatrixCell] = useState<any>(null);
+  const [hoveredEvidence, setHoveredEvidence] = useState<any>(null);
+  const [hoveredNetworkNode, setHoveredNetworkNode] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [timeRange, setTimeRange] = useState('24h');
 
@@ -239,6 +244,335 @@ export default function AIOpsAdvancedAnalytics() {
     { name: 'Storage LUN Path Failovers', rules: 6, coverage: 50, ver: 'v1.0', status: 'Disabled' }
   ], []);
 
+  // A-1: Waterfall Data
+  const waterfallData = useMemo(() => [
+    { name: 'Initial Guess', val: 95, color: '#3B82F6' },
+    { name: 'Syslog Offset', val: -12, color: '#EF4444' },
+    { name: 'Metric Match', val: 8, color: '#10B981' },
+    { name: 'Topology Match', val: 5, color: '#10B981' },
+    { name: 'FAISS Penalty', val: -10, color: '#EF4444' },
+    { name: 'Final Score', val: 86, color: '#A855F7' }
+  ], []);
+
+  // A-2: Spider Radar Data
+  const spiderData = useMemo(() => [
+    { subject: 'Semantic (FAISS)', semantic: 94, bm25: 60, rrf: 85 },
+    { subject: 'Keyword (BM25)', semantic: 50, bm25: 88, rrf: 75 },
+    { subject: 'Temporal Correlation', semantic: 78, bm25: 45, rrf: 80 },
+    { subject: 'Topological Reach', semantic: 85, bm25: 30, rrf: 70 },
+    { subject: 'Cross-Encoder', semantic: 90, bm25: 50, rrf: 92 }
+  ], []);
+
+  // A-3: Log Zone Heatmap Data
+  const logZoneData = useMemo(() => [
+    { template: 'Fibre cut interface down', zone: 'Probable Cause', count: 14, score: 96 },
+    { template: 'LACP rate limit exceeded', zone: 'Probable Cause', count: 8, score: 88 },
+    { template: 'BGP state transition to Idle', zone: 'Impact', count: 24, score: 91 },
+    { template: 'SFP rx power low threshold', zone: 'Impact', count: 18, score: 79 },
+    { template: 'HTTP 502 transaction timeout', zone: 'Impact', count: 45, score: 85 },
+    { template: 'Syslog buffer overrun warning', zone: 'Noise', count: 110, score: 12 },
+    { template: 'DHCP lease renew retry', zone: 'Noise', count: 95, score: 8 },
+    { template: 'SSH connection disconnect', zone: 'Noise', count: 62, score: 15 }
+  ], []);
+
+  // A-4: Anomaly Z-Score Magnitude Data
+  const zScoreBubbleData = useMemo(() => [
+    { x: 10, y: 15, z: 200, name: 'cpu_ready_percent', zScore: 8.5 },
+    { x: 25, y: 40, z: 500, name: 'mem_swapin', zScore: 24.1 },
+    { x: 45, y: 12, z: 120, name: 'icmp_response_time_ms', zScore: 4.8 },
+    { x: 60, y: 85, z: 800, name: 'storage_latency_ms', zScore: 37.2 },
+    { x: 75, y: 55, z: 300, name: 'avail', zScore: -12.4 },
+    { x: 90, y: 30, z: 150, name: 'optical_rx_power_dbm', zScore: -5.6 }
+  ], []);
+
+  // A-5: Evidence Timeline Data
+  const evidenceTimelineData = useMemo(() => [
+    { time: '06:01:10', node: 'vmnic2', event: 'Link State Down', severity: 'Critical', source: 'Syslog' },
+    { time: '06:01:12', node: 'core-rt-01', event: 'BGP Peer Flap', severity: 'High', source: 'SNMP Trap' },
+    { time: '06:01:15', node: 'db-cluster-01', event: 'Storage Latency Spike', severity: 'High', source: 'Metric Poller' },
+    { time: '06:01:22', node: 'app-srv-05', event: 'App Pool Exhaustion', severity: 'Medium', source: 'Agent Log' },
+    { time: '06:01:30', node: 'checkout-api', event: 'HTTP 502 Bad Gateway', severity: 'Critical', source: 'Synthetic APM' }
+  ], []);
+
+  // A-6: Drain3 Similarity Matrix Data
+  const drainSimilarityData = useMemo(() => [
+    [1.0, 0.72, 0.31, 0.15, 0.08],
+    [0.72, 1.0, 0.45, 0.22, 0.11],
+    [0.31, 0.45, 1.0, 0.65, 0.28],
+    [0.15, 0.22, 0.65, 1.0, 0.52],
+    [0.08, 0.11, 0.28, 0.52, 1.0]
+  ], []);
+
+  // A-7: KB Domain Confidence Box Plot Data
+  const kbDomainConfidenceData = useMemo(() => [
+    { name: 'Compute/VM', min: 72, max: 98, avg: 86, color: '#3B82F6' },
+    { name: 'Network Link', min: 65, max: 95, avg: 82, color: '#10B981' },
+    { name: 'Database OS', min: 50, max: 88, avg: 71, color: '#F59E0B' },
+    { name: 'Storage LUN', min: 78, max: 99, avg: 91, color: '#EF4444' },
+    { name: 'Routing BGP', min: 58, max: 92, avg: 77, color: '#A855F7' }
+  ], []);
+
+  // A-8: Word Cloud Text
+  const wordCloudWords = useMemo(() => [
+    { text: 'vmnic_down', size: 24, weight: 'font-black', color: 'text-red-500' },
+    { text: 'storage_latency', size: 20, weight: 'font-extrabold', color: 'text-orange-500' },
+    { text: 'BGP_flap', size: 18, weight: 'font-bold', color: 'text-amber-500' },
+    { text: 'db_pool_leak', size: 16, weight: 'font-bold', color: 'text-purple-500' },
+    { text: 'MTU_drift', size: 12, weight: 'font-semibold', color: 'text-blue-500' },
+    { text: 'mem_swapin', size: 14, weight: 'font-bold', color: 'text-emerald-500' },
+    { text: 'packet_drop', size: 22, weight: 'font-black', color: 'text-rose-500' },
+    { text: 'syslog_error', size: 10, weight: 'font-normal', color: 'text-muted-foreground' }
+  ], []);
+
+  // A-9: Inferred Domain Stacked Bar Data
+  const inferredDomainData = useMemo(() => [
+    { name: 'Inc-101', Network: 65, Compute: 20, Storage: 10, Other: 5 },
+    { name: 'Inc-102', Network: 15, Compute: 70, Storage: 10, Other: 5 },
+    { name: 'Inc-103', Network: 10, Compute: 15, Storage: 65, Other: 10 },
+    { name: 'Inc-104', Network: 40, Compute: 40, Storage: 15, Other: 5 },
+    { name: 'Inc-105', Network: 90, Compute: 5, Storage: 0, Other: 5 }
+  ], []);
+
+  // A-10: Relevant Log Leaderboard Data
+  const relevantLogData = useMemo(() => [
+    { text: 'Failed to write metadata block to ESXi Datastore', score: 94, count: 18, source: 'vmkernel.log' },
+    { text: 'Link vmnic2 transition to Down - carrier lost', score: 91, count: 12, source: 'syslog.log' },
+    { text: 'BGP peer 10.254.1.2 state changed: Established -> Idle', score: 86, count: 8, source: 'edge_router.log' },
+    { text: 'FATAL: connection pool limit of 100 reached for user dbadmin', score: 79, count: 32, source: 'postgresql.log' },
+    { text: 'Out of Memory: Killed process 8242 (java)', score: 72, count: 3, source: 'kern.log' }
+  ], []);
+
+  // A-11: Entity Extraction Coverage Trend
+  const entityCoverageData = useMemo(() => [
+    { period: 'T-12h', IP: 32, Interface: 18, ErrorCode: 42, Port: 28 },
+    { period: 'T-9h', IP: 45, Interface: 24, ErrorCode: 58, Port: 35 },
+    { period: 'T-6h', IP: 58, Interface: 31, ErrorCode: 72, Port: 42 },
+    { period: 'T-3h', IP: 74, Interface: 39, ErrorCode: 85, Port: 56 },
+    { period: 'T-0h', IP: 91, Interface: 52, ErrorCode: 98, Port: 74 }
+  ], []);
+
+  // A-12: Confidence Gate Funnel Data
+  const confidenceGateData = useMemo(() => [
+    { name: 'FAISS Ingest', val: 100, label: '50 candidates' },
+    { name: 'BM25 Filter', val: 78, label: '39 candidates' },
+    { name: 'Cross-Encoder', val: 42, label: '21 candidates' },
+    { name: 'LLM Synthesizer', val: 26, label: '13 candidates' },
+    { name: 'SOP Execution', val: 18, label: '9 candidates' }
+  ], []);
+
+  // A-13: Hypothesis Network Connections
+  const hypothesisNetworkNodes = useMemo(() => [
+    { id: 1, label: 'Fibre Cut', group: 'Network', cx: 80, cy: 80, size: 24, color: '#EF4444' },
+    { id: 2, label: 'vmnic2 Down', group: 'Hardware', cx: 160, cy: 120, size: 16, color: '#F59E0B' },
+    { id: 3, label: 'BGP Flap', group: 'Protocol', cx: 280, cy: 70, size: 20, color: '#A855F7' },
+    { id: 4, label: 'IO Contention', group: 'Storage', cx: 240, cy: 220, size: 22, color: '#3B82F6' },
+    { id: 5, label: 'Datastore Lag', group: 'Storage', cx: 340, cy: 170, size: 18, color: '#10B981' }
+  ], []);
+
+  const hypothesisNetworkLinks = useMemo(() => [
+    { source: 1, target: 2, weight: 5 },
+    { source: 2, target: 3, weight: 4 },
+    { source: 2, target: 4, weight: 2 },
+    { source: 4, target: 5, weight: 5 }
+  ], []);
+
+  // A-14: Metric Deviation Gauge Values
+  const metricDeviations = useMemo(() => [
+    { name: 'mem_swapin', val: 86, dev: '+4.2 Z', status: 'critical' },
+    { name: 'cpu_ready_percent', val: 74, dev: '+3.1 Z', status: 'high' },
+    { name: 'icmp_response_time', val: 62, dev: '+2.4 Z', status: 'medium' },
+    { name: 'storage_latency_ms', val: 92, dev: '+5.5 Z', status: 'critical' },
+    { name: 'packet_drop_rate', val: 45, dev: '+1.5 Z', status: 'low' },
+    { name: 'bgp_state_transitions', val: 80, dev: '+3.8 Z', status: 'high' }
+  ], []);
+
+  // A-15: RAG Build Time vs Inc Complexity Scatter Data
+  const buildTimeScatterData = useMemo(() => [
+    { complexity: 12, buildTime: 4.2, kbDocs: 15 },
+    { complexity: 28, buildTime: 8.5, kbDocs: 34 },
+    { complexity: 45, buildTime: 12.1, kbDocs: 48 },
+    { complexity: 62, buildTime: 18.0, kbDocs: 85 },
+    { complexity: 78, buildTime: 24.5, kbDocs: 110 },
+    { complexity: 95, buildTime: 32.2, kbDocs: 142 },
+    { complexity: 18, buildTime: 5.8, kbDocs: 22 },
+    { complexity: 55, buildTime: 15.2, kbDocs: 62 }
+  ], []);
+
+  // B-1: Remedy Confidence per Vendor Box Plot Data
+  const remedyVendorConfidenceData = useMemo(() => [
+    { vendor: 'Cisco IOS', min: 70, max: 98, avg: 89, color: '#3B82F6' },
+    { vendor: 'VMware ESXi', min: 62, max: 96, avg: 84, color: '#10B981' },
+    { vendor: 'MongoDB Corp', min: 55, max: 92, avg: 78, color: '#F59E0B' },
+    { vendor: 'Juniper Junos', min: 68, max: 95, avg: 83, color: '#A855F7' },
+    { vendor: 'Fallback SOP', min: 40, max: 80, avg: 62, color: '#64748B' }
+  ], []);
+
+  // B-2: Remediation Time Estimate Histogram Data
+  const remedyTimeHistogram = useMemo(() => [
+    { bin: '0-5m', auto: 18, manual: 4 },
+    { bin: '6-15m', auto: 34, manual: 12 },
+    { bin: '16-30m', auto: 28, manual: 25 },
+    { bin: '31-60m', auto: 12, manual: 42 },
+    { bin: '60m+', auto: 3, manual: 18 }
+  ], []);
+
+  // B-3: Risk Level vs Confidence 2D Matrix Data
+  const riskConfidenceMatrix = useMemo(() => [
+    { risk: 'Critical', confidence: '>90%', count: 18, color: 'bg-emerald-500/80 border-emerald-500 text-emerald-950 font-black' },
+    { risk: 'Critical', confidence: '75-90%', count: 8, color: 'bg-emerald-500/50 border-emerald-500/70 text-emerald-900 font-bold' },
+    { risk: 'Critical', confidence: '60-75%', count: 4, color: 'bg-amber-500/40 border-amber-500/60 text-amber-900 font-medium' },
+    { risk: 'Critical', confidence: '<60%', count: 1, color: 'bg-red-500/30 border-red-500/50 text-red-950' },
+    
+    { risk: 'High', confidence: '>90%', count: 24, color: 'bg-emerald-500/80 border-emerald-500 text-emerald-950 font-black' },
+    { risk: 'High', confidence: '75-90%', count: 15, color: 'bg-emerald-500/60 border-emerald-500/80 text-emerald-950' },
+    { risk: 'High', confidence: '60-75%', count: 8, color: 'bg-amber-500/30 border-amber-500/50 text-amber-900' },
+    { risk: 'High', confidence: '<60%', count: 2, color: 'bg-red-500/20 border-red-500/40 text-red-900' },
+
+    { risk: 'Medium', confidence: '>90%', count: 42, color: 'bg-emerald-500/90 border-emerald-500 text-emerald-950 font-black' },
+    { risk: 'Medium', confidence: '75-90%', count: 28, color: 'bg-emerald-500/70 border-emerald-500/90 text-emerald-950' },
+    { risk: 'Medium', confidence: '60-75%', count: 12, color: 'bg-amber-500/20 border-amber-500/40 text-amber-900' },
+    { risk: 'Medium', confidence: '<60%', count: 3, color: 'bg-red-500/10 border-red-500/30 text-red-900' },
+
+    { risk: 'Low', confidence: '>90%', count: 85, color: 'bg-emerald-500/95 border-emerald-500 text-emerald-950 font-black' },
+    { risk: 'Low', confidence: '75-90%', count: 52, color: 'bg-emerald-500/80 border-emerald-500/90 text-emerald-950 font-bold' },
+    { risk: 'Low', confidence: '60-75%', count: 18, color: 'bg-emerald-500/40 border-emerald-500/60 text-emerald-900' },
+    { risk: 'Low', confidence: '<60%', count: 5, color: 'bg-red-500/10 border-red-500/20 text-red-900' }
+  ], []);
+
+  // B-4: Remedy Step Complexity vs Time Scatter Data
+  const complexityTimeScatter = useMemo(() => [
+    { name: 'Vlan Restore', steps: 4, estTime: 8, risk: 'Low' },
+    { name: 'Disk Cleanup', steps: 6, estTime: 12, risk: 'Low' },
+    { name: 'BGP Path Prep', steps: 8, estTime: 22, risk: 'Medium' },
+    { name: 'LUN Path Failover', steps: 11, estTime: 35, risk: 'Medium' },
+    { name: 'Replica Re-Sync', steps: 14, estTime: 48, risk: 'High' },
+    { name: 'Core Router SOP', steps: 19, estTime: 75, risk: 'Critical' },
+    { name: 'Fibre Backup Route', steps: 22, estTime: 92, risk: 'Critical' }
+  ], []);
+
+  // B-5: Top Served Remedy Leaderboard Data
+  const topRemedyArticles = useMemo(() => [
+    { title: 'ESXi Host Storage Latency Mitigation Protocol', count: 68, successRate: 94, id: 'RM-8041' },
+    { title: 'Juniper vmnic Carrier Flap Redirection Routine', count: 52, successRate: 88, id: 'RM-7210' },
+    { title: 'MongoDB Replica Replication Timeout Recoverer', count: 41, successRate: 81, id: 'RM-5902' },
+    { title: 'BGP Multihop Peering Reset Script', count: 35, successRate: 92, id: 'RM-3048' },
+    { title: 'Generic Ping Failure Auto-Diagnostic Loop', count: 28, successRate: 64, id: 'RM-1011' }
+  ], []);
+
+  // B-6: Escalation Rate Tracker Data
+  const escalationRateData = useMemo(() => [
+    { period: 'May 1', AutoClosed: 78, Escalated: 12 },
+    { period: 'May 5', AutoClosed: 84, Escalated: 10 },
+    { period: 'May 10', AutoClosed: 89, Escalated: 8 },
+    { period: 'May 15', AutoClosed: 91, Escalated: 7 },
+    { period: 'May 20', AutoClosed: 95, Escalated: 5 }
+  ], []);
+
+  // B-7: Vendor Coverage Gap Analysis
+  const vendorCoverageGapData = useMemo(() => [
+    { segment: 'Switches', targetVendor: 'Cisco Catalyst', activeRemedy: 'Cisco IOS SOP', mismatch: false },
+    { segment: 'Firewalls', targetVendor: 'Fortinet FortiOS', activeRemedy: 'Fallback SOP', mismatch: true },
+    { segment: 'Core Routers', targetVendor: 'Juniper Junos', activeRemedy: 'Juniper Core Script', mismatch: false },
+    { segment: 'Load Balancers', targetVendor: 'F5 BIG-IP', activeRemedy: 'Fallback SOP', mismatch: true },
+    { segment: 'Hypervisors', targetVendor: 'VMware ESXi 8.0', activeRemedy: 'VMware ESXi SOP', mismatch: false }
+  ], []);
+
+  // B-8: RCA-to-Remedy Success Funnel
+  const mappingSuccessFunnel = useMemo(() => [
+    { stage: 'Incidents Ingested', val: 458, color: 'bg-primary' },
+    { stage: 'RCA Confirmed (>75%)', val: 342, color: 'bg-indigo-500' },
+    { stage: 'Remedy Associated', val: 298, color: 'bg-purple-500' },
+    { stage: 'Auto-Run Dispatched', val: 242, color: 'bg-emerald-500' },
+    { stage: 'Verification Complete', val: 218, color: 'bg-teal-500' }
+  ], []);
+
+  // B-9: Cross-Encoder Probability Threshold Sensitivity
+  const ceSensitivityData = useMemo(() => [
+    { threshold: 0.1, precision: 32, recall: 99 },
+    { threshold: 0.3, precision: 54, recall: 95 },
+    { threshold: 0.5, precision: 76, recall: 88 },
+    { threshold: 0.6, precision: 86, recall: 81 },
+    { threshold: 0.7, precision: 92, recall: 68 },
+    { threshold: 0.8, precision: 96, recall: 45 },
+    { threshold: 0.9, precision: 98, recall: 18 }
+  ], []);
+
+  // B-10: OS Flavor Coverage Map Data
+  const remedyOSCoverageData = useMemo(() => [
+    { name: 'Linux RHEL/CentOS', value: 45, color: '#3B82F6' },
+    { name: 'Cisco IOS-XE', value: 28, color: '#10B981' },
+    { name: 'VMware ESXi shell', value: 22, color: '#F59E0B' },
+    { name: 'Juniper JunOS CLI', value: 15, color: '#A855F7' },
+    { name: 'Windows PowerShell', value: 8, color: '#EC4899' }
+  ], []);
+
+  // B-11: Remedy OS Flavor Coverage Treemap Data
+  const treemapData = useMemo(() => [
+    {
+      name: 'Linux Flavor',
+      children: [
+        { name: 'RHEL/CentOS', size: 450 },
+        { name: 'Ubuntu/Debian', size: 150 },
+      ]
+    },
+    {
+      name: 'Network OS',
+      children: [
+        { name: 'Cisco IOS-XE', size: 280 },
+        { name: 'Juniper Junos', size: 180 },
+        { name: 'Arista EOS', size: 90 },
+      ]
+    },
+    {
+      name: 'Hypervisors',
+      children: [
+        { name: 'ESXi shell', size: 220 }
+      ]
+    }
+  ], []);
+
+  // B-11: Remedy Confidence Trend
+  const remedyConfidenceTrend = useMemo(() => [
+    { week: 'Wk 1', Network: 81, Compute: 74, Storage: 88 },
+    { week: 'Wk 2', Network: 83, Compute: 79, Storage: 89 },
+    { week: 'Wk 3', Network: 88, Compute: 82, Storage: 91 },
+    { week: 'Wk 4', Network: 91, Compute: 86, Storage: 92 },
+    { week: 'Wk 5', Network: 94, Compute: 88, Storage: 95 }
+  ], []);
+
+  // B-12: Auto vs Manual Ratio
+  const autoManualRatio = useMemo(() => [
+    { name: 'Auto Remedied', value: 74, color: 'hsl(var(--status-success))' },
+    { name: 'Manual Verification Required', value: 26, color: 'hsl(var(--severity-medium))' }
+  ], []);
+
+  // B-13: Doc Links Coverage
+  const docLinksCoverage = useMemo(() => [
+    { name: 'Has Confluence Link', value: 65, color: 'hsl(var(--primary))' },
+    { name: 'Has Vendor KB Doc', value: 25, color: 'hsl(var(--status-success))' },
+    { name: 'No Attached Reference', value: 10, color: 'hsl(var(--severity-critical))' }
+  ], []);
+
+  // B-14: Estimated Time Saved Data
+  const timeSavedHistory = useMemo(() => [
+    { period: 'Day 1', hoursSaved: 12 },
+    { period: 'Day 2', hoursSaved: 18 },
+    { period: 'Day 3', hoursSaved: 25 },
+    { period: 'Day 4', hoursSaved: 32 },
+    { period: 'Day 5', hoursSaved: 48 },
+    { period: 'Day 6', hoursSaved: 54 },
+    { period: 'Day 7', hoursSaved: 68 }
+  ], []);
+
+  // B-15: Feedback Loop Readiness Score
+  const feedbackReadinessData = useMemo(() => [
+    { dimension: 'Operator Rating Coverage', score: 85 },
+    { dimension: 'Execution Logs Success', score: 92 },
+    { dimension: 'Error-Path Retries Logged', score: 78 },
+    { dimension: 'Config drift tracked', score: 64 },
+    { dimension: 'Telemetry Pre-Post Verified', score: 90 }
+  ], []);
+
   return (
     <MainLayout>
       <div className="p-6 space-y-8 bg-background min-h-screen text-foreground font-['Sora',sans-serif] relative overflow-hidden">
@@ -322,6 +656,17 @@ export default function AIOpsAdvancedAnalytics() {
                 <Cpu className="h-3.5 w-3.5 mr-2" />
                 2. RAG & RCA Insights
               </TabsTrigger>
+              <TabsTrigger
+                value="remediation"
+                className={`text-xs font-black tracking-widest uppercase pb-3 border-b-2 rounded-none transition-all px-0 h-auto ${
+                  activeTab === 'remediation'
+                    ? 'border-primary text-primary bg-transparent'
+                    : 'border-transparent text-muted-foreground hover:text-foreground bg-transparent'
+                }`}
+              >
+                <ShieldCheck className="h-3.5 w-3.5 mr-2" />
+                3. Remediation Analytics
+              </TabsTrigger>
             </TabsList>
 
             <div className="text-[10px] font-black text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 bg-card border border-border/40 px-3 py-1 rounded-full">
@@ -334,7 +679,7 @@ export default function AIOpsAdvancedAnalytics() {
               TAB 1: EVENT INTELLIGENCE
               ======================================================== */}
           <TabsContent value="events" className="mt-0 space-y-8 animate-in fade-in duration-300">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
               {/* W-E1: Severity Heat Calendar */}
               <Card className="lg:col-span-2 bg-card/40 border-border/50 backdrop-blur-md">
@@ -451,7 +796,7 @@ export default function AIOpsAdvancedAnalytics() {
               </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
               {/* W-E2: Source Sankey Flow */}
               <Card className="bg-card/40 border-border/50 backdrop-blur-md flex flex-col h-[400px]">
@@ -615,7 +960,7 @@ export default function AIOpsAdvancedAnalytics() {
               </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
               {/* W-E6: Correlation Label Chord Diagram */}
               <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
@@ -711,7 +1056,7 @@ export default function AIOpsAdvancedAnalytics() {
               </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
               {/* W-E9: Noise Reduction Waterfall */}
               <Card className="lg:col-span-2 bg-card/40 border-border/50 backdrop-blur-md h-[420px]">
@@ -781,159 +1126,31 @@ export default function AIOpsAdvancedAnalytics() {
           {/* ========================================================
               TAB 2: RAG & RCA INSIGHTS
               ======================================================== */}
+          {/* ========================================================
+              TAB 2: RAG & RCA INSIGHTS (15 WIDGETS)
+              ======================================================== */}
           <TabsContent value="rca" className="mt-0 space-y-8 animate-in fade-in duration-300">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* W-R1: Circular Packed Hypotheses Treemap */}
-              <Card className="lg:col-span-2 bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
-                <CardHeader className="py-4 border-b border-border/30">
-                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
-                    W-R1 · Circular Packed Hypotheses Treemap
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 relative overflow-visible h-[330px]">
-                  {/* Packed bubbles representing different competing diagnoses */}
-                  <div className="absolute inset-0 bg-background/20 rounded-xl overflow-hidden pointer-events-none z-0">
-                    <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, hsl(var(--primary)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-                  </div>
-                  
-                  <div className="absolute inset-0 w-full h-full z-10">
-                    {hypothesesBubbles.map((bubble) => (
-                      <div
-                        key={bubble.id}
-                        onClick={() => setSelectedDetails({ type: 'hypothesis', data: bubble })}
-                        className={`absolute rounded-full border flex flex-col justify-center items-center text-center shadow-lg transition-all duration-300 cursor-pointer backdrop-blur-md group hover:scale-[1.05] hover:z-50 ${bubble.border}`}
-                        style={{
-                          width: bubble.r * 2,
-                          height: bubble.r * 2,
-                          top: `${bubble.cy}%`,
-                          left: `${bubble.cx}%`,
-                          transform: 'translate(-50%, -50%)',
-                          background: bubble.gradient,
-                          boxShadow: `inset 0 0 20px ${bubble.color}33, 0 10px 40px rgba(0,0,0,0.15)`
-                        }}
-                      >
-                        <span className="text-[10px] font-black text-foreground block tracking-tight px-2 leading-tight">{bubble.title}</span>
-                        <div className="mt-1 text-[8px] font-black px-2 py-0.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-                          {bubble.conf}% MATCH
-                        </div>
-
-                        {/* Interactive tooltip popping out from corner of the bubble */}
-                        <div className="absolute top-[5%] left-[80%] opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none scale-75 group-hover:scale-100 z-[100] origin-top-left">
-                          <div className="bg-popover/95 text-popover-foreground rounded-xl shadow-2xl p-4 border border-border/50 w-[220px] text-left backdrop-blur-xl">
-                            <div className="text-[11px] font-black mb-3 pb-2 border-b border-border/50 leading-snug whitespace-normal">
-                              {bubble.title}
-                            </div>
-                            <div className="flex justify-between items-center text-[10px] mb-2 font-bold">
-                              <span className="text-muted-foreground">Domain Category</span>
-                              <span className="text-foreground">{bubble.domain}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-[10px] mb-2 font-bold">
-                              <span className="text-muted-foreground">Services Impacted</span>
-                              <span className="text-primary">{bubble.services} Services</span>
-                            </div>
-                            <div className="flex justify-between items-center text-[10px] font-bold">
-                              <span className="text-muted-foreground">Evidence Log Entries</span>
-                              <span className="text-foreground">{bubble.evidence} Items</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* W-R3: Radar Coverage Diagram */}
+            {/* Row 1: A-1, A-2, A-3 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* A-1: RCA Confidence Waterfall */}
               <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
                 <CardHeader className="py-4 border-b border-border/30">
                   <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
-                    W-R3 · RCA Domain Coverage Radar
+                    A-1 · RCA Confidence Waterfall
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 flex flex-col justify-between h-[330px]">
-                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">RCA Rule coverage vs Event frequency</div>
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Confidence Score Contributors</div>
                   <div className="flex-1 w-full h-full relative">
                     <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart cx="50%" cy="50%" outerRadius="80%" data={domainCoverage}>
-                        <PolarGrid strokeOpacity={0.1} />
-                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748B', fontSize: 8, fontWeight: 'bold' }} />
-                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#64748B', fontSize: 8 }} axisLine={false} />
-                        <Radar name="RCA Rules Coverage" dataKey="coverage" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.15} />
-                        <Radar name="Active Event Frequency" dataKey="frequency" stroke="hsl(var(--severity-critical))" fill="hsl(var(--severity-critical))" fillOpacity={0.1} />
-                        <Legend wrapperStyle={{ fontSize: 9, fontWeight: 'bold' }} />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* W-R2: Pattern Confidence Timeline */}
-              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
-                <CardHeader className="py-4 border-b border-border/30">
-                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
-                    W-R2 · Pattern Confidence Timeline
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
-                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">Neural confidence scoring of patterns</div>
-                  <div className="flex-1 w-full h-full relative">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={[
-                        { period: 'T-5', confA: 82, confB: 65, confC: 40 },
-                        { period: 'T-4', confA: 88, confB: 72, confC: 58 },
-                        { period: 'T-3', confA: 92, confB: 76, confC: 70 },
-                        { period: 'T-2', confA: 91, confB: 84, confC: 82 },
-                        { period: 'T-1', confA: 95, confB: 89, confC: 85 }
-                      ]}>
+                      <BarChart data={waterfallData}>
                         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.05} />
-                        <XAxis dataKey="period" tick={{ fill: '#64748B', fontSize: 9, fontWeight: 'bold' }} axisLine={false} />
-                        <YAxis domain={[0, 100]} tick={{ fill: '#64748B', fontSize: 9 }} axisLine={false} />
+                        <XAxis dataKey="name" tick={{ fill: '#64748B', fontSize: 8, fontWeight: 'bold' }} />
+                        <YAxis tick={{ fill: '#64748B', fontSize: 8 }} />
                         <Tooltip content={<CustomChartTooltip />} />
-                        <Line type="monotone" dataKey="confA" stroke="hsl(var(--severity-critical))" strokeWidth={2.5} name="Link Flapping" dot={{ r: 4 }} />
-                        <Line type="monotone" dataKey="confB" stroke="hsl(var(--severity-high))" strokeWidth={2} name="CPU Exhaustion" dot={{ r: 3 }} />
-                        <Line type="monotone" dataKey="confC" stroke="hsl(var(--severity-medium))" strokeWidth={2} name="DB Pool Leak" dot={{ r: 3 }} />
-                        <Legend wrapperStyle={{ fontSize: 9, fontWeight: 'bold' }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* W-R4: Hypothesis Weight Waterfall */}
-              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
-                <CardHeader className="py-4 border-b border-border/30">
-                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
-                    W-R4 · Hypothesis Weight Waterfall
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
-                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">Incident Hypothesis weight distribution</div>
-                  <div className="flex-1 w-full h-full relative">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        layout="vertical"
-                        data={[
-                          { name: 'Fibre Cut', weight: 45, color: 'hsl(var(--severity-critical))' },
-                          { name: 'SFP Transceiver Fail', weight: 28, color: 'hsl(var(--severity-high))' },
-                          { name: 'Intermittent Jitter', weight: 15, color: 'hsl(var(--severity-medium))' },
-                          { name: 'MTU Configuration Drift', weight: 12, color: 'hsl(var(--primary))' }
-                        ]}
-                      >
-                        <XAxis type="number" domain={[0, 50]} hide />
-                        <YAxis dataKey="name" type="category" fontSize={9} width={90} tick={{ fill: '#64748B', fontWeight: 'bold' }} axisLine={false} tickLine={false} />
-                        <Tooltip content={<CustomChartTooltip />} />
-                        <Bar dataKey="weight" radius={[0, 4, 4, 0]} barSize={18}>
-                          {[
-                            'hsl(var(--severity-critical))',
-                            'hsl(var(--severity-high))',
-                            'hsl(var(--severity-medium))',
-                            'hsl(var(--primary))'
-                          ].map((color, index) => (
-                            <Cell key={`cell-${index}`} fill={color} />
+                        <Bar dataKey="val" radius={[4, 4, 0, 0]}>
+                          {waterfallData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.val >= 0 ? 'hsl(var(--status-success))' : 'hsl(var(--severity-critical))'} />
                           ))}
                         </Bar>
                       </BarChart>
@@ -942,128 +1159,362 @@ export default function AIOpsAdvancedAnalytics() {
                 </CardContent>
               </Card>
 
-              {/* W-R5: Pattern Occurrence Heatmap */}
+              {/* A-2: Semantic vs BM25 Spider Contribution */}
               <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
                 <CardHeader className="py-4 border-b border-border/30">
                   <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
-                    W-R5 · Pattern Occurrence Heatmap
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 flex flex-col justify-between h-[330px] relative">
-                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">Weekly pattern match frequencies</div>
-                  <div className="relative flex-1 flex flex-col">
-                    <div className="grid grid-cols-7 gap-2 flex-1">
-                      {Array.from({ length: 28 }).map((_, idx) => {
-                        const count = Math.floor(Math.sin(idx * 0.4) * 8 + Math.cos(idx * 0.2) * 5 + 10);
-                        const color =
-                          count > 15 ? 'bg-red-500/40 border-red-500/50 shadow-[0_0_8px_rgba(239,68,68,0.15)] hover:bg-red-500/60' :
-                          count > 10 ? 'bg-orange-500/30 border-orange-500/40 hover:bg-orange-500/50' :
-                          count > 5 ? 'bg-amber-500/20 border-amber-500/30 hover:bg-amber-500/40' :
-                          'bg-teal-500/10 border-teal-500/20 hover:bg-teal-500/30';
-                        return (
-                          <div
-                            key={idx}
-                            onMouseEnter={() => setHoveredPatternCell({ day: idx + 1, count })}
-                            onMouseLeave={() => setHoveredPatternCell(null)}
-                            className={`rounded-lg border flex items-center justify-center text-[9px] font-black font-mono transition-all cursor-pointer ${color}`}
-                          >
-                            {count}
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Interactive Pattern Tooltip overlay */}
-                    {hoveredPatternCell && (
-                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-popover/95 border border-border/80 px-3.5 py-2 rounded-xl shadow-2xl backdrop-blur-xl text-center font-['Sora',sans-serif] z-50 min-w-[180px] animate-in fade-in zoom-in-95 duration-150">
-                        <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest block leading-none">Telemetry Pattern Feed</span>
-                        <div className="flex items-center gap-2 mt-1.5 justify-center">
-                          <span className="text-xs font-black text-foreground">Day {hoveredPatternCell.day}</span>
-                          <span className="text-muted-foreground font-medium text-[10px]">•</span>
-                          <span className="text-xs font-black text-primary">{hoveredPatternCell.count} Matches</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* W-R6: RAG Retrieval Performance Gauge */}
-              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
-                <CardHeader className="py-4 border-b border-border/30">
-                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
-                    W-R6 · RAG Retrieval Performance
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 flex flex-col items-center justify-around h-[330px]">
-                  <div className="flex justify-around w-full gap-4">
-                    <ConcentricGauge value={94} label="Top-K Precision" subLabel="Semantic Search" color="hsl(var(--primary))" />
-                    <ConcentricGauge value={87} label="KB Match Rate" subLabel="Prior Verdicts" color="hsl(var(--status-success))" />
-                  </div>
-                  <div className="w-full bg-muted/10 border border-border/30 rounded-xl p-3 text-center">
-                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest block mb-1">Average Retrieval Latency</span>
-                    <span className="text-xl font-black text-foreground block font-mono">142ms</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* W-R7: Cascading Failure Graph (Topology) */}
-              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
-                <CardHeader className="py-4 border-b border-border/30">
-                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
-                    W-R7 · Cascading Failure Graph
+                    A-2 · Semantic vs BM25 Pre-Score Contribution
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 flex flex-col justify-between h-[330px]">
-                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">Temporal Parent-Child Failures</div>
-                  <div className="flex-1 flex flex-col justify-between relative py-2">
-                    <div className="flex justify-center">
-                      <div className="bg-red-500/25 border border-red-500/40 p-2.5 rounded-xl text-center w-40 shadow-lg">
-                        <span className="text-[9px] font-black block tracking-widest uppercase text-red-500">Root Node</span>
-                        <span className="text-[10px] font-bold block text-foreground font-mono">dist-sw-05.dc1</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-around items-center relative">
-                      <div className="absolute top-1/2 left-[15%] right-[15%] h-0.5 bg-border/50 -translate-y-1/2 z-0" />
-                      
-                      <div className="bg-orange-500/20 border border-orange-500/30 p-2.5 rounded-xl text-center w-28 shadow z-10">
-                        <span className="text-[8px] font-black block tracking-widest uppercase text-orange-500">Child Node</span>
-                        <span className="text-[9px] font-bold block text-foreground font-mono">core-rt-01.dc1</span>
-                      </div>
-                      
-                      <div className="bg-orange-500/20 border border-orange-500/30 p-2.5 rounded-xl text-center w-28 shadow z-10">
-                        <span className="text-[8px] font-black block tracking-widest uppercase text-orange-500">Child Node</span>
-                        <span className="text-[9px] font-bold block text-foreground font-mono">app-srv-05.dc1</span>
-                      </div>
-                    </div>
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Retrieval Score Decomposition</div>
+                  <div className="flex-1 w-full h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart cx="50%" cy="50%" outerRadius="75%" data={spiderData}>
+                        <PolarGrid strokeOpacity={0.1} />
+                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748B', fontSize: 8, fontWeight: 'bold' }} />
+                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#64748B', fontSize: 8 }} axisLine={false} />
+                        <Radar name="Semantic FAISS" dataKey="semantic" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} />
+                        <Radar name="Keyword BM25" dataKey="bm25" stroke="hsl(var(--status-success))" fill="hsl(var(--status-success))" fillOpacity={0.1} />
+                        <Radar name="Reciprocal Rank Fusion" dataKey="rrf" stroke="hsl(var(--severity-high))" fill="hsl(var(--severity-high))" fillOpacity={0.15} />
+                        <Legend wrapperStyle={{ fontSize: 9, fontWeight: 'bold' }} />
+                      </RadarChart>
+                    </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* W-R8: SLA Breach Prediction Meter */}
+              {/* A-3: Log Zone Classification Heatmap */}
               <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
                 <CardHeader className="py-4 border-b border-border/30">
                   <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
-                    W-R8 · SLA Breach Predictions
+                    A-3 · Log Zone Classification Heatmap
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 overflow-y-auto h-[330px] custom-scrollbar relative">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">Retrieved Logs Classified by AI Pipeline</div>
+                  <div className="space-y-2">
+                    {logZoneData.map((log, idx) => {
+                      const badgeColor =
+                        log.zone === 'Probable Cause' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                        log.zone === 'Impact' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
+                        'bg-teal-500/10 text-teal-500 border-teal-500/20';
+                      return (
+                        <div
+                          key={idx}
+                          onMouseEnter={() => setHoveredLogZone(log)}
+                          onMouseLeave={() => setHoveredLogZone(null)}
+                          onClick={() => setSelectedDetails({ type: 'logZone', data: log })}
+                          className="p-2.5 bg-muted/20 border border-border/50 rounded-xl flex items-center justify-between cursor-pointer hover:border-primary/50 transition-all"
+                        >
+                          <div className="truncate pr-2 space-y-0.5">
+                            <span className="text-[10px] font-black text-foreground block truncate font-mono">{log.template}</span>
+                            <span className="text-[8px] font-bold text-muted-foreground uppercase font-mono">Count: {log.count}</span>
+                          </div>
+                          <Badge variant="outline" className={`text-[8px] font-black px-2 uppercase shrink-0 ${badgeColor}`}>
+                            {log.zone}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {hoveredLogZone && (
+                    <div className="absolute top-12 left-6 right-6 bg-popover border border-border px-3.5 py-2.5 rounded-xl shadow-2xl backdrop-blur-xl text-left z-50">
+                      <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest block">AI Zone Classifier details</span>
+                      <p className="text-[10px] font-black text-foreground font-mono mt-1 leading-normal">{hoveredLogZone.template}</p>
+                      <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-border/40 text-[9px] font-bold">
+                        <span className="text-muted-foreground">Similarity Score:</span>
+                        <span className="text-primary font-mono">{(hoveredLogZone.score / 100).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Row 2: A-4, A-5, A-6 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* A-4: Anomaly Z-Score Magnitude */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    A-4 · Anomaly Z-Score Magnitude
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Metrics Z-score deviations</div>
+                  <div className="flex-1 w-full h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                        <CartesianGrid strokeOpacity={0.05} />
+                        <XAxis type="number" dataKey="x" name="Metric Phase" unit="" tick={{ fontSize: 8, fill: '#64748B' }} hide />
+                        <YAxis type="number" dataKey="y" name="Z-Score" unit="Z" tick={{ fontSize: 8, fill: '#64748B' }} />
+                        <ZAxis type="number" dataKey="z" range={[60, 400]} />
+                        <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomChartTooltip />} />
+                        <Scatter name="Anomalies" data={zScoreBubbleData} fill="hsl(var(--severity-critical))" shape="circle" />
+                      </ScatterChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* A-5: RCA Evidence Chain */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    A-5 · RCA Evidence Chain Timeline
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 overflow-y-auto h-[330px] custom-scrollbar relative">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">Chronological Correlation Path</div>
+                  <div className="relative pl-6 border-l border-border/50 space-y-4">
+                    {evidenceTimelineData.map((evt, idx) => (
+                      <div
+                        key={idx}
+                        className="relative group cursor-pointer"
+                        onMouseEnter={() => setHoveredEvidence(evt)}
+                        onMouseLeave={() => setHoveredEvidence(null)}
+                      >
+                        <div className="absolute -left-[30px] top-1 w-4 h-4 rounded-full border-2 bg-card border-primary flex items-center justify-center">
+                          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[8px] font-black text-muted-foreground font-mono block">{evt.time} · {evt.source}</span>
+                          <span className="text-[10px] font-black text-foreground block font-mono">{evt.node}</span>
+                          <span className="text-[10px] text-muted-foreground block">{evt.event}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {hoveredEvidence && (
+                    <div className="absolute bottom-6 left-6 right-6 bg-popover border border-border p-3.5 rounded-xl shadow-2xl backdrop-blur-xl">
+                      <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest block">Evidence Payload</span>
+                      <p className="text-[11px] font-black text-foreground mt-1.5 font-mono">{hoveredEvidence.node} - {hoveredEvidence.event}</p>
+                      <div className="grid grid-cols-2 gap-4 mt-2.5 pt-2 border-t border-border/40 text-[9px] font-bold">
+                        <span className="text-muted-foreground">Severity: <span className="text-red-500 font-mono">{hoveredEvidence.severity}</span></span>
+                        <span className="text-muted-foreground text-right">Source: <span className="text-primary font-mono">{hoveredEvidence.source}</span></span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* A-6: Drain3 Similarity Matrix */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    A-6 · Drain3 Similarity Matrix
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px] relative">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">Template Cluster Relationships</div>
+                  <div className="flex-1 flex flex-col gap-1">
+                    {drainSimilarityData.map((row, rIdx) => (
+                      <div key={rIdx} className="flex gap-1 flex-1">
+                        {row.map((cell, cIdx) => {
+                          const opacity = Math.round(cell * 100);
+                          const cellBg =
+                            cell > 0.8 ? 'bg-primary/90 hover:bg-primary text-primary-foreground font-black' :
+                            cell > 0.5 ? 'bg-primary/50 hover:bg-primary/70 text-foreground font-bold' :
+                            cell > 0.2 ? 'bg-primary/20 hover:bg-primary/30 text-muted-foreground' :
+                            'bg-primary/5 hover:bg-primary/10 text-muted-foreground/50';
+                          return (
+                            <div
+                              key={cIdx}
+                              onMouseEnter={() => setHoveredMatrixCell({ r: rIdx + 1, c: cIdx + 1, val: cell })}
+                              onMouseLeave={() => setHoveredMatrixCell(null)}
+                              className={`flex-1 rounded-lg border border-border/10 flex items-center justify-center text-[9px] font-mono transition-all cursor-pointer ${cellBg}`}
+                            >
+                              {cell.toFixed(2)}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+
+                  {hoveredMatrixCell && (
+                    <div className="absolute top-12 left-6 right-6 bg-popover border border-border px-3 py-2 rounded-xl shadow-2xl text-center backdrop-blur-xl">
+                      <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest block leading-none">Similarity Grid</span>
+                      <p className="text-[10px] font-black text-foreground font-mono mt-1">Cluster {hoveredMatrixCell.r} ↔ Cluster {hoveredMatrixCell.c}: {Math.round(hoveredMatrixCell.val * 100)}% Similarity</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Row 3: A-7, A-8, A-9 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* A-7: KB Domain Confidence */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    A-7 · KB Domain Confidence
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 overflow-y-auto h-[330px] custom-scrollbar">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">Min-Max Match Distribution</div>
                   <div className="space-y-4">
-                    {slaBreachPredictions.map((sla, idx) => (
-                      <div key={idx} className="space-y-2 border-b border-border/20 pb-3 last:border-b-0">
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="font-black text-foreground block">{sla.name}</span>
-                          <span className="text-[9px] font-black text-red-500 uppercase tracking-widest">{sla.breachTime}</span>
+                    {kbDomainConfidenceData.map((item, idx) => (
+                      <div key={idx} className="space-y-1.5">
+                        <div className="flex justify-between items-center text-[10px] font-black font-mono">
+                          <span>{item.name}</span>
+                          <span className="text-primary">{item.avg}% Avg</span>
+                        </div>
+                        <div className="relative h-4 bg-muted/20 border border-border/30 rounded-full overflow-hidden flex items-center">
+                          {/* Min-Max Bar Range */}
+                          <div
+                            className="absolute h-2.5 rounded-full opacity-60"
+                            style={{
+                              left: `${item.min}%`,
+                              width: `${item.max - item.min}%`,
+                              backgroundColor: item.color
+                            }}
+                          />
+                          {/* Average Tick Marker */}
+                          <div
+                            className="absolute w-1.5 h-4 bg-foreground border border-background shadow rounded-full z-10"
+                            style={{ left: `${item.avg}%`, transform: 'translateX(-50%)' }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-[8px] font-bold text-muted-foreground font-mono px-1">
+                          <span>Min: {item.min}%</span>
+                          <span>Max: {item.max}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* A-8: Query Semantic Text Word Cloud */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    A-8 · Query Semantic Text Word Cloud
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">Active RAG Search query weights</div>
+                  <div className="flex-1 flex flex-wrap items-center justify-center content-center gap-2 p-2">
+                    {wordCloudWords.map((word, idx) => (
+                      <span
+                        key={idx}
+                        className={`px-2.5 py-1 rounded-xl bg-muted/10 border border-border/40 font-mono tracking-tight transition-all cursor-pointer hover:border-primary/50 hover:bg-muted/30 ${word.size > 20 ? 'shadow-md' : ''} ${word.color} ${word.weight}`}
+                        style={{ fontSize: word.size }}
+                      >
+                        {word.text}
+                      </span>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* A-9: Inferred Domain Stacked Bar */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    A-9 · Inferred Domain Stacked Bar
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Category Inference Overlap</div>
+                  <div className="flex-1 w-full h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={inferredDomainData} margin={{ left: -20 }}>
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.05} />
+                        <XAxis dataKey="name" tick={{ fill: '#64748B', fontSize: 8, fontWeight: 'bold' }} />
+                        <YAxis tick={{ fill: '#64748B', fontSize: 8 }} />
+                        <Tooltip content={<CustomChartTooltip />} />
+                        <Legend wrapperStyle={{ fontSize: 8, fontWeight: 'bold' }} />
+                        <Bar dataKey="Network" stackId="a" fill="#3B82F6" />
+                        <Bar dataKey="Compute" stackId="a" fill="#10B981" />
+                        <Bar dataKey="Storage" stackId="a" fill="#F59E0B" />
+                        <Bar dataKey="Other" stackId="a" fill="#A855F7" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Row 4: A-10, A-11, A-12 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* A-10: Relevant Log Leaderboard */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    A-10 · Relevant Log Leaderboard
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 overflow-y-auto h-[330px] custom-scrollbar">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4 font-sans">Semantic Match Rank Logs</div>
+                  <div className="space-y-4">
+                    {relevantLogData.map((log, idx) => (
+                      <div key={idx} className="space-y-1.5 border-b border-border/20 pb-3 last:border-b-0">
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="font-black text-foreground block truncate max-w-[200px] font-mono">{log.text}</span>
+                          <span className="text-[9px] font-black text-primary font-mono">{log.score}%</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${sla.color}`} style={{ width: `${sla.risk}%` }} />
+                          <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full bg-primary" style={{ width: `${log.score}%` }} />
                           </div>
-                          <span className="text-[10px] font-black text-foreground w-8 text-right">{sla.risk}%</span>
+                          <span className="text-[8px] font-black text-muted-foreground uppercase shrink-0 font-mono">{log.source}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* A-11: Entity Extraction Coverage Trend */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    A-11 · Entity Extraction Coverage
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Entity Count Progression</div>
+                  <div className="flex-1 w-full h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={entityCoverageData} margin={{ left: -20 }}>
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.05} />
+                        <XAxis dataKey="period" tick={{ fill: '#64748B', fontSize: 8, fontWeight: 'bold' }} />
+                        <YAxis tick={{ fill: '#64748B', fontSize: 8 }} />
+                        <Tooltip content={<CustomChartTooltip />} />
+                        <Legend wrapperStyle={{ fontSize: 8, fontWeight: 'bold' }} />
+                        <Area type="monotone" dataKey="IP" stackId="1" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.15} />
+                        <Area type="monotone" dataKey="Interface" stackId="1" stroke="#10B981" fill="#10B981" fillOpacity={0.15} />
+                        <Area type="monotone" dataKey="ErrorCode" stackId="1" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.15} />
+                        <Area type="monotone" dataKey="Port" stackId="1" stroke="#A855F7" fill="#A855F7" fillOpacity={0.15} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* A-12: Confidence Gate Funnel */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    A-12 · Confidence Gate Funnel
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">SOP Retrieval Filtering Gate</div>
+                  <div className="space-y-3">
+                    {confidenceGateData.map((step, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex justify-between items-center text-[9px] font-black text-muted-foreground uppercase">
+                          <span>{step.name}</span>
+                          <span className="text-foreground">{step.val}% ({step.label})</span>
+                        </div>
+                        <div className="h-3.5 bg-muted/20 rounded-lg overflow-hidden border border-border/40 relative">
+                          <div className="h-full rounded-lg bg-primary opacity-80" style={{ width: `${step.val}%` }} />
                         </div>
                       </div>
                     ))}
@@ -1072,33 +1523,184 @@ export default function AIOpsAdvancedAnalytics() {
               </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* W-R9: KB Version Coverage Matrix */}
-              <Card className="lg:col-span-2 bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+            {/* Row 5: A-13, A-14, A-15 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* A-13: Hypothesis Overlap Network */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
                 <CardHeader className="py-4 border-b border-border/30">
                   <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
-                    W-R9 · KB Version & Coverage Matrix
+                    A-13 · Hypothesis Overlap Network Graph
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px] relative">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Diagnostic Intersection Network</div>
+                  <div className="flex-1 flex items-center justify-center overflow-visible">
+                    <svg viewBox="0 0 420 280" className="w-full h-full overflow-visible">
+                      {/* Connection Links */}
+                      {hypothesisNetworkLinks.map((link, idx) => {
+                        const srcNode = hypothesisNetworkNodes.find(n => n.id === link.source);
+                        const tgtNode = hypothesisNetworkNodes.find(n => n.id === link.target);
+                        if (!srcNode || !tgtNode) return null;
+                        return (
+                          <line
+                            key={`link-${idx}`}
+                            x1={srcNode.cx}
+                            y1={srcNode.cy}
+                            x2={tgtNode.cx}
+                            y2={tgtNode.cy}
+                            stroke="hsl(var(--border))"
+                            strokeWidth={link.weight}
+                            strokeOpacity={0.4}
+                          />
+                        );
+                      })}
+
+                      {/* Interactive Nodes */}
+                      {hypothesisNetworkNodes.map((node) => (
+                        <g
+                          key={node.id}
+                          className="cursor-pointer"
+                          onMouseEnter={() => setHoveredNetworkNode(node)}
+                          onMouseLeave={() => setHoveredNetworkNode(null)}
+                          onClick={() => setSelectedDetails({ type: 'networkNode', data: node })}
+                        >
+                          <circle
+                            cx={node.cx}
+                            cy={node.cy}
+                            r={node.size}
+                            fill="hsl(var(--card))"
+                            stroke={node.color}
+                            strokeWidth={3}
+                            className="transition-all hover:scale-[1.1] origin-center"
+                          />
+                          <text
+                            x={node.cx}
+                            y={node.cy + 4}
+                            textAnchor="middle"
+                            fontSize="8"
+                            fontWeight="black"
+                            fill="currentColor"
+                            className="pointer-events-none uppercase tracking-wide font-mono"
+                          >
+                            {node.label.split(' ')[0]}
+                          </text>
+                        </g>
+                      ))}
+                    </svg>
+                  </div>
+
+                  {hoveredNetworkNode && (
+                    <div className="absolute top-12 left-6 right-6 bg-popover border border-border px-3.5 py-2.5 rounded-xl shadow-2xl backdrop-blur-xl">
+                      <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest block">Interactive Network Node</span>
+                      <p className="text-[11px] font-black text-foreground font-mono mt-1">{hoveredNetworkNode.label}</p>
+                      <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-border/40 text-[9px] font-bold">
+                        <span className="text-muted-foreground">Category: {hoveredNetworkNode.group}</span>
+                        <span className="text-primary font-mono">Index: {hoveredNetworkNode.id}</span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* A-14: Metric Baseline Gauge */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    A-14 · Metric Baseline Gauge
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 overflow-y-auto h-[330px] custom-scrollbar">
-                  <div className="space-y-3">
-                    {kbMatrix.map((item, idx) => (
-                      <div key={idx} className="p-3 bg-muted/20 border border-border/50 rounded-xl flex items-center justify-between">
-                        <div className="space-y-1">
-                          <span className="text-xs font-black text-foreground block">{item.name}</span>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-[8px] font-black">{item.ver}</Badge>
-                            <span className="text-[10px] font-bold text-muted-foreground">{item.rules} Rules active</span>
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">Deviation from historical baseline</div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {metricDeviations.map((metric, idx) => {
+                      const color =
+                        metric.status === 'critical' ? 'text-red-500 border-red-500/20' :
+                        metric.status === 'high' ? 'text-orange-500 border-orange-500/20' :
+                        metric.status === 'medium' ? 'text-amber-500 border-amber-500/20' :
+                        'text-teal-500 border-teal-500/20';
+                      return (
+                        <div key={idx} className="p-3 bg-muted/15 border border-border/50 rounded-xl flex items-center justify-between font-mono">
+                          <div className="space-y-1 truncate pr-1">
+                            <span className="text-[9px] font-black text-foreground block truncate">{metric.name}</span>
+                            <span className={`text-[8px] font-black uppercase tracking-wider block ${color}`}>{metric.dev}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm font-black text-foreground block">{metric.val}%</span>
                           </div>
                         </div>
-                        <div className="text-right flex items-center gap-4">
-                          <div className="space-y-0.5">
-                            <span className="text-xs font-black text-foreground block">{item.coverage}% Cover</span>
-                            <span className={`text-[8px] font-black uppercase tracking-widest block ${
-                              item.status === 'Active' ? 'text-emerald-500' : 'text-orange-500'
-                            }`}>{item.status}</span>
-                          </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* A-15: RAG Build Time vs Complexity */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    A-15 · RAG Build Time vs Complexity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Build Latency (s) vs Logic Nodes</div>
+                  <div className="flex-1 w-full h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                        <CartesianGrid strokeOpacity={0.05} />
+                        <XAxis type="number" dataKey="complexity" name="Complexity" unit=" nodes" tick={{ fontSize: 8, fill: '#64748B' }} />
+                        <YAxis type="number" dataKey="buildTime" name="Build Time" unit="s" tick={{ fontSize: 8, fill: '#64748B' }} />
+                        <ZAxis type="number" dataKey="kbDocs" range={[40, 200]} name="Docs Searched" />
+                        <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomChartTooltip />} />
+                        <Scatter name="Build Sessions" data={buildTimeScatterData} fill="hsl(var(--primary))" />
+                      </ScatterChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* ========================================================
+              TAB 3: REMEDIATION ANALYTICS (15 WIDGETS)
+              ======================================================== */}
+          <TabsContent value="remediation" className="mt-0 space-y-8 animate-in fade-in duration-300">
+            {/* Row 1: B-1, B-2, B-3 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* B-1: Remedy Confidence per Vendor Box Plot */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    B-1 · Remedy Confidence by Vendor Box Plot
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 overflow-y-auto h-[330px] custom-scrollbar">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">Verification ranges by OS vendor</div>
+                  <div className="space-y-4">
+                    {remedyVendorConfidenceData.map((item, idx) => (
+                      <div key={idx} className="space-y-1.5">
+                        <div className="flex justify-between items-center text-[10px] font-black font-mono">
+                          <span>{item.vendor}</span>
+                          <span className="text-primary">{item.avg}% Avg</span>
+                        </div>
+                        <div className="relative h-4 bg-muted/20 border border-border/30 rounded-full overflow-hidden flex items-center">
+                          {/* Box range */}
+                          <div
+                            className="absolute h-2.5 rounded-full opacity-60"
+                            style={{
+                              left: `${item.min}%`,
+                              width: `${item.max - item.min}%`,
+                              backgroundColor: item.color
+                            }}
+                          />
+                          {/* Avg tick */}
+                          <div
+                            className="absolute w-1.5 h-4 bg-foreground border border-background shadow rounded-full z-10"
+                            style={{ left: `${item.avg}%`, transform: 'translateX(-50%)' }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-[8px] font-bold text-muted-foreground font-mono px-1">
+                          <span>Low Limit: {item.min}%</span>
+                          <span>High Limit: {item.max}%</span>
                         </div>
                       </div>
                     ))}
@@ -1106,21 +1708,388 @@ export default function AIOpsAdvancedAnalytics() {
                 </CardContent>
               </Card>
 
-              {/* W-R10: Auto-Remediation Success Scorecard */}
+              {/* B-2: Remediation Time Estimate Histogram */}
               <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
                 <CardHeader className="py-4 border-b border-border/30">
                   <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
-                    W-R10 · Auto-Remediation Scorecard
+                    B-2 · Remediation Time Estimate Histogram
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 flex flex-col items-center justify-around h-[330px]">
-                  <div className="flex justify-around w-full gap-4">
-                    <ConcentricGauge value={74} label="Success Rate" subLabel="38/48 Runs" color="hsl(var(--primary))" />
-                    <ConcentricGauge value={63} label="MTTR Saved" subLabel="Saved Hours" color="hsl(var(--status-success))" />
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Duration Bins (Auto vs Manual)</div>
+                  <div className="flex-1 w-full h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={remedyTimeHistogram} margin={{ left: -20 }}>
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.05} />
+                        <XAxis dataKey="bin" tick={{ fill: '#64748B', fontSize: 8, fontWeight: 'bold' }} />
+                        <YAxis tick={{ fill: '#64748B', fontSize: 8 }} />
+                        <Tooltip content={<CustomChartTooltip />} />
+                        <Legend wrapperStyle={{ fontSize: 8, fontWeight: 'bold' }} />
+                        <Bar dataKey="auto" name="Auto Run" fill="hsl(var(--status-success))" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="manual" name="Manual Verification" fill="hsl(var(--severity-high))" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
-                  <div className="w-full bg-muted/10 border border-border/30 rounded-xl p-3.5 text-center">
-                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1">Prevented SLA Breaches</span>
-                    <span className="text-xl font-black text-emerald-500 block font-mono">18 Breaches</span>
+                </CardContent>
+              </Card>
+
+              {/* B-3: Risk Level vs Confidence 2D Matrix */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    B-3 · Risk Level vs Confidence 2D Matrix
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px] relative">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">Incident Matrix distribution</div>
+                  <div className="grid grid-cols-4 gap-1 flex-1">
+                    {riskConfidenceMatrix.map((cell, idx) => (
+                      <div
+                        key={idx}
+                        onMouseEnter={() => setHoveredMatrixCell(cell)}
+                        onMouseLeave={() => setHoveredMatrixCell(null)}
+                        className={`rounded-lg border border-border/20 flex flex-col items-center justify-center p-1 text-center cursor-pointer transition-all duration-200 hover:scale-[1.03] ${cell.color}`}
+                      >
+                        <span className="text-[10px] block font-black leading-none font-mono">{cell.count}</span>
+                        <span className="text-[7px] block opacity-80 mt-1 uppercase font-mono tracking-tight truncate w-full">{cell.risk}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {hoveredMatrixCell && (
+                    <div className="absolute top-12 left-6 right-6 bg-popover border border-border px-3.5 py-2.5 rounded-xl shadow-2xl text-center backdrop-blur-xl">
+                      <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest block leading-none">Matrix Cell Details</span>
+                      <p className="text-[10px] font-black text-foreground font-mono mt-1">Confidence {hoveredMatrixCell.confidence} ↔ Risk {hoveredMatrixCell.risk}: {hoveredMatrixCell.count} Incidents</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Row 2: B-4, B-5, B-6 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* B-4: Remedy Step Complexity vs Time Estimate */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    B-4 · Remedy Step Complexity vs Time Estimate
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Step Count vs Est Execution Time (m)</div>
+                  <div className="flex-1 w-full h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                        <CartesianGrid strokeOpacity={0.05} />
+                        <XAxis type="number" dataKey="steps" name="Steps" unit=" steps" tick={{ fontSize: 8, fill: '#64748B' }} />
+                        <YAxis type="number" dataKey="estTime" name="Est Time" unit="m" tick={{ fontSize: 8, fill: '#64748B' }} />
+                        <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomChartTooltip />} />
+                        <Scatter name="Remedies" data={complexityTimeScatter} fill="hsl(var(--primary))" />
+                      </ScatterChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* B-5: Top Served Remedy Leaderboard */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    B-5 · Top Served Remedy Leaderboard
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 overflow-y-auto h-[330px] custom-scrollbar">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">Remediation Script Execution Counts</div>
+                  <div className="space-y-4">
+                    {topRemedyArticles.map((art, idx) => (
+                      <div key={idx} className="space-y-1.5 border-b border-border/20 pb-3 last:border-b-0">
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="font-black text-foreground block truncate max-w-[220px]">{art.title}</span>
+                          <span className="text-[9px] font-black text-primary font-mono">{art.count} runs</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full bg-primary" style={{ width: `${art.successRate}%` }} />
+                          </div>
+                          <span className="text-[8px] font-black text-emerald-500 uppercase shrink-0 font-mono">{art.successRate}% Success</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* B-6: Remedy Escalation Rate Tracker */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    B-6 · Remedy Escalation Rate Tracker
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Escalation rates for top articles</div>
+                  <div className="flex-1 w-full h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={escalationRateData} margin={{ left: -20 }}>
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.05} />
+                        <XAxis dataKey="period" tick={{ fill: '#64748B', fontSize: 8, fontWeight: 'bold' }} />
+                        <YAxis tick={{ fill: '#64748B', fontSize: 8 }} />
+                        <Tooltip content={<CustomChartTooltip />} />
+                        <Legend wrapperStyle={{ fontSize: 8, fontWeight: 'bold' }} />
+                        <Area type="monotone" dataKey="AutoClosed" stackId="1" name="Auto Resolved" stroke="hsl(var(--status-success))" fill="hsl(var(--status-success))" fillOpacity={0.15} />
+                        <Area type="monotone" dataKey="Escalated" stackId="1" name="Escalated" stroke="hsl(var(--severity-critical))" fill="hsl(var(--severity-critical))" fillOpacity={0.15} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Row 3: B-7, B-8, B-9 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* B-7: Vendor Coverage Gap Analysis */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    B-7 · Vendor Coverage Gap Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 overflow-y-auto h-[330px] custom-scrollbar">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">Fallback Match Flags</div>
+                  <div className="space-y-2">
+                    {vendorCoverageGapData.map((item, idx) => (
+                      <div key={idx} className="p-2.5 bg-muted/20 border border-border/50 rounded-xl flex items-center justify-between font-mono">
+                        <div className="space-y-0.5 truncate pr-1">
+                          <span className="text-[10px] font-black text-foreground block truncate">{item.segment}</span>
+                          <span className="text-[8px] font-bold text-muted-foreground block truncate">{item.targetVendor} → {item.activeRemedy}</span>
+                        </div>
+                        <Badge variant="outline" className={`text-[8px] font-black px-2 uppercase shrink-0 ${
+                          item.mismatch ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                        }`}>
+                          {item.mismatch ? 'Coverage Gap' : 'Matched'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* B-8: RCA-to-Remedy Mapping Success Funnel */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    B-8 · RCA-to-Remedy Success Funnel
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Association Pipeline Steps</div>
+                  <div className="space-y-3">
+                    {mappingSuccessFunnel.map((step, idx) => {
+                      const widthPercent = (step.val / 458) * 100;
+                      return (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex justify-between items-center text-[9px] font-black text-muted-foreground uppercase">
+                            <span>{step.stage}</span>
+                            <span className="text-foreground">{step.val} runs ({Math.round(widthPercent)}%)</span>
+                          </div>
+                          <div className="h-3.5 bg-muted/20 rounded-lg overflow-hidden border border-border/40 relative">
+                            <div className={`h-full rounded-lg ${step.color} opacity-85`} style={{ width: `${widthPercent}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* B-9: CE Threshold Sensitivity Histogram */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    B-9 · CE Threshold Sensitivity Histogram
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Precision & Recall by Reranker Threshold</div>
+                  <div className="flex-1 w-full h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={ceSensitivityData} margin={{ left: -20 }}>
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.05} />
+                        <XAxis dataKey="threshold" tick={{ fill: '#64748B', fontSize: 8, fontWeight: 'bold' }} />
+                        <YAxis tick={{ fill: '#64748B', fontSize: 8 }} />
+                        <Tooltip content={<CustomChartTooltip />} />
+                        <Legend wrapperStyle={{ fontSize: 8, fontWeight: 'bold' }} />
+                        <Area type="monotone" dataKey="precision" name="Precision" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.1} />
+                        <Area type="monotone" dataKey="recall" name="Recall" stroke="hsl(var(--severity-critical))" fill="hsl(var(--severity-critical))" fillOpacity={0.05} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Row 4: B-10, B-11, B-12 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* B-10: OS Flavor Coverage Treemap */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    B-10 · OS Flavor Coverage Map
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">SOP Compatibility Coverage</div>
+                  <div className="flex-1 w-full h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <Treemap
+                        data={treemapData}
+                        dataKey="size"
+                        stroke="#fff"
+                        fill="hsl(var(--primary))"
+                      >
+                        <Tooltip content={<CustomChartTooltip />} />
+                      </Treemap>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* B-11: Remedy Confidence Trend */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    B-11 · Remedy Confidence Trend
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Average confidence over 5 weeks</div>
+                  <div className="flex-1 w-full h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={remedyConfidenceTrend} margin={{ left: -20 }}>
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.05} />
+                        <XAxis dataKey="week" tick={{ fill: '#64748B', fontSize: 8, fontWeight: 'bold' }} />
+                        <YAxis tick={{ fill: '#64748B', fontSize: 8 }} />
+                        <Tooltip content={<CustomChartTooltip />} />
+                        <Legend wrapperStyle={{ fontSize: 8, fontWeight: 'bold' }} />
+                        <Line type="monotone" dataKey="Network" stroke="#3B82F6" strokeWidth={2} dot={{ r: 2 }} />
+                        <Line type="monotone" dataKey="Compute" stroke="#10B981" strokeWidth={2} dot={{ r: 2 }} />
+                        <Line type="monotone" dataKey="Storage" stroke="#F59E0B" strokeWidth={2} dot={{ r: 2 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* B-12: Auto vs Manual Ratio */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    B-12 · Auto vs Manual Ratio
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">AI Execution Dispatches</div>
+                  <div className="flex-1 w-full h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={autoManualRatio}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {autoManualRatio.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<CustomChartTooltip />} />
+                        <Legend wrapperStyle={{ fontSize: 8, fontWeight: 'bold' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Row 5: B-13, B-14, B-15 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* B-13: Doc Links Coverage */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    B-13 · Remedy Doc Links Coverage
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Linked reference articles distribution</div>
+                  <div className="flex-1 w-full h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={docLinksCoverage}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={0}
+                          outerRadius={80}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          {docLinksCoverage.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<CustomChartTooltip />} />
+                        <Legend wrapperStyle={{ fontSize: 8, fontWeight: 'bold' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* B-14: Estimated Time Saved */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    B-14 · Estimated Time Saved
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Cumulative Operator Hours Saved</div>
+                  <div className="flex-1 w-full h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={timeSavedHistory} margin={{ left: -20 }}>
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.05} />
+                        <XAxis dataKey="period" tick={{ fill: '#64748B', fontSize: 8, fontWeight: 'bold' }} />
+                        <YAxis tick={{ fill: '#64748B', fontSize: 8 }} />
+                        <Tooltip content={<CustomChartTooltip />} />
+                        <Area type="monotone" dataKey="hoursSaved" name="Hours Saved" stroke="hsl(var(--status-success))" fill="hsl(var(--status-success))" fillOpacity={0.15} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* B-15: Feedback Loop Readiness Score */}
+              <Card className="bg-card/40 border-border/50 backdrop-blur-md h-[400px]">
+                <CardHeader className="py-4 border-b border-border/30">
+                  <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+                    B-15 · Feedback Loop Readiness Score
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 flex flex-col justify-between h-[330px]">
+                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Pipeline learning loop maturity</div>
+                  <div className="flex-1 w-full h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart cx="50%" cy="50%" outerRadius="75%" data={feedbackReadinessData}>
+                        <PolarGrid strokeOpacity={0.1} />
+                        <PolarAngleAxis dataKey="dimension" tick={{ fill: '#64748B', fontSize: 7, fontWeight: 'bold' }} />
+                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#64748B', fontSize: 8 }} axisLine={false} />
+                        <Radar name="Readiness" dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} />
+                      </RadarChart>
+                    </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
@@ -1212,6 +2181,46 @@ export default function AIOpsAdvancedAnalytics() {
                       <div className="p-3 bg-muted/10 border border-border/60 rounded-xl">
                         <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest block">Severity State</span>
                         <span className="text-lg font-black text-red-500 block mt-1 uppercase tracking-wider">{selectedDetails.data.sev}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedDetails.type === 'logZone' && (
+                  <div className="space-y-6">
+                    <div className="p-4 bg-muted/20 border border-border rounded-xl">
+                      <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest block font-mono">Log Template classification</span>
+                      <span className="text-sm font-black text-foreground block mt-1 font-mono">{selectedDetails.data.template}</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3 bg-muted/10 border border-border/60 rounded-xl">
+                        <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest block">Pipeline Zone</span>
+                        <span className="text-lg font-black text-primary block mt-1 uppercase">{selectedDetails.data.zone}</span>
+                      </div>
+                      <div className="p-3 bg-muted/10 border border-border/60 rounded-xl">
+                        <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest block">Trigger Frequency</span>
+                        <span className="text-lg font-black text-foreground block mt-1">{selectedDetails.data.count} occurrences</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedDetails.type === 'networkNode' && (
+                  <div className="space-y-6">
+                    <div className="p-4 bg-muted/20 border border-border rounded-xl">
+                      <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest block">Hypothesis network node</span>
+                      <span className="text-xl font-black text-foreground block mt-1">{selectedDetails.data.label}</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3 bg-muted/10 border border-border/60 rounded-xl">
+                        <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest block">Group Category</span>
+                        <span className="text-lg font-black text-primary block mt-1 uppercase">{selectedDetails.data.group}</span>
+                      </div>
+                      <div className="p-3 bg-muted/10 border border-border/60 rounded-xl">
+                        <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest block">Node Weight</span>
+                        <span className="text-lg font-black text-foreground block mt-1">{selectedDetails.data.size} units</span>
                       </div>
                     </div>
                   </div>

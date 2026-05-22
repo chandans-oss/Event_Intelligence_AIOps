@@ -1,0 +1,431 @@
+[
+  {
+    "sop_id": "fallback.link.001",
+    "category": "link",
+    "title": "Generic Interface / Link Down — Standard Operating Procedure",
+    "description": "No high-confidence vendor-specific remedy was found. Follow this generic SOP to diagnose and restore a down interface or physical link.",
+    "severity": "high",
+    "risk_level": "medium",
+    "estimated_time_minutes": 20,
+    "steps": [
+      {
+        "order": 1,
+        "action": "Verify the interface state on the device",
+        "cli": "show interfaces {iface}",
+        "expected_output": "Interface status line and protocol line showing 'down/down' or 'admin down'",
+        "notes": "Confirm whether this is an admin-down or a line-protocol-down condition."
+      },
+      {
+        "order": 2,
+        "action": "Check physical layer — cable, SFP, and port-level errors",
+        "cli": "show interfaces {iface} counters errors",
+        "expected_output": "Input/output error counts; CRC errors indicate layer-1 issue",
+        "notes": "Replace cable or SFP if CRC/input errors are high."
+      },
+      {
+        "order": 3,
+        "action": "Verify CDP/LLDP neighbour on the affected port",
+        "cli": "show cdp neighbors {iface} detail",
+        "expected_output": "Neighbour device ID, IP address, and port",
+        "notes": "No neighbour output confirms the far-end device is also down or the link is broken."
+      },
+      {
+        "order": 4,
+        "action": "Check interface configuration for admin-down",
+        "cli": "show running-config interface {iface}",
+        "expected_output": "No 'shutdown' keyword should be present if the port should be active",
+        "notes": "If 'shutdown' is present, bring up with 'no shutdown' after change-control approval."
+      },
+      {
+        "order": 5,
+        "action": "Bounce the interface after hardware checks pass",
+        "cli": "interface {iface}\n shutdown\n no shutdown",
+        "expected_output": "Interface transitions to 'up/up'",
+        "notes": "Only after confirming no hardware fault. Log the bounce in the change record."
+      },
+      {
+        "order": 6,
+        "action": "Confirm traffic restoration and monitor for flapping",
+        "cli": "show interfaces {iface} | include rate",
+        "expected_output": "Non-zero input/output rate indicating traffic flow",
+        "notes": "If interface flaps repeatedly escalate to network hardware team."
+      }
+    ],
+    "cli_commands": [
+      "show interfaces {iface}",
+      "show interfaces {iface} counters errors",
+      "show cdp neighbors {iface} detail",
+      "show running-config interface {iface}"
+    ],
+    "variable_map": {
+      "{iface}": "interface"
+    },
+    "keywords": ["interface", "link down", "port down", "physical", "SFP", "cable", "CRC"],
+    "escalation": "Escalate to network hardware team if physical layer issues persist after SFP/cable replacement.",
+    "doc_links": [
+      "https://internal.wiki/runbooks/interface-down",
+      "https://internal.wiki/runbooks/sfp-replacement"
+    ]
+  },
+  {
+    "sop_id": "fallback.routing.001",
+    "category": "routing",
+    "title": "Generic Routing / BGP Session Down — Standard Operating Procedure",
+    "description": "No high-confidence vendor-specific remedy was found. Follow this generic SOP to diagnose BGP or IGP routing failures.",
+    "severity": "critical",
+    "risk_level": "high",
+    "estimated_time_minutes": 30,
+    "steps": [
+      {
+        "order": 1,
+        "action": "Check BGP neighbour state",
+        "cli": "show bgp summary",
+        "expected_output": "Neighbour state should be 'Established'; anything else requires investigation",
+        "notes": "Note the 'Up/Down' timer — a recent reset indicates a recent disruption."
+      },
+      {
+        "order": 2,
+        "action": "Verify reachability to the BGP peer IP",
+        "cli": "ping {bgp_neighbor} source {iface}",
+        "expected_output": "100% success rate",
+        "notes": "If ping fails, the underlay is broken — fix the transport layer first."
+      },
+      {
+        "order": 3,
+        "action": "Review BGP notifications and error codes in logs",
+        "cli": "show bgp neighbors {bgp_neighbor}",
+        "expected_output": "Last error code and sub-code; notification reason",
+        "notes": "Common causes: hold-timer expiry, AS mismatch, auth failure, policy change."
+      },
+      {
+        "order": 4,
+        "action": "Confirm BGP authentication key matches on both sides",
+        "cli": "show running-config | section router bgp",
+        "expected_output": "Matching password or keychain configuration",
+        "notes": "MD5 password mismatch causes TCP sessions to fail silently."
+      },
+      {
+        "order": 5,
+        "action": "Clear BGP session (soft reset preferred)",
+        "cli": "clear ip bgp {bgp_neighbor} soft",
+        "expected_output": "Session re-establishes within hold-time",
+        "notes": "Use hard reset only if soft reset fails. Hard reset interrupts traffic."
+      }
+    ],
+    "cli_commands": [
+      "show bgp summary",
+      "ping {bgp_neighbor} source {iface}",
+      "show bgp neighbors {bgp_neighbor}",
+      "show running-config | section router bgp"
+    ],
+    "variable_map": {
+      "{bgp_neighbor}": "bgp_neighbor",
+      "{iface}": "interface"
+    },
+    "keywords": ["BGP", "routing", "neighbour down", "session reset", "hold-timer", "AS mismatch"],
+    "escalation": "Escalate to senior network engineer if BGP session does not re-establish after soft reset and underlay is confirmed healthy.",
+    "doc_links": [
+      "https://internal.wiki/runbooks/bgp-session-down",
+      "https://internal.wiki/runbooks/routing-troubleshooting"
+    ]
+  },
+  {
+    "sop_id": "fallback.device.001",
+    "category": "device",
+    "title": "Generic Device Unreachable / High CPU — Standard Operating Procedure",
+    "description": "No high-confidence vendor-specific remedy was found. Follow this generic SOP for device unreachability or high CPU conditions.",
+    "severity": "critical",
+    "risk_level": "high",
+    "estimated_time_minutes": 25,
+    "steps": [
+      {
+        "order": 1,
+        "action": "Attempt out-of-band (console/OOB) access to the device",
+        "cli": "",
+        "expected_output": "Console login prompt",
+        "notes": "OOB access bypasses the data plane and confirms whether the device is fully unresponsive."
+      },
+      {
+        "order": 2,
+        "action": "Check CPU utilisation and identify high-CPU processes",
+        "cli": "show processes cpu sorted",
+        "expected_output": "Top processes by 5-second/1-minute/5-minute CPU percentage",
+        "notes": "Identify the responsible process. Common culprits: BGP scanner, routing table recalculation, SNMP polling."
+      },
+      {
+        "order": 3,
+        "action": "Review system logs for crash/exception messages",
+        "cli": "show logging | last 50",
+        "expected_output": "Traceback, exception, or OOM messages",
+        "notes": "If crash occurred, collect core dump before rebooting."
+      },
+      {
+        "order": 4,
+        "action": "Check memory utilisation",
+        "cli": "show processes memory sorted",
+        "expected_output": "Processes with highest memory allocation",
+        "notes": "Low free memory can cause process restarts and device instability."
+      },
+      {
+        "order": 5,
+        "action": "Reduce SNMP/management plane load if CPU is high",
+        "cli": "show snmp | include packets",
+        "expected_output": "SNMP packet counts — excessive polling can drive high CPU",
+        "notes": "Temporarily disable non-critical SNMP polling from NMS if CPU is > 80%."
+      },
+      {
+        "order": 6,
+        "action": "Schedule reload if device is unresponsive and OOB access unavailable",
+        "cli": "",
+        "expected_output": "Device reloads and becomes reachable",
+        "notes": "Only with change-control approval. Confirm impact scope before reloading."
+      }
+    ],
+    "cli_commands": [
+      "show processes cpu sorted",
+      "show logging | last 50",
+      "show processes memory sorted",
+      "show snmp | include packets"
+    ],
+    "variable_map": {},
+    "keywords": ["device unreachable", "high CPU", "OOB", "crash", "memory", "process", "reload"],
+    "escalation": "Escalate to vendor TAC if device remains unreachable after OOB access attempt and reload.",
+    "doc_links": [
+      "https://internal.wiki/runbooks/device-unreachable",
+      "https://internal.wiki/runbooks/high-cpu"
+    ]
+  },
+  {
+    "sop_id": "fallback.thermal.001",
+    "category": "thermal",
+    "title": "Generic Thermal / Hardware Fault — Standard Operating Procedure",
+    "description": "No high-confidence vendor-specific remedy was found. Follow this generic SOP for temperature alarms or hardware component faults.",
+    "severity": "high",
+    "risk_level": "high",
+    "estimated_time_minutes": 15,
+    "steps": [
+      {
+        "order": 1,
+        "action": "Check environmental status — temperature and fan speed",
+        "cli": "show environment temperature",
+        "expected_output": "Temperature readings per module with status (Normal / Warning / Critical)",
+        "notes": "Confirm which components are over threshold."
+      },
+      {
+        "order": 2,
+        "action": "Verify data-centre cooling is operational",
+        "cli": "",
+        "expected_output": "DCIM/BMS confirms CRAC units are active and airflow is unobstructed",
+        "notes": "Check physical rack for airflow blockage — cable management, blanking panels."
+      },
+      {
+        "order": 3,
+        "action": "Check fan trays and power supplies",
+        "cli": "show environment fan",
+        "expected_output": "All fans at expected RPM; no failed/absent fan trays",
+        "notes": "A failed fan tray can cause localised overheating even when room cooling is fine."
+      },
+      {
+        "order": 4,
+        "action": "Reduce load if thermal condition is critical",
+        "cli": "",
+        "expected_output": "Traffic redistributed to other devices in the cluster",
+        "notes": "Shift traffic away from the affected device using routing policy before hardware replacement."
+      }
+    ],
+    "cli_commands": [
+      "show environment temperature",
+      "show environment fan"
+    ],
+    "variable_map": {},
+    "keywords": ["temperature", "thermal", "fan", "hardware fault", "overheat", "environment"],
+    "escalation": "Escalate to data-centre facilities team and vendor hardware support immediately for critical thermal alarms.",
+    "doc_links": [
+      "https://internal.wiki/runbooks/thermal-alarm",
+      "https://internal.wiki/runbooks/hardware-replacement"
+    ]
+  },
+  {
+    "sop_id": "fallback.security.001",
+    "category": "security",
+    "title": "Generic Security / Access Control Fault — Standard Operating Procedure",
+    "description": "No high-confidence vendor-specific remedy was found. Follow this generic SOP for authentication failures, ACL misconfigurations, or security policy violations.",
+    "severity": "critical",
+    "risk_level": "high",
+    "estimated_time_minutes": 20,
+    "steps": [
+      {
+        "order": 1,
+        "action": "Review authentication failure logs",
+        "cli": "show logging | include AUTH|FAIL|SEC",
+        "expected_output": "Source IP, username, and failure reason for each failed attempt",
+        "notes": "Distinguish between misconfig (legitimate user locked out) and attack (unknown source IPs)."
+      },
+      {
+        "order": 2,
+        "action": "Verify AAA server reachability",
+        "cli": "test aaa group radius {username} {password} legacy",
+        "expected_output": "Authentication passed / server reachable",
+        "notes": "If RADIUS/TACACS is unreachable, local fallback authentication may be needed."
+      },
+      {
+        "order": 3,
+        "action": "Check ACL for unintended deny entries",
+        "cli": "show ip access-lists {acl_name}",
+        "expected_output": "Hit counters on deny entries indicate mismatched traffic",
+        "notes": "High hit counts on deny rules confirm misapplied or overly broad ACL."
+      },
+      {
+        "order": 4,
+        "action": "Isolate source if brute-force attack is suspected",
+        "cli": "",
+        "expected_output": "Source IP blocked at perimeter firewall or ingress ACL",
+        "notes": "Engage security operations team for incident response if attack is confirmed."
+      }
+    ],
+    "cli_commands": [
+      "show logging | include AUTH|FAIL|SEC",
+      "show ip access-lists {acl_name}"
+    ],
+    "variable_map": {
+      "{acl_name}": "acl_name",
+      "{username}": "username"
+    },
+    "keywords": ["authentication", "ACL", "security", "RADIUS", "TACACS", "brute-force", "deny"],
+    "escalation": "Escalate to security operations team immediately if attack pattern is confirmed.",
+    "doc_links": [
+      "https://internal.wiki/runbooks/auth-failure",
+      "https://internal.wiki/runbooks/acl-troubleshooting"
+    ]
+  },
+  {
+    "sop_id": "fallback.default.001",
+    "category": "default",
+    "title": "Generic Network Fault — Standard Operating Procedure",
+    "description": "No high-confidence vendor-specific remedy was found and the fault category could not be determined. Follow this baseline SOP for any unclassified network event.",
+    "severity": "medium",
+    "risk_level": "medium",
+    "estimated_time_minutes": 30,
+    "steps": [
+      {
+        "order": 1,
+        "action": "Confirm the alert is genuine — check monitoring tool for false-positive indicators",
+        "cli": "",
+        "expected_output": "Alert is corroborated by at least one other data source (SNMP trap, syslog, NMS)",
+        "notes": "Do not action alerts that are not independently corroborated."
+      },
+      {
+        "order": 2,
+        "action": "Identify the affected device and collect basic status",
+        "cli": "show version",
+        "expected_output": "Device type, IOS/OS version, uptime, and last reload reason",
+        "notes": "Uptime < 10 minutes indicates a recent reload — check for crash."
+      },
+      {
+        "order": 3,
+        "action": "Review recent syslog messages on the device",
+        "cli": "show logging | last 100",
+        "expected_output": "Recent error or warning messages with timestamps",
+        "notes": "Correlate timestamps with the alert window."
+      },
+      {
+        "order": 4,
+        "action": "Check interface and protocol status",
+        "cli": "show ip interface brief",
+        "expected_output": "All expected interfaces are up/up",
+        "notes": "Any down interface should be investigated first as it may be the root cause."
+      },
+      {
+        "order": 5,
+        "action": "Verify management plane connectivity",
+        "cli": "ping {mgmt_ip} source {mgmt_iface}",
+        "expected_output": "100% ping success from management IP",
+        "notes": "If management reachability is intermittent, check management VRF routing."
+      },
+      {
+        "order": 6,
+        "action": "Escalate with collected data if root cause is not identified",
+        "cli": "",
+        "expected_output": "Ticket created with: device name, alarm details, syslog excerpt, and steps already taken",
+        "notes": "Attach show-tech output to the escalation ticket."
+      }
+    ],
+    "cli_commands": [
+      "show version",
+      "show logging | last 100",
+      "show ip interface brief",
+      "ping {mgmt_ip} source {mgmt_iface}"
+    ],
+    "variable_map": {
+      "{mgmt_ip}": "mgmt_ip",
+      "{mgmt_iface}": "mgmt_interface"
+    },
+    "keywords": ["general", "unclassified", "unknown", "fault", "alarm", "network event"],
+    "escalation": "Escalate to senior NOC engineer with collected show-tech and syslog data if fault is not resolved within SLA window.",
+    "doc_links": [
+      "https://internal.wiki/runbooks/generic-network-fault",
+      "https://internal.wiki/runbooks/escalation-procedure"
+    ]
+  },
+  {
+    "sop_id": "fallback.vm_stun.001",
+    "rca_id": "vm.stun_storage_latency",
+    "category": "virtualization",
+    "title": "Virtual Machine Stunned & MongoDB Timeout Recovery SOP",
+    "description": "Recommended SOP to recover from hypervisor storage latency and stunned Virtual Machine state.",
+    "severity": "critical",
+    "risk_level": "medium",
+    "estimated_time_minutes": 20,
+    "steps": [
+      {
+        "order": 1,
+        "action": "Verify storage latency and status on host ESX-07",
+        "cli": "esxcli storage core device list",
+        "expected_output": "Datastore latency details and storage path status",
+        "notes": "Verify if storage connectivity is stable or if paths are failing."
+      },
+      {
+        "order": 2,
+        "action": "Check VM power and stun logs in host vmkernel.log",
+        "cli": "grep -i 'stun' /var/log/vmkernel.log",
+        "expected_output": "VM stunned messages and duration",
+        "notes": "Check how long the VM was stunned. High durations explain service timeouts."
+      },
+      {
+        "order": 3,
+        "action": "Check MongoDB service state on the guest VM",
+        "cli": "systemctl status mongod.service",
+        "expected_output": "mongod.service status (active, inactive, or failed)",
+        "notes": "If service failed due to timeout, it needs to be restarted."
+      },
+      {
+        "order": 4,
+        "action": "Restart MongoDB service if inactive or failed",
+        "cli": "systemctl restart mongod.service",
+        "expected_output": "mongod.service running",
+        "notes": "Ensure service restarts and verify TCP port 27017 status."
+      },
+      {
+        "order": 5,
+        "action": "Verify MongoDB replica set synchronization status",
+        "cli": "mongosh --eval 'rs.status()'",
+        "expected_output": "Replica set health status showing members as PRIMARY or SECONDARY",
+        "notes": "Confirm heartbeats are restored and replica lag is decreasing."
+      }
+    ],
+    "cli_commands": [
+      "esxcli storage core device list",
+      "grep -i 'stun' /var/log/vmkernel.log",
+      "systemctl status mongod.service",
+      "systemctl restart mongod.service",
+      "mongosh --eval 'rs.status()'"
+    ],
+    "variable_map": {},
+    "keywords": ["vm stun", "storage latency", "datastore latency", "mongodb", "heartbeat missed", "mongod"],
+    "escalation": "Escalate to storage engineering and DBA teams if datastore latency remains above 30ms or replica sync fails.",
+    "doc_links": [
+      "https://internal.wiki/runbooks/vm-stun-recovery",
+      "https://internal.wiki/runbooks/mongodb-replica-repair"
+    ]
+  }
+]

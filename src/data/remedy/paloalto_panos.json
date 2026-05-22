@@ -1,0 +1,733 @@
+[
+  {
+    "remedy_id": "paloalto.panos.link.phys_intf_down",
+    "rca_id": "link.down",
+    "title": "Physical Interface Down on PAN-OS Firewall",
+    "description": "A physical Ethernet interface on the Palo Alto firewall has transitioned to a down state, resulting in loss of connectivity for associated zones, virtual routers, and security policies. This may be caused by a cable fault, SFP/transceiver failure, speed/duplex mismatch, or a shutdown command applied to the interface. Immediate investigation is required to restore network paths dependent on this interface.",
+    "vendor": "palo alto",
+    "os_flavor": "pan-os",
+    "severity": "critical",
+    "appliance_types": ["PA-220", "PA-820", "PA-850", "PA-3220", "PA-3250", "PA-3260", "PA-5220", "PA-5250", "PA-5260", "PA-7050", "PA-7080", "VM-300", "VM-500"],
+    "symptom_patterns": [
+      "Interface status shows 'down' in dashboard",
+      "Traffic loss on zones attached to the affected interface",
+      "Alerts: 'Interface ethernet1/X is down'",
+      "Sessions not forming through the interface",
+      "Routing adjacencies dropped if interface carries uplink"
+    ],
+    "rca_keywords": [
+      "interface down", "link down", "ethernet down", "port down", "physical link failure",
+      "SFP failure", "cable fault", "duplex mismatch", "interface flap"
+    ],
+    "steps": [
+      "Step 1 – Identify the down interface: > show interface all | match down",
+      "Step 2 – Check detailed interface statistics and hardware counters: > show interface ethernet1/X",
+      "Step 3 – Verify interface configuration and admin state: > show running-config | match ethernet1/X",
+      "Step 4 – Check hardware and SFP transceiver diagnostics: > show system state | match sfp",
+      "Step 5 – Review system logs for link-state change events: > show log system direction equal forward | match 'ethernet1/X'",
+      "Step 6 – Inspect interface error counters (CRC, input errors, drops): > show counter interface ethernet1/X",
+      "Step 7 – Confirm speed and duplex negotiation settings: > show interface ethernet1/X | match 'speed\\|duplex'",
+      "Step 8 – If admin-down, re-enable interface via CLI: > configure  set network interface ethernet ethernet1/X link-state auto  commit",
+      "Step 9 – If SFP suspected, check DOM (Digital Optical Monitoring): > show system state filter sys.s1.p1.phy",
+      "Step 10 – Physically inspect cable and SFP; reseat or replace if degraded",
+      "Step 11 – Verify zone bindings are restored after link is up: > show zone <zone-name>",
+      "Step 12 – Confirm routing table is repopulated: > show routing route",
+      "Step 13 – Check HA synchronization if interface is part of HA pair: > show high-availability all",
+      "Step 14 – Clear interface counters after fix and monitor for recurrence: > clear counter interface ethernet1/X"
+    ],
+    "keywords": [
+      "interface down", "link down", "PAN-OS interface", "physical port down",
+      "ethernet down", "SFP", "cable", "PA firewall port"
+    ],
+    "reranker_text": "This remedy addresses a physical interface down condition on a Palo Alto Networks PAN-OS firewall. The interface may be in an admin-down state, suffering from a hardware failure such as a bad SFP transceiver or cable, or experiencing a speed/duplex mismatch. Diagnostic steps include checking interface status with 'show interface all', reviewing DOM stats, inspecting system logs for link-state events, and verifying zone and routing table restoration after the interface is brought back up.",
+    "estimated_time_minutes": 30,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "If interface remains down after cable replacement and SFP swap, escalate to Palo Alto TAC with output of 'show interface all', 'show system state', and 'show log system'. Engage hardware replacement RMA process if transceiver or port is defective.",
+    "doc_links": [
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/networking/configure-interfaces",
+      "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClFuCAK",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-cli-quick-start/use-the-cli/cli-show-commands"
+    ]
+  },
+  {
+    "remedy_id": "paloalto.panos.link.intf_flapping",
+    "rca_id": "link.flap",
+    "title": "Interface Flapping on PAN-OS Firewall",
+    "description": "An Ethernet interface on the Palo Alto firewall is repeatedly cycling between up and down states (flapping), causing intermittent packet loss and session drops for traffic traversing the affected port. Interface flapping is commonly caused by faulty cables, degraded SFP modules, autonegotiation conflicts, or a failing connected switch port. This instability can destabilize routing adjacencies and HA failover logic.",
+    "vendor": "palo alto",
+    "os_flavor": "pan-os",
+    "severity": "high",
+    "appliance_types": ["PA-220", "PA-820", "PA-850", "PA-3220", "PA-3250", "PA-3260", "PA-5220", "PA-5250", "PA-5260", "PA-7050", "PA-7080", "VM-300", "VM-500"],
+    "symptom_patterns": [
+      "Repeated 'link up / link down' syslog messages for the same interface",
+      "Intermittent packet loss or session resets on traffic via affected port",
+      "Routing adjacencies cycling (BGP/OSPF resets)",
+      "High interface error counter values (CRC errors, input errors)",
+      "HA failover events correlated with interface state changes"
+    ],
+    "rca_keywords": [
+      "interface flap", "link flap", "link instability", "port cycling",
+      "CRC errors", "autonegotiation", "SFP degraded", "intermittent link"
+    ],
+    "steps": [
+      "Step 1 – Identify the flapping interface by reviewing system logs: > show log system direction equal forward | match 'link state changed'",
+      "Step 2 – Check current interface status and error counters: > show interface ethernet1/X",
+      "Step 3 – Collect interface counters to observe increasing error rates: > show counter interface ethernet1/X",
+      "Step 4 – Review hardware state including SFP optical power levels: > show system state filter sys.s1.p1.phy",
+      "Step 5 – Disable autonegotiation and hard-code speed/duplex to eliminate negotiation conflicts: > configure  set network interface ethernet ethernet1/X link-speed 1000  set network interface ethernet ethernet1/X link-duplex full  commit",
+      "Step 6 – Check connected switch port configuration and error counters on the peer side",
+      "Step 7 – Replace patch cable with a known-good cable of appropriate category",
+      "Step 8 – If SFP, reseat the transceiver; replace with a TAA-compliant Palo Alto certified SFP if errors persist",
+      "Step 9 – Enable interface dampening if supported: contact TAC for platform-specific guidance",
+      "Step 10 – Monitor interface state for 15 minutes post-change: > show interface ethernet1/X",
+      "Step 11 – Check routing table stability: > show routing route",
+      "Step 12 – Verify BGP neighbors are stable if flap affected an uplink: > show routing protocol bgp summary",
+      "Step 13 – Review HA status to confirm no spurious failover occurred: > show high-availability all",
+      "Step 14 – Clear counters and set a baseline for ongoing monitoring: > clear counter interface ethernet1/X"
+    ],
+    "keywords": [
+      "interface flapping", "link flap", "port instability", "CRC errors",
+      "autonegotiation", "SFP optical", "intermittent loss", "link bounce"
+    ],
+    "reranker_text": "This remedy targets a flapping interface condition on a Palo Alto PAN-OS firewall where an Ethernet port repeatedly transitions between up and down states. Diagnostics involve reviewing syslog link-state change messages, collecting hardware error counters, checking SFP optical power via DOM, and hardcoding speed/duplex to eliminate autonegotiation issues. Physical layer remediation such as cable or SFP replacement is typically required.",
+    "estimated_time_minutes": 45,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Palo Alto TAC if flapping continues after cable and SFP replacement. Provide 'show interface all', 'show counter interface ethernet1/X', 'show system state', and syslog exports. If platform supports it, request kernel-level link debounce tuning.",
+    "doc_links": [
+      "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClFuCAK",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/networking/configure-interfaces/configure-ethernet-interfaces",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-cli-quick-start"
+    ]
+  },
+  {
+    "remedy_id": "paloalto.panos.device.dp_cpu_high",
+    "rca_id": "device.cpu_overload",
+    "title": "Data Plane CPU Overload on PAN-OS Firewall",
+    "description": "The data plane (DP) CPU utilization on the Palo Alto firewall has exceeded safe operating thresholds, typically above 80% sustained, causing packet processing delays, session drops, and potential traffic outages. Data plane CPU spikes are commonly triggered by a volumetric attack (DDoS), misconfigured security policies causing excessive logging, heavy App-ID or Content-ID processing, or a software defect. Immediate triage is required to identify and mitigate the root cause.",
+    "vendor": "palo alto",
+    "os_flavor": "pan-os",
+    "severity": "critical",
+    "appliance_types": ["PA-820", "PA-850", "PA-3220", "PA-3250", "PA-3260", "PA-5220", "PA-5250", "PA-5260", "PA-7050", "PA-7080", "VM-300", "VM-500", "VM-700"],
+    "symptom_patterns": [
+      "Data plane CPU utilization > 80% in dashboard or SNMP",
+      "Increased latency or packet drops on firewalled traffic",
+      "Session table growth rate abnormally high",
+      "SNMP trap: panDPCPUUtilization threshold exceeded",
+      "Threat logs showing high-volume scan or DDoS attack patterns"
+    ],
+    "rca_keywords": [
+      "data plane CPU high", "DP CPU spike", "packet processing overload",
+      "DDoS", "App-ID overload", "content inspection CPU", "firewall slowdown"
+    ],
+    "steps": [
+      "Step 1 – Check overall system resource utilization: > show system resources",
+      "Step 2 – Examine data plane CPU detail per core: > show running resource-monitor",
+      "Step 3 – View real-time data plane process utilization: > show running resource-monitor duration 10",
+      "Step 4 – Identify top session contributors by source/destination: > show session all filter state active | head 50",
+      "Step 5 – Check session table utilization and rate: > show session info",
+      "Step 6 – Review threat logs for DDoS or scan activity: > show log threat direction equal forward | head 100",
+      "Step 7 – Identify top talkers using traffic logs: > show log traffic direction equal forward | head 100",
+      "Step 8 – Check if decryption policy is contributing to load (SSL/TLS inspection): > show system software status",
+      "Step 9 – Review App-ID and Content-ID engine status: > show running security-policy",
+      "Step 10 – If DDoS attack identified, apply Zone Protection profile with flood thresholds: > configure  set zone <zone> network layer3 zone-protection-profile <profile>  commit",
+      "Step 11 – If logging overload, reduce log forwarding rate or disable verbose logging temporarily: > configure  set deviceconfig setting management log-export-schedule <adjusted-rate>  commit",
+      "Step 12 – Enable DoS Protection policies to rate-limit offending flows: > configure  set rulebase dos rules <rule-name>  commit",
+      "Step 13 – Check for software bugs by reviewing release notes for known DP CPU issues: > show system info | match 'sw-version'",
+      "Step 14 – If CPU remains critical and traffic impact is severe, consider failing over to HA peer: > request high-availability state suspend",
+      "Step 15 – Collect tech support file for TAC review: > tftp export tech-support to <server>"
+    ],
+    "keywords": [
+      "data plane CPU", "DP CPU high", "packet processing", "DDoS firewall",
+      "App-ID CPU", "content inspection", "session overload", "firewall performance"
+    ],
+    "reranker_text": "This remedy covers high data plane CPU utilization on a Palo Alto PAN-OS firewall. The data plane handles all packet processing, App-ID classification, threat inspection, and SSL decryption. When DP CPU exceeds safe thresholds, it manifests as increased latency, dropped sessions, and degraded throughput. Diagnostic steps include 'show running resource-monitor', session table analysis, threat log inspection for DDoS activity, and mitigation via Zone Protection profiles or DoS policies.",
+    "estimated_time_minutes": 60,
+    "risk_level": "critical",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Palo Alto TAC if DP CPU remains above 80% after mitigations are applied. Provide output of 'show running resource-monitor', 'show session info', threat logs, and a tech support file. If a software bug is suspected, request a hotfix or upgrade path.",
+    "doc_links": [
+      "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClVCCA0",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/zone-protection-and-dos-protection",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/monitoring/use-syslog-for-monitoring"
+    ]
+  },
+  {
+    "remedy_id": "paloalto.panos.device.mp_cpu_high",
+    "rca_id": "device.cpu_overload",
+    "title": "Management Plane CPU Overload on PAN-OS Firewall",
+    "description": "The management plane (MP) CPU on the Palo Alto firewall is running at high utilization, causing the web GUI to become sluggish or unresponsive, CLI commands to time out, and Panorama connectivity to degrade or drop. Management plane CPU spikes are typically caused by large commit operations, heavy log generation with local disk writes, SNMP polling storms, certificate operations, or a runaway management process. Unlike DP CPU issues, MP CPU overload generally does not directly drop production traffic.",
+    "vendor": "palo alto",
+    "os_flavor": "pan-os",
+    "severity": "high",
+    "appliance_types": ["PA-220", "PA-820", "PA-850", "PA-3220", "PA-3250", "PA-3260", "PA-5220", "PA-5250", "PA-5260", "PA-7050", "PA-7080", "VM-300", "VM-500"],
+    "symptom_patterns": [
+      "Web GUI response times > 30 seconds or browser timeout",
+      "CLI commands hang or produce delayed output",
+      "Panorama disconnection alerts",
+      "SNMP polling timeouts from NMS",
+      "Commit operations stalling or failing",
+      "Management plane CPU > 80% in 'show system resources'"
+    ],
+    "rca_keywords": [
+      "management plane CPU high", "MP CPU spike", "GUI unresponsive",
+      "CLI timeout", "Panorama disconnect", "commit overload", "log generation overload"
+    ],
+    "steps": [
+      "Step 1 – Check management plane CPU and memory via system resources: > show system resources",
+      "Step 2 – Identify top CPU-consuming processes on management plane: > show system resources | head 30",
+      "Step 3 – Check if a commit is in progress and consuming resources: > show jobs all",
+      "Step 4 – Review management plane process health: > debug management-server show",
+      "Step 5 – Check log disk utilization (high log write rates drive MP CPU): > show system disk-space",
+      "Step 6 – Review SNMP polling configuration and reduce frequency if excessive: > show system setting snmp",
+      "Step 7 – Check Panorama connection state: > show panorama-status",
+      "Step 8 – Identify if any administrator sessions are running large operations: > show admins",
+      "Step 9 – Review software update or content update activity: > show system software status",
+      "Step 10 – If a runaway process is identified, attempt graceful restart of the management server (non-disruptive to traffic): > debug software restart process management-server",
+      "Step 11 – Reduce local log retention or configure log forwarding to offload disk I/O: > configure  set deviceconfig setting management log-export-schedule  commit",
+      "Step 12 – Reduce SNMP polling intervals from NMS to ease MP CPU load",
+      "Step 13 – Monitor CPU after each remediation step: > show system resources",
+      "Step 14 – If issue persists, collect tech support file: > tftp export tech-support to <server>",
+      "Step 15 – Review PAN-OS release notes for known MP CPU bugs and plan upgrade if applicable: > show system info | match sw-version"
+    ],
+    "keywords": [
+      "management plane CPU", "MP CPU", "GUI slow", "CLI unresponsive",
+      "Panorama disconnect", "commit slow", "log overload", "SNMP polling"
+    ],
+    "reranker_text": "This remedy addresses high management plane CPU utilization on a Palo Alto PAN-OS firewall. The management plane handles GUI, CLI, Panorama connectivity, commit operations, and local log storage. Overload on the MP does not directly interrupt traffic forwarding but causes operational blindness through loss of management access and Panorama telemetry. Diagnostics focus on 'show system resources', job inspection, log disk utilization, and process-level analysis.",
+    "estimated_time_minutes": 45,
+    "risk_level": "medium",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Palo Alto TAC if management plane remains unresponsive after restarting the management-server process. Provide 'show system resources', 'show jobs all', 'show system disk-space', and a tech support file. TAC may recommend a PAN-OS upgrade for known MP CPU defects.",
+    "doc_links": [
+      "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClVCCA0",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/monitoring",
+      "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA14u000000wiT1CAI"
+    ]
+  },
+  {
+    "remedy_id": "paloalto.panos.device.dp_memory_exhaustion",
+    "rca_id": "device.memory_exhaustion",
+    "title": "Data Plane Memory Exhaustion on PAN-OS Firewall",
+    "description": "The data plane memory on the Palo Alto firewall has reached critical utilization levels, causing packet buffer exhaustion, traffic drops, and potential system instability. Data plane memory is consumed by packet buffers, session table entries, forwarding tables, and security content signatures. Exhaustion may result from an abnormal traffic spike, session table overflow, large content update files, or a software memory leak in the data plane processes.",
+    "vendor": "palo alto",
+    "os_flavor": "pan-os",
+    "severity": "critical",
+    "appliance_types": ["PA-820", "PA-850", "PA-3220", "PA-3250", "PA-3260", "PA-5220", "PA-5250", "PA-5260", "PA-7050", "PA-7080", "VM-300", "VM-500", "VM-700"],
+    "symptom_patterns": [
+      "Data plane memory utilization > 90% in system resources",
+      "Packet drops increasing on all interfaces",
+      "Session establishment failures: 'session limit reached'",
+      "SNMP trap: panDPMemoryUtilization threshold exceeded",
+      "System logs showing 'out of memory' or 'malloc failure' in DP"
+    ],
+    "rca_keywords": [
+      "data plane memory", "DP memory exhaustion", "packet buffer full",
+      "memory leak", "session table full", "malloc failure", "DP OOM"
+    ],
+    "steps": [
+      "Step 1 – Check overall memory utilization: > show system resources",
+      "Step 2 – Check data plane memory utilization specifically: > show running resource-monitor",
+      "Step 3 – Check session table utilization against maximum: > show session info",
+      "Step 4 – Identify top memory-consuming sessions: > show session all filter state active | head 100",
+      "Step 5 – Review global counters for memory drop indicators: > show counter global filter aspect resource delta yes",
+      "Step 6 – Check packet buffer utilization: > show running packet-diag",
+      "Step 7 – Identify if a specific application or flow is consuming disproportionate memory: > show session all filter application <app> | head 50",
+      "Step 8 – Check if content updates (AV/Threat) are loaded and within version bounds: > show system software status",
+      "Step 9 – Clear aged-out or inactive sessions to free memory: > clear session all filter state discard",
+      "Step 10 – Reduce maximum session limit temporarily if system-wide setting is too high: > configure  set deviceconfig setting session max-pending-mcast-pkts 256  commit",
+      "Step 11 – Review and tighten security policies to drop unwanted traffic early: > show running security-policy",
+      "Step 12 – Check HA peer memory status: > show high-availability all",
+      "Step 13 – If memory leak suspected (gradual increase without traffic spike), document PAN-OS version and open TAC case",
+      "Step 14 – Collect memory diagnostics for TAC: > debug dataplane internal ifclient stats",
+      "Step 15 – If memory is critically low and traffic impact is severe, initiate HA failover: > request high-availability state suspend"
+    ],
+    "keywords": [
+      "data plane memory", "DP memory", "packet buffer", "session table",
+      "memory exhaustion", "OOM", "traffic drops", "firewall memory"
+    ],
+    "reranker_text": "This remedy covers data plane memory exhaustion on a Palo Alto PAN-OS firewall. The data plane memory holds packet buffers, session state, forwarding information, and content signature databases. When exhausted, the firewall begins dropping packets and refusing new session establishment. Key diagnostics are 'show session info' for session table utilization, 'show running resource-monitor' for memory metrics, and 'show counter global' for resource drop counters.",
+    "estimated_time_minutes": 60,
+    "risk_level": "critical",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Palo Alto TAC immediately if DP memory remains above 95%. Provide output of 'show system resources', 'show session info', 'show running resource-monitor', and 'show counter global filter aspect resource'. TAC will analyze for memory leaks and provide a hotfix or upgrade recommendation.",
+    "doc_links": [
+      "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClVCCA0",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/session-settings-and-timeouts",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/monitoring/use-syslog-for-monitoring"
+    ]
+  },
+  {
+    "remedy_id": "paloalto.panos.device.session_table_exhaustion",
+    "rca_id": "device.memory_exhaustion",
+    "title": "Session Table Exhaustion on PAN-OS Firewall",
+    "description": "The firewall session table has reached or is approaching its maximum capacity, causing new connection attempts to be dropped and services to become unreachable for legitimate users. Session table exhaustion is commonly triggered by a SYN flood or TCP session attack, an application creating excessive connections, or overly long session timeout values that prevent stale sessions from being reclaimed. This condition can mimic a network outage from the perspective of end users.",
+    "vendor": "palo alto",
+    "os_flavor": "pan-os",
+    "severity": "critical",
+    "appliance_types": ["PA-220", "PA-820", "PA-850", "PA-3220", "PA-3250", "PA-3260", "PA-5220", "PA-5250", "PA-5260", "PA-7050", "PA-7080", "VM-300", "VM-500"],
+    "symptom_patterns": [
+      "New connection attempts failing with 'session limit reached' errors",
+      "Session count in 'show session info' at or near platform maximum",
+      "SNMP trap: panSessionUtilization threshold exceeded",
+      "Legitimate traffic blocked while existing sessions appear active",
+      "Log entries showing session denied: 'maximum session limit'"
+    ],
+    "rca_keywords": [
+      "session table full", "session limit reached", "session exhaustion",
+      "SYN flood", "TCP session attack", "session timeout", "session table overflow"
+    ],
+    "steps": [
+      "Step 1 – Check current session utilization vs. platform maximum: > show session info",
+      "Step 2 – View active session count broken down by state: > show session info | match 'Total\\|Active\\|TCP'",
+      "Step 3 – Identify top session consumers by source IP: > show session all filter state active | head 100",
+      "Step 4 – Check for abnormal half-open TCP sessions (SYN flood indicator): > show session all filter state SYN-SENT | head 50",
+      "Step 5 – Review global counters for session drop reasons: > show counter global filter aspect session delta yes",
+      "Step 6 – Check session timeout settings: > show running session-timeout",
+      "Step 7 – Identify the application driving the most sessions: > show session all | match <application>",
+      "Step 8 – Clear stale DISCARD-state sessions to reclaim table space: > clear session all filter state discard",
+      "Step 9 – Reduce TCP half-open and ICMP session timeouts to reclaim stale entries: > configure  set deviceconfig setting session timeout-discard tcp 15  set deviceconfig setting session timeout-discard udp 15  commit",
+      "Step 10 – Apply Zone Protection profile with SYN flood protection if attack is detected: > configure  set zone <zone> network layer3 zone-protection-profile <profile>  commit",
+      "Step 11 – Block the offending source IPs via dynamic block list or security policy: > configure  set rulebase security rules <block-rule>  commit",
+      "Step 12 – Verify session count is declining: > show session info",
+      "Step 13 – Review platform session limits and plan capacity upgrade if legitimately exceeded",
+      "Step 14 – Enable session limit alerts via SNMP/syslog for early warning",
+      "Step 15 – Document session peak times and plan policy optimizations to reduce session count"
+    ],
+    "keywords": [
+      "session table", "session limit", "SYN flood", "session exhaustion",
+      "connection refused", "session count", "TCP sessions", "firewall sessions"
+    ],
+    "reranker_text": "This remedy addresses session table exhaustion on a Palo Alto PAN-OS firewall where the total active session count reaches the platform maximum. This results in new connections being rejected while existing sessions continue. Key diagnostics include 'show session info' to check utilization, reviewing TCP half-open sessions for flood attacks, clearing discard-state sessions, tuning session timeouts, and applying Zone Protection profiles to throttle session creation rates.",
+    "estimated_time_minutes": 45,
+    "risk_level": "critical",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Palo Alto TAC if session exhaustion cannot be resolved by clearing stale sessions and applying flood protection. Provide 'show session info', 'show counter global filter aspect session', and traffic logs showing session creation rates. TAC can assist with platform sizing and policy tuning.",
+    "doc_links": [
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/session-settings-and-timeouts",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/zone-protection-and-dos-protection/zone-defense",
+      "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClWCCA0"
+    ]
+  },
+  {
+    "remedy_id": "paloalto.panos.device.mgmt_unreachable",
+    "rca_id": "device.unreachable",
+    "title": "Management Interface Unreachable on PAN-OS Firewall",
+    "description": "The Palo Alto firewall management interface (MGT port) is not reachable via SSH, HTTPS, or ping, causing complete loss of administrative access to the device. This may be caused by a management interface misconfiguration, incorrect IP/routing, firewall management ACL blocking access, interface hardware failure, or a management plane process crash. Restoring management access is critical to re-establishing operational visibility and control.",
+    "vendor": "palo alto",
+    "os_flavor": "pan-os",
+    "severity": "critical",
+    "appliance_types": ["PA-220", "PA-820", "PA-850", "PA-3220", "PA-3250", "PA-3260", "PA-5220", "PA-5250", "PA-5260", "PA-7050", "PA-7080", "VM-300", "VM-500"],
+    "symptom_patterns": [
+      "SSH connection to management IP times out or is refused",
+      "HTTPS GUI returns connection timeout",
+      "Ping to management IP unreachable from admin workstation",
+      "Panorama shows firewall as disconnected",
+      "SNMP polling from NMS fails"
+    ],
+    "rca_keywords": [
+      "management unreachable", "MGT port down", "SSH timeout", "GUI unreachable",
+      "management ACL", "management IP", "device unreachable", "admin access lost"
+    ],
+    "steps": [
+      "Step 1 – Attempt console access via physical console cable (9600 baud, 8N1) or out-of-band management if available",
+      "Step 2 – Once on console, check management interface status: > show interface management",
+      "Step 3 – Verify management IP configuration is correct: > show system info | match 'ip-address\\|netmask\\|default-gateway'",
+      "Step 4 – Ping the default gateway from the firewall to test IP connectivity: > ping source management count 5 host <gateway-ip>",
+      "Step 5 – Check management plane process health: > show system resources",
+      "Step 6 – Verify management services (SSH, HTTPS) are enabled: > show deviceconfig system permitted-ip",
+      "Step 7 – Confirm the management ACL (permitted-ip list) includes the admin source IP: > show running-config | match permitted-ip",
+      "Step 8 – If IP is correct but services are down, restart the management server process: > debug software restart process management-server",
+      "Step 9 – Check for IP address conflict by pinging the MGT IP from another host and observing ARP behavior",
+      "Step 10 – Review system logs for management plane errors: > show log system direction equal forward | match 'management'",
+      "Step 11 – If MGT interface is physically down, reseat the MGT port cable or use in-band management via a data plane interface",
+      "Step 12 – Configure an in-band management interface as emergency fallback: > configure  set network interface ethernet ethernet1/1 layer3 ip <mgmt-backup-ip/mask>  set zone <mgmt-zone> network layer3 ethernet1/1  commit",
+      "Step 13 – Verify Panorama connectivity is restored: > show panorama-status",
+      "Step 14 – After restoring access, harden MGT ACL with permitted-ip entries",
+      "Step 15 – Document the root cause and implement OOB management (console server, IPMI) if not already in place"
+    ],
+    "keywords": [
+      "management unreachable", "SSH unreachable", "GUI inaccessible",
+      "console access", "MGT port", "permitted-ip", "admin access", "Panorama disconnect"
+    ],
+    "reranker_text": "This remedy addresses loss of management access to a Palo Alto PAN-OS firewall where the MGT interface is unreachable via SSH, HTTPS, or ICMP. Recovery requires console access to diagnose management IP configuration, permitted-ip ACL settings, management service health, and MP process status. Key recovery steps include restarting the management-server process and configuring an in-band emergency management interface.",
+    "estimated_time_minutes": 60,
+    "risk_level": "critical",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Palo Alto TAC if management access cannot be restored via console. TAC may guide a maintenance mode boot or factory reset procedure. For cloud-deployed firewalls (VM-Series), engage the cloud provider's out-of-band console (AWS SSM, Azure Serial Console).",
+    "doc_links": [
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/getting-started/configure-initial-settings/set-up-management-access",
+      "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClFdCAK",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/high-availability"
+    ]
+  },
+  {
+    "remedy_id": "paloalto.panos.device.panorama_disconnected",
+    "rca_id": "device.unreachable",
+    "title": "Panorama Management Disconnection from PAN-OS Firewall",
+    "description": "The Palo Alto firewall has lost its connection to Panorama, the centralized management and logging platform, resulting in loss of centralized policy push capability, log forwarding, and device visibility in Panorama dashboards. Disconnection may be caused by network reachability issues between the firewall and Panorama server, SSL certificate mismatches, Panorama server overload, or misconfiguration of the Panorama server IP on the firewall. Restoring Panorama connectivity is essential for centralized management operations.",
+    "vendor": "palo alto",
+    "os_flavor": "pan-os",
+    "severity": "high",
+    "appliance_types": ["PA-220", "PA-820", "PA-850", "PA-3220", "PA-3250", "PA-3260", "PA-5220", "PA-5250", "PA-5260", "PA-7050", "PA-7080", "VM-300", "VM-500"],
+    "symptom_patterns": [
+      "Panorama GUI shows firewall as 'Disconnected'",
+      "Firewall CLI: 'show panorama-status' shows disconnected state",
+      "Log forwarding to Panorama has stopped",
+      "Policy pushes from Panorama fail with connection error",
+      "Syslog: 'Failed to connect to Panorama <IP>'"
+    ],
+    "rca_keywords": [
+      "Panorama disconnected", "Panorama unreachable", "management server disconnect",
+      "log forwarding failed", "Panorama SSL", "device registration", "Panorama connectivity"
+    ],
+    "steps": [
+      "Step 1 – Check current Panorama connection status from the firewall: > show panorama-status",
+      "Step 2 – Verify the configured Panorama server IP/hostname: > show deviceconfig system | match panorama-server",
+      "Step 3 – Test network reachability to Panorama from the firewall: > ping source management count 5 host <panorama-ip>",
+      "Step 4 – Verify Panorama TCP port 3978 is reachable (used for HA and device communication): > test connectivity port 3978 host <panorama-ip>",
+      "Step 5 – Check if the firewall's management interface default gateway is correctly configured: > show system info | match 'default-gateway'",
+      "Step 6 – Review system logs for Panorama connection errors: > show log system direction equal forward | match 'panorama'",
+      "Step 7 – Check Panorama server health by logging into Panorama and verifying device status",
+      "Step 8 – Verify the serial number registration match between firewall and Panorama: > show system info | match serial",
+      "Step 9 – Check for SSL certificate issues – renew or regenerate certificates if expired: > show system setting ssl-exclude-cert",
+      "Step 10 – Attempt to manually reconnect Panorama: > request panorama reconnect",
+      "Step 11 – If IP changed, update Panorama server IP on the firewall: > configure  set deviceconfig system panorama-server <new-panorama-ip>  commit",
+      "Step 12 – Verify Panorama is not resource-constrained (check Panorama CPU/memory from Panorama GUI)",
+      "Step 13 – Check if any security policy on the firewall is blocking TCP 3978 to Panorama IP: > show running security-policy",
+      "Step 14 – Verify Panorama connection is established: > show panorama-status",
+      "Step 15 – Confirm log forwarding is resumed by checking Panorama log viewer for new entries"
+    ],
+    "keywords": [
+      "Panorama disconnected", "Panorama reconnect", "centralized management",
+      "log forwarding", "policy push", "Panorama server", "device management"
+    ],
+    "reranker_text": "This remedy addresses Panorama management disconnection from a Palo Alto PAN-OS firewall. Panorama uses TCP port 3978 for device communication and log forwarding. Disconnection prevents centralized policy management, real-time log aggregation, and device health monitoring. Key diagnostics include 'show panorama-status', ping/connectivity testing to Panorama IP, certificate verification, and the 'request panorama reconnect' command.",
+    "estimated_time_minutes": 30,
+    "risk_level": "medium",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Palo Alto TAC if Panorama remains disconnected after verifying network reachability and certificate validity. TAC can analyze Panorama server logs and assist with certificate regeneration or device re-registration. Provide 'show panorama-status', 'show system info', and network connectivity test results.",
+    "doc_links": [
+      "https://docs.paloaltonetworks.com/panorama/11-0/panorama-admin/manage-firewalls/add-a-firewall-as-a-managed-device-in-panorama",
+      "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClGHCA0",
+      "https://docs.paloaltonetworks.com/panorama/11-0/panorama-admin/set-up-panorama/install-the-panorama-virtual-appliance"
+    ]
+  },
+  {
+    "remedy_id": "paloalto.panos.device.unexpected_reboot",
+    "rca_id": "device.unexpected_reboot",
+    "title": "Unexpected Reboot Due to Watchdog or Kernel Panic on PAN-OS Firewall",
+    "description": "The Palo Alto firewall has unexpectedly rebooted without a scheduled maintenance window, indicating a possible kernel panic, hardware watchdog timeout, or critical software fault in the data or management plane. Unexpected reboots cause a complete traffic outage for non-HA deployments and may trigger HA failover for active-passive pairs. Root cause analysis requires reviewing crash dump files, system logs, and kernel diagnostic output to determine whether the fault is hardware or software in origin.",
+    "vendor": "palo alto",
+    "os_flavor": "pan-os",
+    "severity": "critical",
+    "appliance_types": ["PA-220", "PA-820", "PA-850", "PA-3220", "PA-3250", "PA-3260", "PA-5220", "PA-5250", "PA-5260", "PA-7050", "PA-7080", "VM-300", "VM-500"],
+    "symptom_patterns": [
+      "Firewall rebooted without scheduled maintenance",
+      "System log shows 'System rebooted' or 'kernel panic'",
+      "HA partner performed failover unexpectedly",
+      "Uptime counter reset to near-zero in 'show system info'",
+      "Crash dump files present in /var/cores directory"
+    ],
+    "rca_keywords": [
+      "unexpected reboot", "kernel panic", "watchdog timeout", "crash dump",
+      "system crash", "spontaneous reboot", "DP crash", "MP crash", "core file"
+    ],
+    "steps": [
+      "Step 1 – Check current uptime and confirm reboot occurred: > show system info | match 'uptime\\|sw-version'",
+      "Step 2 – Review system logs around the time of the reboot: > show log system direction equal forward | match 'reboot\\|panic\\|crash'",
+      "Step 3 – Check if crash dump/core files exist: > show system files | match 'core\\|crash'",
+      "Step 4 – Check the reboot reason stored in the system: > show system environment",
+      "Step 5 – Verify hardware health (fans, power supplies, temperatures): > show system environmentals",
+      "Step 6 – Check if thermal shutdown triggered the reboot: > show system environmentals | match 'temperature'",
+      "Step 7 – Review HA state and confirm failover occurred correctly: > show high-availability all",
+      "Step 8 – Check if the reboot was caused by a software upgrade or content update: > show system software status",
+      "Step 9 – Inspect system resources at time of crash using historical resource data: > show running resource-monitor",
+      "Step 10 – Collect tech support file which includes crash dumps: > tftp export tech-support to <server>",
+      "Step 11 – Check for disk errors that may indicate storage hardware failure: > show system disk-space",
+      "Step 12 – Verify PAN-OS version is not affected by known crash defects (review release notes and CVEs): > show system info | match sw-version",
+      "Step 13 – If hardware fault is suspected, run hardware diagnostics: > show system state | match 'hw\\|asic'",
+      "Step 14 – If HA peer is active and stable, leave it active while performing RCA on the rebooted unit",
+      "Step 15 – Plan PAN-OS upgrade to a stable release if software defect is confirmed as root cause: > request system software install version <target-version>"
+    ],
+    "keywords": [
+      "unexpected reboot", "kernel panic", "watchdog", "crash dump",
+      "core file", "system crash", "reboot reason", "HA failover"
+    ],
+    "reranker_text": "This remedy covers unexpected reboots on Palo Alto PAN-OS firewalls caused by kernel panics, hardware watchdog timeouts, or critical software faults. Diagnostics involve checking 'show system info' for uptime reset, reviewing system logs for panic or crash messages, verifying environmental health (temperature, power, fans), collecting crash dump files, and generating a tech support file for Palo Alto TAC analysis. PAN-OS upgrade is typically required if a software defect is confirmed.",
+    "estimated_time_minutes": 90,
+    "risk_level": "critical",
+    "requires_maintenance_window": true,
+    "escalation": "Immediately escalate to Palo Alto TAC with the tech support file and crash dump outputs. Provide 'show system info', 'show system environmentals', 'show log system', and any core files from /var/cores. TAC will analyze crash dumps to determine if RMA (hardware replacement) or PAN-OS hotfix is required.",
+    "doc_links": [
+      "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClVDCA0",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/high-availability",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/getting-started/upgrade-the-pan-os-software"
+    ]
+  },
+  {
+    "remedy_id": "paloalto.panos.routing.bgp_down",
+    "rca_id": "routing.bgp_down",
+    "title": "BGP Session Down on PAN-OS Firewall",
+    "description": "A BGP peering session on the Palo Alto firewall has transitioned to the Idle or Active state, causing loss of dynamically learned routes and potential traffic blackholing to destinations reachable only through BGP. BGP session failures may result from a peer IP misconfiguration, AS number mismatch, authentication key mismatch (MD5), TCP connectivity issues on port 179, or BGP hold timer expiry due to interface flapping or high CPU. Rapid recovery is essential to restore internet or WAN routing.",
+    "vendor": "palo alto",
+    "os_flavor": "pan-os",
+    "severity": "critical",
+    "appliance_types": ["PA-820", "PA-850", "PA-3220", "PA-3250", "PA-3260", "PA-5220", "PA-5250", "PA-5260", "PA-7050", "PA-7080", "VM-300", "VM-500"],
+    "symptom_patterns": [
+      "BGP neighbor state shows Idle or Active in 'show routing protocol bgp summary'",
+      "Routes previously learned from BGP peer are missing from routing table",
+      "Traffic to Internet or WAN destinations is blackholed",
+      "BGP hold timer expiry events in system logs",
+      "SNMP trap: BGP neighbor state change"
+    ],
+    "rca_keywords": [
+      "BGP down", "BGP session failure", "BGP neighbor down", "BGP Idle",
+      "BGP Active state", "hold timer expiry", "AS mismatch", "BGP authentication"
+    ],
+    "steps": [
+      "Step 1 – Check BGP neighbor summary status: > show routing protocol bgp summary",
+      "Step 2 – Check detailed BGP peer information including state and error codes: > show routing protocol bgp peer",
+      "Step 3 – Review BGP RIB (Routing Information Base) to see routes received from the peer: > show routing protocol bgp rib-out",
+      "Step 4 – Verify the routing table contains expected BGP routes: > show routing route | match 'B '",
+      "Step 5 – Ping the BGP peer IP to verify Layer 3 reachability: > ping source <local-interface-ip> count 5 host <peer-ip>",
+      "Step 6 – Test TCP port 179 connectivity to peer: > test connectivity port 179 host <peer-ip>",
+      "Step 7 – Check BGP configuration for correct peer IP, remote-AS, and local-AS: > show running-config | match bgp",
+      "Step 8 – Verify MD5 authentication key matches the peer configuration: > show routing protocol bgp peer | match 'auth'",
+      "Step 9 – Check for BGP notification messages that indicate session termination reason: > show routing protocol bgp loc-rib",
+      "Step 10 – Review system logs for BGP state change events: > show log system direction equal forward | match 'bgp'",
+      "Step 11 – Check the interface carrying the BGP session is up and error-free: > show interface ethernet1/X",
+      "Step 12 – If peer is a connected route, verify the connected route exists: > show routing route | match <peer-subnet>",
+      "Step 13 – Clear the BGP session to force re-establishment: > clear routing protocol bgp peer <peer-ip>",
+      "Step 14 – Monitor BGP session re-establishment: > show routing protocol bgp summary",
+      "Step 15 – Verify routes are re-installed in the routing table and traffic is restored: > show routing route"
+    ],
+    "keywords": [
+      "BGP down", "BGP session", "routing failure", "BGP neighbor",
+      "BGP hold timer", "AS number", "route missing", "WAN routing"
+    ],
+    "reranker_text": "This remedy addresses BGP session failure on a Palo Alto PAN-OS firewall where a BGP peering session has dropped to the Idle or Active state, causing loss of dynamically learned routes. Diagnostics use 'show routing protocol bgp summary' and 'show routing protocol bgp peer' to identify the session state and error codes. Common causes include AS/peer IP misconfiguration, MD5 authentication mismatch, and TCP 179 connectivity issues. Session recovery uses 'clear routing protocol bgp peer'.",
+    "estimated_time_minutes": 45,
+    "risk_level": "critical",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Palo Alto TAC if BGP session cannot be re-established after verifying configuration and Layer 3 connectivity. Provide 'show routing protocol bgp summary', 'show routing protocol bgp peer', 'show routing route', and system logs. Coordinate with the upstream ISP or WAN provider if the peer is external.",
+    "doc_links": [
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/networking/bgp",
+      "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClFvCAK",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/networking/bgp/configure-bgp"
+    ]
+  },
+  {
+    "remedy_id": "paloalto.panos.security.ike_phase1_fail",
+    "rca_id": "security.ipsec_down",
+    "title": "IPSec IKE Phase 1 (ISAKMP) Negotiation Failure on PAN-OS",
+    "description": "The IKE Phase 1 (Main Mode or Aggressive Mode) negotiation for an IPSec VPN tunnel has failed on the Palo Alto firewall, preventing the establishment of the ISAKMP Security Association (SA) and consequently blocking Phase 2 and encrypted tunnel traffic. Phase 1 failures are most commonly caused by IKE version mismatch (IKEv1 vs IKEv2), Pre-Shared Key (PSK) mismatch, encryption/hash/DH group proposal mismatch, or IP reachability issues to the remote peer. All VPN-dependent traffic is disrupted until Phase 1 is successfully negotiated.",
+    "vendor": "palo alto",
+    "os_flavor": "pan-os",
+    "severity": "high",
+    "appliance_types": ["PA-220", "PA-820", "PA-850", "PA-3220", "PA-3250", "PA-3260", "PA-5220", "PA-5250", "PA-5260", "PA-7050", "PA-7080", "VM-300", "VM-500"],
+    "symptom_patterns": [
+      "IKE SA state shows 'init' or absent in 'show vpn ike-sa'",
+      "VPN tunnel status shows 'inactive' in Panorama or GUI",
+      "Encrypted traffic cannot pass through the VPN tunnel",
+      "System log shows 'IKE phase-1 negotiation is failed'",
+      "Remote site users report complete loss of connectivity"
+    ],
+    "rca_keywords": [
+      "IKE phase 1 fail", "ISAKMP failure", "VPN down", "PSK mismatch",
+      "IKE proposal mismatch", "DH group", "IKEv1 IKEv2", "tunnel down"
+    ],
+    "steps": [
+      "Step 1 – Check IKE SA status for all tunnels: > show vpn ike-sa",
+      "Step 2 – Check IKE SA status for a specific gateway: > show vpn ike-sa gateway <gateway-name>",
+      "Step 3 – Check the IKE gateway configuration: > show running-config | match 'ike-gateway'",
+      "Step 4 – Verify network reachability to the remote peer IP: > ping source <outside-interface-ip> count 5 host <remote-peer-ip>",
+      "Step 5 – Enable IKE debug logging to capture negotiation details: > debug ike global on debug",
+      "Step 6 – Clear existing IKE SAs and force re-negotiation: > clear vpn ike-sa gateway <gateway-name>",
+      "Step 7 – Initiate tunnel and capture IKE debug output: > test vpn ike-sa gateway <gateway-name>",
+      "Step 8 – Review IKE debug log for specific failure reason: > show log system direction equal forward | match 'IKE\\|phase-1\\|negotiate'",
+      "Step 9 – Verify IKE version matches on both peers (IKEv1 vs IKEv2): > show running-config | match 'version'",
+      "Step 10 – Verify Pre-Shared Key matches on both ends (compare PSK hash or re-enter): > configure  set network ike gateway <gw-name> authentication pre-shared-key key <psk>  commit",
+      "Step 11 – Verify IKE Phase 1 proposal (encryption, hash, DH group, lifetime) matches peer: > show running-config | match 'ike-crypto-profile'",
+      "Step 12 – Check if NAT-T (NAT Traversal) is required and enabled if behind NAT: > show running-config | match 'nat-traversal'",
+      "Step 13 – Disable debug logging after troubleshooting: > debug ike global off",
+      "Step 14 – Confirm Phase 1 SA is now established: > show vpn ike-sa gateway <gateway-name>",
+      "Step 15 – Verify Phase 2 has also established and tunnel is passing traffic: > show vpn ipsec-sa tunnel <tunnel-name>"
+    ],
+    "keywords": [
+      "IKE phase 1", "ISAKMP", "VPN tunnel down", "PSK mismatch",
+      "IKE negotiation", "DH group", "encryption proposal", "IPSec VPN"
+    ],
+    "reranker_text": "This remedy covers IKE Phase 1 negotiation failure on a Palo Alto PAN-OS firewall, which prevents IPSec VPN tunnel establishment. Phase 1 creates the ISAKMP SA used to protect Phase 2 negotiation. Common failures include PSK mismatch, IKE version incompatibility, proposal mismatch (encryption/hash/DH group), and IP reachability to the remote peer. Diagnostics use 'show vpn ike-sa', IKE debug logging, and 'test vpn ike-sa gateway' to identify the exact failure point.",
+    "estimated_time_minutes": 45,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Palo Alto TAC with IKE debug logs, 'show vpn ike-sa', IKE gateway and crypto-profile configuration, and system logs. Coordinate with the remote VPN peer administrator to verify parameter alignment. TAC can perform packet captures on IKE UDP 500/4500 to pinpoint negotiation failures.",
+    "doc_links": [
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/vpns/site-to-site-vpn-overview",
+      "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClFwCAK",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/vpns/site-to-site-vpn-overview/ike-gateway-configuration"
+    ]
+  },
+  {
+    "remedy_id": "paloalto.panos.security.ipsec_phase2_fail",
+    "rca_id": "security.ipsec_down",
+    "title": "IPSec Phase 2 (Quick Mode) Tunnel Failure on PAN-OS",
+    "description": "The IPSec Phase 2 (Quick Mode) negotiation has failed on the Palo Alto firewall despite a successful Phase 1 IKE SA, resulting in the absence of an IPSec SA and preventing encrypted data plane traffic from traversing the VPN tunnel. Phase 2 failures are typically caused by mismatched IPSec transform sets (encryption/hash algorithms), incompatible traffic selectors (proxy IDs / ACLs), PFS group mismatch, or IPSec lifetime mismatch between peers. Traffic dependent on the VPN is disrupted.",
+    "vendor": "palo alto",
+    "os_flavor": "pan-os",
+    "severity": "high",
+    "appliance_types": ["PA-220", "PA-820", "PA-850", "PA-3220", "PA-3250", "PA-3260", "PA-5220", "PA-5250", "PA-5260", "PA-7050", "PA-7080", "VM-300", "VM-500"],
+    "symptom_patterns": [
+      "Phase 1 IKE SA is UP but Phase 2 IPSec SA is missing or inactive",
+      "'show vpn ipsec-sa' shows no active SAs for the tunnel",
+      "Encrypted traffic cannot pass through the VPN tunnel",
+      "System log: 'IPSec phase-2 negotiation failed as initiator'",
+      "VPN monitor shows green for IKE but red for IPSec"
+    ],
+    "rca_keywords": [
+      "IPSec phase 2 fail", "Quick Mode failure", "IPSec SA missing",
+      "transform set mismatch", "proxy ID mismatch", "PFS mismatch",
+      "tunnel interface down", "IPSec VPN"
+    ],
+    "steps": [
+      "Step 1 – Confirm Phase 1 is UP and Phase 2 is missing: > show vpn ike-sa",
+      "Step 2 – Check Phase 2 IPSec SA status: > show vpn ipsec-sa",
+      "Step 3 – Check tunnel interface status: > show vpn tunnel",
+      "Step 4 – Enable IKE debug to capture Phase 2 negotiation: > debug ike global on debug",
+      "Step 5 – Manually initiate Phase 2 negotiation: > test vpn ipsec-sa tunnel <tunnel-name>",
+      "Step 6 – Review IKE debug output for Phase 2 error: > show log system direction equal forward | match 'phase-2\\|IPSec\\|Quick Mode'",
+      "Step 7 – Verify IPSec crypto profile (ESP encryption, hash, PFS group, lifetime): > show running-config | match 'ipsec-crypto-profile'",
+      "Step 8 – Verify proxy IDs (traffic selectors) match on both peers. PAN-OS uses: local-ip, remote-ip, protocol: > show running-config | match 'proxy-id'",
+      "Step 9 – If using route-based VPN, ensure tunnel interface IP and routing are correct: > show interface tunnel.X",
+      "Step 10 – If using policy-based VPN, verify proxy ID selectors match the remote peer ACL exactly",
+      "Step 11 – Correct any mismatched IPSec parameters: > configure  set network tunnel ipsec <tunnel> auto-key ipsec-crypto-profile <profile>  commit",
+      "Step 12 – Clear IPSec SAs and force re-negotiation: > clear vpn ipsec-sa tunnel <tunnel-name>",
+      "Step 13 – Disable debug after troubleshooting: > debug ike global off",
+      "Step 14 – Confirm IPSec SA is established: > show vpn ipsec-sa",
+      "Step 15 – Test traffic through the tunnel: > ping source <local-lan-ip> host <remote-lan-ip>"
+    ],
+    "keywords": [
+      "IPSec phase 2", "Quick Mode", "IPSec SA", "transform set",
+      "proxy ID", "PFS group", "tunnel down", "VPN encrypted traffic"
+    ],
+    "reranker_text": "This remedy addresses IPSec Phase 2 (Quick Mode) failure on a Palo Alto PAN-OS firewall where Phase 1 IKE SA is established but no IPSec SA is formed, blocking encrypted VPN traffic. Phase 2 failures typically stem from transform set mismatches (ESP encryption/hash/PFS), incompatible proxy IDs/traffic selectors, or IPSec lifetime differences. Diagnostics use 'show vpn ipsec-sa', IKE debug logging, and 'test vpn ipsec-sa tunnel' to capture the exact failure reason.",
+    "estimated_time_minutes": 45,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Palo Alto TAC with IKE debug logs, 'show vpn ike-sa', 'show vpn ipsec-sa', IPSec crypto profile configuration, and proxy-ID settings. Coordinate with the remote VPN peer admin to align transform set parameters. TAC can capture IKE Quick Mode exchange packets for detailed analysis.",
+    "doc_links": [
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/vpns/site-to-site-vpn-overview",
+      "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClFxCAK",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/vpns/site-to-site-vpn-overview/set-up-site-to-site-vpn"
+    ]
+  },
+  {
+    "remedy_id": "paloalto.panos.security.ssl_decrypt_fail",
+    "rca_id": "security.ssl_decrypt_fail",
+    "title": "SSL/TLS Decryption Failure on PAN-OS Firewall",
+    "description": "The PAN-OS SSL/TLS decryption engine is failing to decrypt HTTPS or other encrypted traffic sessions, resulting in decryption errors, certificate errors presented to clients, or unintended traffic bypass of security inspection. SSL decryption failures may stem from certificate pinning by applications, unsupported cipher suites or TLS versions (TLS 1.3 issues), the forward proxy certificate not being trusted by clients, or excluded URL categories that should not be decrypted. Misconfiguration can expose the network to uninspected encrypted threats.",
+    "vendor": "palo alto",
+    "os_flavor": "pan-os",
+    "severity": "high",
+    "appliance_types": ["PA-820", "PA-850", "PA-3220", "PA-3250", "PA-3260", "PA-5220", "PA-5250", "PA-5260", "PA-7050", "PA-7080", "VM-300", "VM-500"],
+    "symptom_patterns": [
+      "Clients receive SSL certificate error / 'Your connection is not private'",
+      "Decryption logs show 'Unsupported cipher' or 'Certificate error'",
+      "Applications fail to load when decryption policy is enabled",
+      "Decryption failure count increasing in ACC (Application Command Center)",
+      "Traffic log shows 'decrypt-error' in session end reason"
+    ],
+    "rca_keywords": [
+      "SSL decryption failure", "TLS decrypt fail", "certificate error",
+      "cipher mismatch", "certificate pinning", "forward proxy cert",
+      "TLS 1.3", "decryption policy", "SSL inspection"
+    ],
+    "steps": [
+      "Step 1 – Check decryption policy configuration: > show running-config | match 'decrypt'",
+      "Step 2 – Review decryption logs for failure reasons: > show log decryption direction equal forward | head 100",
+      "Step 3 – Check global decryption statistics: > show system setting ssl-decrypt statistics",
+      "Step 4 – Check the forward proxy CA certificate validity and expiry: > show config running | match 'ssl-forward-proxy\\|forward-trust-certificate'",
+      "Step 5 – Verify the forward proxy CA certificate is deployed to client devices (via GPO or MDM)",
+      "Step 6 – Check SSL exclude cache to see domains excluded from decryption: > show system setting ssl-exclude-cert",
+      "Step 7 – Identify applications using certificate pinning (e.g., Google, Apple services) and add to SSL exclude list: > configure  set shared ssl-exclude-cert <cert-name> server-address <domain>  commit",
+      "Step 8 – Check supported cipher suites and enable TLS 1.3 if required by modern clients: > show running-config | match 'ssl-protocol-settings'",
+      "Step 9 – Enable decryption broker if required for high-throughput environments: > show running-config | match 'decryption-broker'",
+      "Step 10 – Check if decryption profile blocks sessions with specific certificate errors: > show running-config | match 'decryption-profile'",
+      "Step 11 – Review the ACC for top decryption failure reasons and applications",
+      "Step 12 – Test decryption for a specific URL: > debug dataplane packet-diag show setting",
+      "Step 13 – Add problematic application categories to the SSL decryption exclusion list",
+      "Step 14 – Renew the forward proxy CA certificate if expired and redistribute to clients: > request certificate renew <cert-name>",
+      "Step 15 – Verify decryption is functioning for expected traffic by reviewing decryption logs: > show log decryption direction equal forward | match 'success'"
+    ],
+    "keywords": [
+      "SSL decryption", "TLS inspection", "certificate error", "cipher suite",
+      "forward proxy certificate", "certificate pinning", "TLS 1.3", "HTTPS inspection"
+    ],
+    "reranker_text": "This remedy covers SSL/TLS decryption failures on a Palo Alto PAN-OS firewall where the decryption engine cannot inspect HTTPS sessions, causing client certificate errors or application failures. Key diagnostics include reviewing decryption logs for failure reasons, checking forward proxy CA certificate validity, identifying certificate-pinned applications for exclusion, verifying supported cipher suites, and ensuring the CA certificate is distributed to endpoint trust stores.",
+    "estimated_time_minutes": 60,
+    "risk_level": "medium",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Palo Alto TAC if decryption failures persist across multiple applications after exclusions are configured. Provide decryption logs, 'show system setting ssl-decrypt statistics', the decryption policy and profile configuration, and the forward proxy CA certificate details. TAC may recommend cipher suite adjustments or platform-specific TLS configuration.",
+    "doc_links": [
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/decryption/decryption-concepts",
+      "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClVECA0",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/decryption/configure-ssl-forward-proxy",
+      "https://live.paloaltonetworks.com/t5/blogs/how-to-troubleshoot-ssl-decryption/ba-p/422109"
+    ]
+  },
+  {
+    "remedy_id": "paloalto.panos.application.sip_alg_timeout",
+    "rca_id": "application.sip_timeout",
+    "title": "SIP Application Layer Gateway (ALG) Timeout and Call Failure on PAN-OS",
+    "description": "SIP (Session Initiation Protocol) calls are failing, dropping mid-call, or experiencing one-way audio due to SIP ALG processing issues on the Palo Alto firewall. PAN-OS includes a SIP Application Layer Gateway that inspects and rewrites SIP headers for NAT traversal, but this can conflict with SIP endpoints that perform their own NAT traversal (STUN, ICE), use non-standard ports, or have SIP session timers shorter than the firewall session timeout. Issues manifest as failed INVITE transactions, missing RTP audio streams, or calls dropping after a fixed duration.",
+    "vendor": "palo alto",
+    "os_flavor": "pan-os",
+    "severity": "high",
+    "appliance_types": ["PA-220", "PA-820", "PA-850", "PA-3220", "PA-3250", "PA-3260", "PA-5220", "PA-5250", "PA-5260", "PA-7050", "PA-7080", "VM-300", "VM-500"],
+    "symptom_patterns": [
+      "SIP INVITE requests failing with 408 Timeout or 503 Service Unavailable",
+      "One-way audio on VoIP calls (RTP stream issue)",
+      "Calls dropping after a fixed duration (typically 30 minutes - session timeout)",
+      "SIP registration failures from IP phones",
+      "Traffic logs show SIP sessions ending with 'aged-out' reason"
+    ],
+    "rca_keywords": [
+      "SIP timeout", "SIP ALG", "SIP call drop", "one-way audio", "RTP failure",
+      "SIP INVITE", "SIP registration", "VoIP failure", "SIP NAT traversal"
+    ],
+    "steps": [
+      "Step 1 – Check current SIP sessions on the firewall: > show session all filter application sip",
+      "Step 2 – Check SIP session details including timeout and NAT state: > show session id <session-id>",
+      "Step 3 – Review traffic logs for SIP session end reasons: > show log traffic direction equal forward | match 'sip'",
+      "Step 4 – Check the App-ID application definition for SIP (default port and timeout): > show application id sip",
+      "Step 5 – Check the current session timeout for SIP: > show running session-timeout",
+      "Step 6 – Verify SIP application override policy if in use: > show running-config | match 'application-override'",
+      "Step 7 – Check if the SIP ALG is modifying headers by enabling SIP debug: > debug dataplane packet-diag set filter match application sip",
+      "Step 8 – Capture SIP traffic to inspect header modifications: > debug dataplane packet-diag set log feature sip detail  debug dataplane packet-diag show log",
+      "Step 9 – Check if SIP phones are behind NAT and need STUN/ICE (may conflict with ALG): review SIP phone configuration for STUN/ICE settings",
+      "Step 10 – If SIP ALG is causing header corruption, create an application-override policy to bypass App-ID and use a custom application or disable ALG processing: > configure  set rulebase application-override rules <override-rule> application sip  commit",
+      "Step 11 – Increase SIP session timeout if calls drop after fixed duration: > configure  set application sip timeout 3600  commit",
+      "Step 12 – Create a security policy allowing RTP ports (typically UDP 10000-20000) between SIP endpoints: > configure  set rulebase security rules <rtp-rule>  commit",
+      "Step 13 – Verify SIP registrations are succeeding after changes: > show session all filter application sip",
+      "Step 14 – Test a SIP call end-to-end and capture with Wireshark on an endpoint to verify RTP bidirectionality",
+      "Step 15 – Clear SIP ALG debug after testing: > debug dataplane packet-diag clear filter"
+    ],
+    "keywords": [
+      "SIP ALG", "SIP timeout", "VoIP", "SIP call drop", "one-way audio",
+      "RTP", "SIP INVITE", "SIP registration", "NAT traversal", "session timeout"
+    ],
+    "reranker_text": "This remedy addresses SIP ALG timeout and call failure issues on a Palo Alto PAN-OS firewall. The SIP ALG inspects and rewrites SIP headers for NAT traversal, but can conflict with endpoints using STUN/ICE or cause call drops when session timeouts are shorter than SIP session durations. Diagnostics involve reviewing SIP sessions with 'show session all filter application sip', enabling SIP debug with 'debug dataplane packet-diag', and checking traffic logs for session end reasons. Remediation often involves increasing SIP session timeouts, creating application-override rules to bypass ALG, and allowing RTP port ranges.",
+    "estimated_time_minutes": 60,
+    "risk_level": "medium",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Palo Alto TAC if SIP issues persist after ALG bypass and timeout tuning. Provide SIP packet captures, 'show session all filter application sip', traffic logs, and the security and application-override policy configuration. TAC may recommend specific App-ID signature tuning or PAN-OS version for SIP fixes.",
+    "doc_links": [
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/app-id/create-a-custom-application-signature",
+      "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClGQCA0",
+      "https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/networking/nat/nat-policy-rules",
+      "https://live.paloaltonetworks.com/t5/blogs/sip-and-pan-os/ba-p/63558"
+    ]
+  }
+]

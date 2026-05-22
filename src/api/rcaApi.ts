@@ -57,3 +57,28 @@ export const deleteRAGKBEntry = async (docId: string) => {
     });
     return response.data;
 };
+
+// ─── Remedy KB API ─────────────────────────────────────────────────────────────
+
+export const fetchRemedyKB = async () => {
+    const response = await axios.get(`${API_BASE_URL}/api/remedy/kb/`);
+    return response.data;
+};
+
+export const saveRemedyKBEntry = async (entry: any, isNew: boolean) => {
+    if (isNew) {
+        const response = await axios.post(`${API_BASE_URL}/api/remedy/kb/`, entry);
+        return response.data;
+    } else {
+        const response = await axios.put(`${API_BASE_URL}/api/remedy/kb/`, entry);
+        return response.data;
+    }
+};
+
+export const deleteRemedyKBEntry = async (remedyId: string) => {
+    const response = await axios.delete(`${API_BASE_URL}/api/remedy/kb/`, {
+        params: { id: remedyId }
+    });
+    return response.data;
+};
+

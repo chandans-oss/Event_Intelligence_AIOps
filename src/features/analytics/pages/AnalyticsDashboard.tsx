@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { MainLayout } from '@/shared/components/layout/MainLayout';
-import { Brain, Zap, Search, Activity } from 'lucide-react';
+import { Brain, Zap, Search, Activity, FileText, Server } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -277,24 +277,39 @@ export default function AnalyticsDashboard() {
                     <div key={item.id} className="bg-muted/30 border border-border/50 rounded-xl p-3 transition-all hover:border-primary/30 group">
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${item.sev === 'critical' ? 'bg-red-500/10 text-red-500' : item.sev === 'high' ? 'bg-orange-500/10 text-orange-500' : 'bg-yellow-500/10 text-yellow-500'}`}>{item.sev}</span>
                           <span className="text-foreground font-bold text-[14px] leading-tight truncate" title={item.fullTitle}>{item.title}</span>
                         </div>
-                        <button
-                          onClick={() => handleAnalyze(item)}
-                          className="flex items-center gap-2 text-primary text-[12px] font-bold opacity-90 hover:opacity-100 transition-opacity"
-                        >
-                          <Brain className="h-4 w-4" />
-                          Analyze
-                        </button>
+                        <div className="flex items-center gap-4 shrink-0">
+                          <div className="relative w-8 h-8 flex items-center justify-center">
+                            <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 36 36">
+                              <circle cx="18" cy="18" r="16" fill="none" className="stroke-muted" strokeWidth="3" />
+                              <circle 
+                                cx="18" cy="18" r="16" fill="none" 
+                                className={item.conf >= 90 ? 'stroke-green-500' : item.conf >= 75 ? 'stroke-yellow-500' : 'stroke-red-500'} strokeWidth="3" 
+                                strokeDasharray="100" strokeDashoffset={100 - item.conf} 
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                            <span className="absolute text-[9px] font-bold text-foreground">{item.conf}</span>
+                          </div>
+                          <button
+                            onClick={() => handleAnalyze(item)}
+                            className="flex items-center gap-2 text-primary text-[12px] font-bold opacity-90 hover:opacity-100 transition-opacity"
+                          >
+                            <Brain className="h-4 w-4" />
+                            Analyze
+                          </button>
+                        </div>
                       </div>
                       <div className="flex items-center gap-4 text-muted-foreground text-[11px] font-medium ml-1">
                         <div className="flex items-center gap-1.5">
-                          <Zap className="h-3 w-3 text-primary" />
-                          {item.conf}% confidence
+                          <FileText className="w-3 h-3" />
+                          Events : <span className="text-primary hover:underline cursor-pointer font-bold">{item.evidence}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 underline decoration-primary/20">{item.evidence} evidence</div>
-                        <div className="flex items-center gap-1.5">{item.services} services</div>
+                        <div className="flex items-center gap-1.5">
+                          <Server className="w-3 h-3" />
+                          Services : <span className="text-primary hover:underline cursor-pointer font-bold">{item.services}</span>
+                        </div>
                       </div>
                     </div>
                   ))}

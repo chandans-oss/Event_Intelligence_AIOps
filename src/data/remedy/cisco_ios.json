@@ -1,0 +1,1100 @@
+[
+  {
+    "remedy_id": "cisco.sg300.link.down.cable_sfp",
+    "rca_id": "link.down",
+    "title": "SG300 Port Down \u2014 Check Cable and SFP Transceiver",
+    "description": "Port is operationally down with admin status up. Most common cause on SG300 is a physical cable pull, faulty patch cable, or failed SFP module in the combo port (g49\u2013g52).",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "high",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x",
+      "sg500"
+    ],
+    "symptom_patterns": [
+      "Port down",
+      "Link failure",
+      "No link",
+      "Loss of signal",
+      "Carrier lost",
+      "Interface changed state to down"
+    ],
+    "rca_keywords": [
+      "port",
+      "link",
+      "down",
+      "cable",
+      "SFP",
+      "transceiver",
+      "signal",
+      "carrier"
+    ],
+    "steps": [
+      "SSH to switch or open web UI: ssh admin@<device_ip>",
+      "Check port operational status: show interfaces status",
+      "Confirm admin status is up (not shutdown): show running-config interface <port>",
+      "Inspect cable \u2014 reseat or replace patch cable at both ends",
+      "For combo ports (g49-g52): check SFP transceiver is seated correctly",
+      "View SFP optical info if available: show fiber-ports optical-transceiver",
+      "Verify port speed and duplex config: show interfaces <port> capabilities",
+      "If port was admin-shutdown, re-enable: interface <port> -> no shutdown",
+      "Confirm link restored: show interfaces status <port>"
+    ],
+    "keywords": [
+      "port",
+      "link",
+      "down",
+      "cable",
+      "SFP",
+      "shutdown",
+      "transceiver",
+      "carrier",
+      "signal"
+    ],
+    "reranker_text": "SG300 port operationally down, admin up. Check physical cable, reseat or replace SFP on combo ports, verify no admin shutdown. Use show interfaces status and show fiber-ports optical-transceiver.",
+    "estimated_time_minutes": 10,
+    "risk_level": "low",
+    "requires_maintenance_window": false,
+    "escalation": "If cable and SFP replaced with no link recovery, escalate to check remote peer port status and patch panel.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.link.admin_down.restore",
+    "rca_id": "link.admin_down",
+    "title": "SG300 Port Admin Shutdown \u2014 Re-enable Port",
+    "description": "Port is intentionally shut down via admin configuration. Restore service by re-enabling the port after confirming the shutdown was not deliberate security action.",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "medium",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "Admin down",
+      "Port disabled",
+      "Interface shutdown",
+      "Port suspended"
+    ],
+    "rca_keywords": [
+      "admin",
+      "shutdown",
+      "disabled",
+      "suspended",
+      "port"
+    ],
+    "steps": [
+      "Confirm shutdown was not intentional (check change log or ticket): show log",
+      "Access switch CLI: ssh admin@<device_ip>",
+      "Verify admin state: show running-config interface <port>",
+      "Enter interface config: interface <port>",
+      "Re-enable the port: no shutdown",
+      "Exit and save: end -> copy running-config startup-config",
+      "Verify port is now active: show interfaces status <port>",
+      "If port security caused shutdown, review: show port security",
+      "Check if port security auto-recovery is needed: port security max-addresses 1"
+    ],
+    "keywords": [
+      "admin",
+      "shutdown",
+      "disabled",
+      "restore",
+      "no shutdown",
+      "port security"
+    ],
+    "reranker_text": "SG300 port admin-down. Verify shutdown was not intentional, then re-enable with 'no shutdown' command. Save config after restoring. Check port security if auto-disabled.",
+    "estimated_time_minutes": 5,
+    "risk_level": "low",
+    "requires_maintenance_window": false,
+    "escalation": "If port repeatedly auto-disables, investigate port security violations or STP BPDU guard events.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.link.flap.duplex_cable",
+    "rca_id": "link.flap",
+    "title": "SG300 Port Flapping \u2014 Fix Duplex Mismatch or Replace Cable",
+    "description": "Port repeatedly cycles between up and down. Common causes on SG300 are duplex/speed auto-negotiation failure, degraded patch cable, or a faulty NIC on the connected device.",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "high",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "Port flapping",
+      "Link up down cycling",
+      "Interface state changes",
+      "Duplex mismatch",
+      "Half duplex detected"
+    ],
+    "rca_keywords": [
+      "flap",
+      "flapping",
+      "duplex",
+      "mismatch",
+      "cable",
+      "negotiation",
+      "bounce"
+    ],
+    "steps": [
+      "Identify flapping port and check error counters: show interfaces counters <port>",
+      "Check interface error and collision counts: show interfaces <port>",
+      "View current speed and duplex: show interfaces status <port>",
+      "Check link state change history: show log | include <port>",
+      "If duplex mismatch: force speed and duplex on port",
+      "Enter interface config: interface <port>",
+      "Set fixed speed: speed 100 (or 10 or 1000)",
+      "Set fixed duplex: duplex full",
+      "Exit and save: end -> copy running-config startup-config",
+      "If error counts continue: replace patch cable",
+      "If NIC on connected device is suspected: test with another device on same port",
+      "Enable storm control if broadcast storm is causing flap: storm-control broadcast level 10"
+    ],
+    "keywords": [
+      "flap",
+      "duplex",
+      "mismatch",
+      "speed",
+      "cable",
+      "bounce",
+      "storm control",
+      "counters"
+    ],
+    "reranker_text": "SG300 port flapping. Check duplex and speed mismatch with show interfaces status. Force fixed speed and duplex. Replace cable if error counters are rising. Enable storm control for broadcast-induced flaps.",
+    "estimated_time_minutes": 15,
+    "risk_level": "low",
+    "requires_maintenance_window": false,
+    "escalation": "If flapping continues after cable and duplex fix, replace SFP or check connected device NIC for hardware failure.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.link.flap_errors.cable_replace",
+    "rca_id": "link.flap_with_errors",
+    "title": "SG300 Port Flapping with CRC Errors \u2014 Replace Degraded Cable",
+    "description": "Port is both flapping and generating CRC/input errors simultaneously. This indicates a degraded or damaged cable causing intermittent signal corruption. Replace the physical cable first.",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "high",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "Port flapping with errors",
+      "CRC errors rising",
+      "Input errors",
+      "FCS errors",
+      "Link cycling with error count"
+    ],
+    "rca_keywords": [
+      "flap",
+      "CRC",
+      "error",
+      "FCS",
+      "input error",
+      "cable",
+      "corrupt"
+    ],
+    "steps": [
+      "Check current error counters: show interfaces counters <port>",
+      "Note CRC, FCS, and input error counts: show interfaces <port>",
+      "Clear counters to establish fresh baseline: clear counters <port>",
+      "Monitor for 5 minutes and recheck: show interfaces counters <port>",
+      "Replace patch cable between switch and connected device",
+      "If combo SFP port: replace SFP module, clean fibre connector",
+      "If copper port: test with CAT6 cable, avoid runs longer than 100m",
+      "Verify errors drop to zero after cable replacement",
+      "If errors persist: check connected device NIC for hardware failure",
+      "Save clean config: copy running-config startup-config"
+    ],
+    "keywords": [
+      "CRC",
+      "FCS",
+      "error",
+      "flap",
+      "cable",
+      "input error",
+      "corrupt",
+      "signal"
+    ],
+    "reranker_text": "SG300 port flapping with rising CRC and input errors. Primary fix is cable replacement. Check show interfaces counters for CRC and FCS. Test with known-good CAT6 cable. Replace SFP if combo port.",
+    "estimated_time_minutes": 15,
+    "risk_level": "low",
+    "requires_maintenance_window": false,
+    "escalation": "If errors continue after cable replacement, NIC on connected device may need replacement. Escalate to end-device team.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.link.errors.check_counters",
+    "rca_id": "link.high_errors",
+    "title": "SG300 High Error Rate \u2014 Diagnose and Clear Port Errors",
+    "description": "Port has elevated CRC, input, or output error counters. On SG300 this is typically caused by a degraded cable, EMI interference, oversized frames, or a faulty NIC on the connected device.",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "medium",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "CRC errors",
+      "Input errors",
+      "Output errors",
+      "FCS errors",
+      "Runts",
+      "Giants",
+      "High error rate"
+    ],
+    "rca_keywords": [
+      "CRC",
+      "error",
+      "input",
+      "output",
+      "FCS",
+      "runt",
+      "giant",
+      "counter"
+    ],
+    "steps": [
+      "View error counters for the affected port: show interfaces counters errors",
+      "Check full interface statistics: show interfaces <port>",
+      "Note error type: CRC/FCS (cable), runts (duplex mismatch), giants (MTU issue)",
+      "Clear counters and monitor for 10 minutes: clear counters <port>",
+      "If CRC/FCS errors: replace patch cable, test with shorter cable",
+      "If runts present: check duplex setting on connected device (half-duplex mismatch)",
+      "Fix duplex: interface <port> -> duplex full -> speed 1000",
+      "If giants: check MTU settings on connected server or NIC",
+      "If errors only on SFP port: clean fibre, replace SFP module",
+      "Enable port-level error monitoring via RMON if available",
+      "Save config after changes: copy running-config startup-config"
+    ],
+    "keywords": [
+      "CRC",
+      "FCS",
+      "error",
+      "runt",
+      "giant",
+      "duplex",
+      "cable",
+      "MTU",
+      "counter"
+    ],
+    "reranker_text": "SG300 high error rate on port. Use show interfaces counters errors to identify CRC, FCS, runt, or giant frames. Fix duplex mismatch, replace cable, or clean SFP. Giants indicate MTU misconfiguration.",
+    "estimated_time_minutes": 20,
+    "risk_level": "low",
+    "requires_maintenance_window": false,
+    "escalation": "If errors persist after cable and duplex fix, replace the NIC on the connected device. For SFP errors, replace transceiver module.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.link.degraded.sfp_power",
+    "rca_id": "link.degraded",
+    "title": "SG300 Degraded Link \u2014 Check SFP Optical Power and Cable Quality",
+    "description": "Link is up but experiencing degraded performance: high latency, packet loss, or rising error counters trending toward link down. On SG300 combo ports this is usually a weakening SFP or dirty fibre connector.",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "medium",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "Degraded link",
+      "Rising errors",
+      "High latency",
+      "Packet loss",
+      "Optical power dropping",
+      "Signal quality degrading"
+    ],
+    "rca_keywords": [
+      "degraded",
+      "latency",
+      "packet loss",
+      "optical",
+      "signal",
+      "power",
+      "trending"
+    ],
+    "steps": [
+      "Check optical Rx power on combo SFP port: show fiber-ports optical-transceiver",
+      "Compare Rx power to SFP module threshold (typically > -20 dBm)",
+      "If Rx power trending down: clean fibre connector with lint-free wipe",
+      "Check fibre bend radius \u2014 no sharp bends or kinks",
+      "Test with a known-good short fibre patch",
+      "Check error counter trend: show interfaces counters errors",
+      "If copper port: test cable with Fluke tester or replace with CAT6",
+      "Check for EMI sources near cable run (UPS, motors, fluorescent lighting)",
+      "Replace SFP module if optical power is below threshold after cleaning",
+      "Monitor link quality after remediation: show interfaces status"
+    ],
+    "keywords": [
+      "degraded",
+      "optical",
+      "SFP",
+      "fibre",
+      "Rx power",
+      "packet loss",
+      "latency",
+      "cable quality"
+    ],
+    "reranker_text": "SG300 link degraded with rising errors or packet loss. Check optical Rx power with show fiber-ports optical-transceiver. Clean fibre connectors. Replace SFP if below threshold. Test copper with CAT6.",
+    "estimated_time_minutes": 20,
+    "risk_level": "low",
+    "requires_maintenance_window": false,
+    "escalation": "If optical power is within spec but errors persist, escalate to remote peer \u2014 the issue may be on the far-end SFP or fibre span.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.link.lag_down.member_restore",
+    "rca_id": "link.lag_down",
+    "title": "SG300 LAG / Port-Channel Down \u2014 Restore Member Links",
+    "description": "A Link Aggregation Group (LAG / port-channel) is down because all member ports have failed. On SG300, LAG is configured via the Port Trunking feature. Restore at least one member link to bring the LAG up.",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "critical",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "LAG down",
+      "Port channel down",
+      "Trunk down",
+      "All LAG members down",
+      "Aggregated link failure"
+    ],
+    "rca_keywords": [
+      "LAG",
+      "port-channel",
+      "trunk",
+      "aggregation",
+      "LACP",
+      "member",
+      "down"
+    ],
+    "steps": [
+      "Identify LAG and its member ports: show port-channel",
+      "Check LACP status if dynamic LAG: show lacp statistics",
+      "Check each member port status: show interfaces status",
+      "For each down member port: check cable, SFP, and admin status",
+      "Re-enable any admin-shutdown member: interface <port> -> no shutdown",
+      "Verify LACP mode matches remote peer (active/passive): show running-config interface <port>",
+      "If static LAG (no LACP): verify same ports are configured as trunk members on remote switch",
+      "Check remote peer switch LAG configuration for consistency",
+      "Once member link recovers, verify LAG comes up: show port-channel",
+      "Confirm traffic flows: check MAC table on LAG interface"
+    ],
+    "keywords": [
+      "LAG",
+      "port-channel",
+      "LACP",
+      "trunk",
+      "aggregation",
+      "member",
+      "active",
+      "passive"
+    ],
+    "reranker_text": "SG300 LAG down. Use show port-channel and show lacp statistics to identify failed members. Restore physical link on member ports. Verify LACP active/passive mode matches peer. Check cable and admin state on each member.",
+    "estimated_time_minutes": 20,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "If all members are physically up but LAG stays down, LACP negotiation is failing \u2014 check LACP system priority and port priority on both switches.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.link.lag_degraded.member_check",
+    "rca_id": "link.lag_degraded",
+    "title": "SG300 LAG Degraded \u2014 Restore Failed Member Port",
+    "description": "LAG is up but operating with fewer active members than configured, reducing available bandwidth. Find and restore the failed member port.",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "medium",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "LAG degraded",
+      "Reduced LAG bandwidth",
+      "LAG member down",
+      "Port-channel member failure",
+      "Active members reduced"
+    ],
+    "rca_keywords": [
+      "LAG",
+      "degraded",
+      "member",
+      "bandwidth",
+      "port-channel",
+      "LACP"
+    ],
+    "steps": [
+      "Check LAG member status: show port-channel",
+      "Identify which member port is down: show lacp statistics",
+      "Check physical status of the down member: show interfaces status <port>",
+      "Inspect cable on the failed member port",
+      "Re-enable if admin-shutdown: interface <port> -> no shutdown",
+      "Verify LACP negotiation after link restores: show lacp statistics",
+      "Confirm LAG shows all members active: show port-channel",
+      "Check bandwidth utilisation returns to expected level"
+    ],
+    "keywords": [
+      "LAG",
+      "degraded",
+      "member",
+      "LACP",
+      "bandwidth",
+      "restore",
+      "port-channel"
+    ],
+    "reranker_text": "SG300 LAG degraded with one or more members down. Use show port-channel and show lacp statistics to find the failed member. Restore physical link and verify LACP renegotiates. Check cable and admin state.",
+    "estimated_time_minutes": 15,
+    "risk_level": "medium",
+    "requires_maintenance_window": false,
+    "escalation": "If member is physically up but not rejoining LAG, check for LACP timeout or mismatched configuration on remote peer.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.link.stp_loop.bpdu_guard",
+    "rca_id": "link.stp_loop",
+    "title": "SG300 STP Loop / TCN Storm \u2014 Enable BPDU Guard and PortFast",
+    "description": "Spanning Tree topology change notifications (TCN) are flooding the network, causing MAC table flushes and broadcast storms. On SG300, enable BPDU Guard on access ports and STP PortFast to stabilise the topology.",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "critical",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "STP loop",
+      "TCN storm",
+      "Topology change",
+      "BPDU storm",
+      "Broadcast flooding",
+      "MAC table flapping",
+      "STP reconvergence"
+    ],
+    "rca_keywords": [
+      "STP",
+      "loop",
+      "TCN",
+      "BPDU",
+      "topology change",
+      "broadcast",
+      "storm",
+      "spanning tree"
+    ],
+    "steps": [
+      "Check STP status and root bridge: show spanning-tree",
+      "Identify ports receiving unexpected BPDUs: show spanning-tree detail",
+      "Check topology change count and source: show spanning-tree active",
+      "Identify the rogue device or loop: show mac address-table dynamic",
+      "Disconnect suspected loop-causing device or cable immediately",
+      "Enable BPDU Guard on all access ports (end-device ports only): spanning-tree bpduguard enable",
+      "Enable STP PortFast on access ports: spanning-tree portfast",
+      "For uplink/trunk ports do NOT enable PortFast or BPDU Guard",
+      "Enable Root Guard on ports that should not become root: spanning-tree guard root",
+      "Verify STP has stabilised: show spanning-tree (check no port in BLK state unexpectedly)",
+      "Enable storm control on access ports: storm-control broadcast level 10",
+      "Save configuration: copy running-config startup-config"
+    ],
+    "keywords": [
+      "STP",
+      "loop",
+      "BPDU guard",
+      "PortFast",
+      "TCN",
+      "root guard",
+      "storm control",
+      "spanning tree"
+    ],
+    "reranker_text": "SG300 STP loop causing TCN storm and broadcast flooding. Disconnect loop source. Enable BPDU Guard and PortFast on access ports. Enable Root Guard on uplinks. Use show spanning-tree to verify stabilisation.",
+    "estimated_time_minutes": 30,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "If loop cannot be isolated, progressively disable access ports until topology stabilises, then reconnect one at a time to find the loop source.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.link.one_way.vlan_check",
+    "rca_id": "link.one_way",
+    "title": "SG300 One-Way Traffic \u2014 Check VLAN Membership and Trunk Configuration",
+    "description": "Traffic flows in only one direction on a port or LAG. On SG300 this is most commonly a VLAN membership mismatch between trunk ports or a misconfigured access VLAN. Rx-only or Tx-only packet counters confirm the fault.",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "high",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "One-way traffic",
+      "Asymmetric forwarding",
+      "Rx only",
+      "Tx only",
+      "VLAN mismatch",
+      "Trunk mismatch"
+    ],
+    "rca_keywords": [
+      "one-way",
+      "asymmetric",
+      "VLAN",
+      "trunk",
+      "access",
+      "mismatch",
+      "forwarding"
+    ],
+    "steps": [
+      "Check Rx and Tx packet counters for asymmetry: show interfaces counters <port>",
+      "Verify VLAN membership of port: show interfaces switchport <port>",
+      "Check trunk allowed VLANs: show running-config interface <port>",
+      "Compare VLAN config with remote peer switch port",
+      "Verify VLANs exist in VLAN database: show vlan",
+      "If access port VLAN mismatch: correct VLAN assignment",
+      "Enter interface config: interface <port>",
+      "Set correct access VLAN: switchport access vlan <id>",
+      "If trunk: verify allowed VLAN list matches remote: switchport trunk allowed vlan add <id>",
+      "Check if VLAN is active on trunk to uplink switch",
+      "Save config: copy running-config startup-config",
+      "Verify bidirectional traffic: show interfaces counters <port>"
+    ],
+    "keywords": [
+      "one-way",
+      "VLAN",
+      "trunk",
+      "access",
+      "switchport",
+      "mismatch",
+      "allowed",
+      "forwarding"
+    ],
+    "reranker_text": "SG300 one-way traffic. Check show interfaces counters for Rx/Tx asymmetry. Verify VLAN membership with show interfaces switchport. Correct access VLAN or trunk allowed VLAN list. Ensure VLAN exists in database.",
+    "estimated_time_minutes": 20,
+    "risk_level": "medium",
+    "requires_maintenance_window": false,
+    "escalation": "If VLAN config is correct on both switches, check for ACL or storm-control policy blocking one direction.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.device.cpu_overload.storm_control",
+    "rca_id": "device.cpu_overload",
+    "title": "SG300 CPU Overload \u2014 Identify and Mitigate Control-Plane Storm",
+    "description": "SG300 switch CPU is running at high utilisation. Unlike IOS-XE, SG300 has no routing protocol processes. High CPU on SG300 is almost always caused by a broadcast/multicast storm, excessive STP TCNs, or a management polling storm (SNMP).",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "high",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "CPU high",
+      "CPU overload",
+      "Switch slow",
+      "Web UI unresponsive",
+      "Broadcast storm",
+      "SNMP polling overload"
+    ],
+    "rca_keywords": [
+      "CPU",
+      "overload",
+      "broadcast",
+      "storm",
+      "SNMP",
+      "multicast",
+      "control plane",
+      "high utilization"
+    ],
+    "steps": [
+      "Check CPU utilisation: show processes cpu",
+      "Check for broadcast storm on ports: show interfaces counters",
+      "Identify ports with highest broadcast/multicast rates",
+      "Enable storm control on high-traffic access ports: storm-control broadcast level 10",
+      "Enable multicast storm control: storm-control multicast level 20",
+      "Check for STP TCN storms causing MAC flushes: show spanning-tree",
+      "If STP is causing CPU spike: enable BPDU Guard on access ports",
+      "Review SNMP polling interval \u2014 reduce frequency if NMS is polling aggressively",
+      "Check for management access storms: show log | include SNMP",
+      "Temporarily disable SNMP if overload is confirmed: no snmp-server",
+      "If CPU remains high: reload the switch during maintenance window",
+      "Save configuration before reload: copy running-config startup-config"
+    ],
+    "keywords": [
+      "CPU",
+      "storm control",
+      "broadcast",
+      "multicast",
+      "SNMP",
+      "STP",
+      "control plane",
+      "reload"
+    ],
+    "reranker_text": "SG300 CPU overload. Unlike IOS-XE, no BGP/OSPF processes exist. Check broadcast/multicast storm with show interfaces counters. Enable storm-control. Check STP TCNs. Reduce SNMP polling. Reload if unresponsive.",
+    "estimated_time_minutes": 25,
+    "risk_level": "medium",
+    "requires_maintenance_window": false,
+    "escalation": "If storm control and STP fixes do not reduce CPU, schedule emergency maintenance window for switch reload and firmware upgrade.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.device.memory_exhaustion.cam_table",
+    "rca_id": "device.memory_exhaustion",
+    "title": "SG300 Memory Exhaustion \u2014 Clear CAM Table and Upgrade Firmware",
+    "description": "SG300 memory is exhausted. Primary cause is a full MAC address (CAM) table due to a MAC flooding attack, or accumulated memory leak fixed in a later firmware version. SG300 has 8 MB flash \u2014 firmware upgrades fix known leaks.",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "high",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "Memory exhaustion",
+      "Low memory",
+      "CAM table full",
+      "MAC table full",
+      "Forwarding degraded",
+      "Memory allocation failure"
+    ],
+    "rca_keywords": [
+      "memory",
+      "CAM",
+      "MAC table",
+      "full",
+      "exhaustion",
+      "leak",
+      "firmware"
+    ],
+    "steps": [
+      "Check MAC address table utilisation: show mac address-table count",
+      "If CAM table full: clear dynamic entries: clear mac address-table dynamic",
+      "Check for MAC flooding: look for single port with hundreds of MACs",
+      "Enable port security to limit MACs per port: port security max-addresses 5 (on access ports)",
+      "Enable port security action: port security action discard",
+      "Check current firmware version: show version",
+      "Compare with latest available firmware on Cisco SMB support page",
+      "If firmware is outdated: download latest from cisco.com/go/sg300firmware",
+      "Upgrade via web UI: Administration -> File Management -> Firmware Upgrade",
+      "After upgrade, reload switch: reload",
+      "Monitor memory after reload: show processes memory"
+    ],
+    "keywords": [
+      "memory",
+      "CAM",
+      "MAC table",
+      "port security",
+      "firmware",
+      "upgrade",
+      "flooding",
+      "CAM full"
+    ],
+    "reranker_text": "SG300 memory exhaustion. Check CAM table with show mac address-table count. Clear dynamic entries. Enable port security to prevent MAC flooding. Upgrade firmware to fix known memory leaks. Reload after upgrade.",
+    "estimated_time_minutes": 45,
+    "risk_level": "high",
+    "requires_maintenance_window": true,
+    "escalation": "If memory exhaustion recurs after firmware upgrade and CAM table is not full, escalate to Cisco SMB TAC \u2014 hardware memory fault possible.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html",
+      "https://www.cisco.com/c/en/us/support/switches/sg300-52-52-port-gigabit-managed-switch/model.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.device.unreachable.mgmt_vlan",
+    "rca_id": "device.unreachable",
+    "title": "SG300 Device Unreachable \u2014 Restore Management VLAN and IP Config",
+    "description": "SG300 is not responding to ICMP or SNMP from NMS. Most common causes are: management VLAN IP misconfiguration, default gateway missing, admin password lockout, or management access control list blocking NMS IP.",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "critical",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "Device unreachable",
+      "SNMP timeout",
+      "ICMP unreachable",
+      "Management access lost",
+      "Cannot SSH",
+      "Web UI unreachable"
+    ],
+    "rca_keywords": [
+      "unreachable",
+      "management",
+      "VLAN",
+      "IP",
+      "gateway",
+      "SNMP",
+      "SSH",
+      "access"
+    ],
+    "steps": [
+      "Verify switch is powered on and has link on uplink port (check LEDs)",
+      "Try to reach switch from a device on the same VLAN/subnet first",
+      "If local access works but NMS cannot reach: check default gateway",
+      "Connect console cable to switch console port (RJ45)",
+      "Login via console: admin / (configured password)",
+      "Check management IP: show ip interface",
+      "Check default gateway: show ip default-gateway",
+      "If IP is wrong: configure correct management IP",
+      "Enter global config: configure terminal",
+      "Set management IP: interface vlan <mgmt-vlan-id> -> ip address <ip> <mask>",
+      "Set default gateway: ip default-gateway <gateway-ip>",
+      "Check management access list: show management access-list",
+      "If NMS IP is blocked: add NMS IP to management access list",
+      "If locked out: perform factory reset via reset button (hold 10s) as last resort",
+      "Save config: copy running-config startup-config"
+    ],
+    "keywords": [
+      "unreachable",
+      "management",
+      "VLAN",
+      "IP address",
+      "gateway",
+      "console",
+      "SSH",
+      "access list",
+      "locked out"
+    ],
+    "reranker_text": "SG300 unreachable from NMS. Connect via console cable. Check management VLAN IP with show ip interface. Verify default gateway. Check management access list for NMS IP block. Correct IP config and save.",
+    "estimated_time_minutes": 30,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "If console access is also lost, perform hardware reset. If switch LED shows no activity, check power supply and UPS.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.device.unexpected_reboot.power_firmware",
+    "rca_id": "device.unexpected_reboot",
+    "title": "SG300 Unexpected Reboot \u2014 Check Power and Firmware Crash Log",
+    "description": "SG300 has rebooted unexpectedly without operator action. Causes include power fluctuation, firmware panic/watchdog reset, or hardware fault. Check the system log and firmware version to determine root cause.",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "high",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "Unexpected reboot",
+      "Spontaneous reload",
+      "Switch restarted",
+      "Watchdog reset",
+      "Power cycle",
+      "Firmware crash"
+    ],
+    "rca_keywords": [
+      "reboot",
+      "reload",
+      "restart",
+      "watchdog",
+      "power",
+      "crash",
+      "firmware"
+    ],
+    "steps": [
+      "Check system log for reboot reason: show log",
+      "Check last reload reason: show version (look for Last reload reason)",
+      "If power-related: check UPS status and power supply connections",
+      "Measure input voltage at switch power connector (should be 100-240V AC)",
+      "Check for environmental issues: temperature, humidity",
+      "View component inventory for hardware faults: show system hardware",
+      "Check current firmware version: show version",
+      "If firmware version is old: upgrade to latest stable release",
+      "Download firmware from Cisco SMB support: cisco.com/go/sg300firmware",
+      "Upgrade via web UI: Administration -> File Management -> Firmware Upgrade",
+      "After upgrade, monitor for recurrence: show log (check for watchdog entries)",
+      "If power fluctuation confirmed: install UPS or line conditioner",
+      "Save configuration: copy running-config startup-config"
+    ],
+    "keywords": [
+      "reboot",
+      "reload",
+      "watchdog",
+      "power",
+      "firmware",
+      "crash",
+      "UPS",
+      "log",
+      "version"
+    ],
+    "reranker_text": "SG300 unexpected reboot. Check show log for reload reason \u2014 watchdog, power, or firmware crash. Upgrade firmware if outdated. Verify power supply and UPS. Monitor after upgrade for recurrence.",
+    "estimated_time_minutes": 40,
+    "risk_level": "high",
+    "requires_maintenance_window": true,
+    "escalation": "If reboots recur after firmware upgrade and power is clean, escalate to Cisco SMB TAC \u2014 hardware watchdog or memory fault suspected.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html",
+      "https://www.cisco.com/c/en/us/support/switches/sg300-52-52-port-gigabit-managed-switch/model.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.device.boot_loop.firmware_recovery",
+    "rca_id": "device.boot_loop",
+    "title": "SG300 Boot Loop \u2014 Recover via Firmware Re-flash",
+    "description": "SG300 is stuck in a boot loop \u2014 repeatedly powering on and failing to reach a stable operating state. This is caused by a corrupt firmware image. Recovery requires re-flashing firmware via the boot menu using TFTP or the web recovery page.",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "critical",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "Boot loop",
+      "Switch not booting",
+      "Stuck in boot",
+      "Firmware corrupt",
+      "Continuous restart",
+      "LED cycling on boot"
+    ],
+    "rca_keywords": [
+      "boot loop",
+      "corrupt",
+      "firmware",
+      "TFTP",
+      "recovery",
+      "flash",
+      "reload"
+    ],
+    "steps": [
+      "Power cycle the switch and watch console output for boot menu",
+      "Connect console cable at 115200 baud, 8N1",
+      "During boot, press Ctrl+C or ESC to access boot menu (timing is critical)",
+      "Select option to boot from alternate firmware image if available",
+      "If alternate image is not present: initiate TFTP recovery",
+      "Set up TFTP server on a laptop connected to switch port 1",
+      "Assign laptop IP 192.168.1.x (SG300 boot mode uses 192.168.1.254 by default)",
+      "Place valid firmware .bin file in TFTP root directory",
+      "From boot menu: select TFTP download option",
+      "Enter TFTP server IP and firmware filename",
+      "Wait for firmware flash to complete (do not power off during this step)",
+      "After flash completes, switch will reboot into new firmware",
+      "Verify normal boot via console: show version",
+      "Restore configuration from backup if available",
+      "Save: copy running-config startup-config"
+    ],
+    "keywords": [
+      "boot loop",
+      "firmware",
+      "TFTP",
+      "recovery",
+      "flash",
+      "corrupt",
+      "console",
+      "boot menu"
+    ],
+    "reranker_text": "SG300 stuck in boot loop due to corrupt firmware. Access boot menu via console during power-on. Use TFTP recovery to re-flash firmware. Set up TFTP server on connected laptop. Do not power off during flash.",
+    "estimated_time_minutes": 60,
+    "risk_level": "critical",
+    "requires_maintenance_window": true,
+    "escalation": "If TFTP recovery fails and boot menu is inaccessible, the switch hardware (flash memory) may be defective. RMA required \u2014 contact Cisco SMB TAC.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html",
+      "https://www.cisco.com/c/en/us/support/switches/sg300-52-52-port-gigabit-managed-switch/model.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.device.power_failure.psu_check",
+    "rca_id": "device.power_failure",
+    "title": "SG300 Power Failure \u2014 Check PSU, UPS and Power Source",
+    "description": "SG300 has lost power. The SG300-52 has a single internal PSU \u2014 no redundant power option. Verify the power source, power cable, and UPS output. Physical inspection required.",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "critical",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "Power failure",
+      "Device powered off",
+      "No power",
+      "System LED off",
+      "UPS output failure",
+      "Power supply failure"
+    ],
+    "rca_keywords": [
+      "power",
+      "PSU",
+      "UPS",
+      "outage",
+      "power supply",
+      "failure",
+      "offline"
+    ],
+    "steps": [
+      "Check System LED on front panel \u2014 off indicates no power",
+      "Verify power cable is firmly connected to switch and wall socket",
+      "Check if wall socket has power (test with another device)",
+      "Check UPS output \u2014 verify UPS is on and outputting correct voltage",
+      "Check UPS event log for power outage or overload",
+      "If UPS is in bypass or fault: restore UPS, check UPS battery health",
+      "Inspect power cable for damage \u2014 replace if damaged",
+      "If power source is confirmed good: internal PSU may have failed",
+      "SG300 has no redundant PSU \u2014 device must be replaced if PSU fails",
+      "Check ambient temperature around switch \u2014 overtemp can trigger PSU shutdown",
+      "Verify adequate ventilation around the switch (min 2U clearance above/below)",
+      "After power restore: verify switch boots fully and all ports recover",
+      "Check log for pre-failure messages: show log"
+    ],
+    "keywords": [
+      "power",
+      "PSU",
+      "UPS",
+      "LED",
+      "cable",
+      "outage",
+      "temperature",
+      "ventilation",
+      "replace"
+    ],
+    "reranker_text": "SG300 power failure. Check System LED, power cable, and UPS output. SG300 has single non-redundant PSU \u2014 failed PSU requires device replacement. Check ambient temperature and ventilation. Verify UPS health.",
+    "estimated_time_minutes": 30,
+    "risk_level": "critical",
+    "requires_maintenance_window": false,
+    "escalation": "If power source is confirmed healthy and switch still has no power, the internal PSU has failed. Initiate RMA with Cisco SMB \u2014 end of sale 2018, check Cisco warranty status.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.sg300.emergency.sop",
+    "rca_id": "device.unreachable",
+    "title": "SG300 Emergency SOP \u2014 When All Other Remedies Fail",
+    "description": "Emergency standard operating procedure for SG300 when root cause cannot be determined remotely and device is unresponsive to all management access methods.",
+    "vendor": "cisco",
+    "os_flavor": "sg300",
+    "severity": "critical",
+    "appliance_types": [
+      "sg300",
+      "sg300-52",
+      "sg300-28",
+      "sg350",
+      "sg350x"
+    ],
+    "symptom_patterns": [
+      "All remedies exhausted",
+      "Device unresponsive",
+      "No management access",
+      "Cannot diagnose remotely"
+    ],
+    "rca_keywords": [
+      "emergency",
+      "SOP",
+      "escalate",
+      "unresponsive",
+      "console",
+      "factory reset"
+    ],
+    "steps": [
+      "Dispatch on-site engineer to physical location of switch",
+      "Verify power: check System LED and all port LEDs",
+      "Connect console cable (RJ45 to DB9 or USB): 115200 baud, 8N1, no flow control",
+      "Attempt console login: admin / <password>",
+      "If console is unresponsive: power cycle switch",
+      "On boot, attempt to access boot menu (Ctrl+C or ESC)",
+      "If device is responding but config is corrupt: restore from startup-config backup",
+      "If no backup: perform factory reset (hold Reset button 10+ seconds)",
+      "After factory reset: reconfigure management IP, VLAN, and credentials",
+      "Restore from configuration backup file if available via web UI",
+      "If device cannot boot: proceed with firmware TFTP recovery",
+      "If hardware failure confirmed: initiate Cisco SMB RMA",
+      "Document all steps taken and outcome in incident ticket"
+    ],
+    "keywords": [
+      "emergency",
+      "console",
+      "factory reset",
+      "RMA",
+      "on-site",
+      "SOP",
+      "unresponsive",
+      "escalation"
+    ],
+    "reranker_text": "SG300 emergency SOP. Dispatch on-site engineer. Connect console cable at 115200 baud. Power cycle if unresponsive. Factory reset as last resort (hold Reset 10s). TFTP firmware recovery if corrupt. Initiate RMA if hardware failed.",
+    "estimated_time_minutes": 90,
+    "risk_level": "critical",
+    "requires_maintenance_window": true,
+    "escalation": "Engage Cisco SMB TAC: 1-800-553-2447. Have serial number (DNI143803V8 for SG300-52) and firmware version ready. Check warranty status at cisco.com/go/warranty.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/smb/sg300/administration_guide/SG300_AG.html",
+      "https://www.cisco.com/c/en/us/support/switches/sg300-52-52-port-gigabit-managed-switch/model.html"
+    ]
+  }
+]

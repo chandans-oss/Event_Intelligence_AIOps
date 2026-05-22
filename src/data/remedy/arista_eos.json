@@ -1,0 +1,994 @@
+[
+  {
+    "remedy_id": "arista.eos.link.001",
+    "rca_id": "link.down",
+    "title": "Physical Interface Down – SFP/Cable Failure",
+    "description": "A physical Ethernet interface has transitioned to a down/down state due to a missing, unseated, or failed SFP transceiver or a broken/disconnected fiber/copper cable. The interface carrier signal is lost at the physical layer, causing the link to be reported as operationally down. This condition typically results in traffic blackholing and triggers SNMP/syslog alerts for the affected port.",
+    "vendor": "arista",
+    "os_flavor": "eos",
+    "severity": "high",
+    "appliance_types": [
+      "DCS-7050CX3",
+      "DCS-7280CR3",
+      "DCS-7368",
+      "DCS-7150S",
+      "DCS-7060CX2",
+      "DCS-7260CX3",
+      "vEOS-lab",
+      "cEOSLab"
+    ],
+    "symptom_patterns": [
+      "Interface Ethernet X/Y/Z is down, line protocol is down",
+      "SNMP linkDown trap received for interface",
+      "Traffic loss reported on specific port",
+      "Syslog: %ETH-5-SINGLE_COLLISION or %LINEPROTO-5-UPDOWN: Line protocol on Interface EthernetX, changed state to down",
+      "BFD session down on affected interface"
+    ],
+    "rca_keywords": [
+      "link down",
+      "sfp failure",
+      "cable fault",
+      "physical layer",
+      "no carrier",
+      "lineproto down",
+      "interface down"
+    ],
+    "steps": [
+      "Step 1 – Identify the affected interface and confirm operational status: `show interfaces Ethernet<X/Y/Z> status`",
+      "Step 2 – Check interface counters and error statistics for the port: `show interfaces Ethernet<X/Y/Z>`",
+      "Step 3 – Verify transceiver presence and DOM (Digital Optical Monitoring) readings: `show interfaces Ethernet<X/Y/Z> transceiver`",
+      "Step 4 – Confirm transceiver type and compatibility with the switch and cable plant: `show interfaces Ethernet<X/Y/Z> transceiver detail`",
+      "Step 5 – Review recent syslog messages around the time of the outage for hardware error events: `show logging last 200`",
+      "Step 6 – Check if the interface is administratively shut down (should show 'connected' or 'notconnect'): `show interfaces status | grep Eth<X>`",
+      "Step 7 – Attempt a physical layer reset by bouncing the interface (coordinate with change management): `configure terminal` → `interface Ethernet<X/Y/Z>` → `shutdown` → `no shutdown` → `end`",
+      "Step 8 – Re-examine transceiver DOM values post-bounce to detect receive power below threshold: `show interfaces Ethernet<X/Y/Z> transceiver`",
+      "Step 9 – Check for hardware error registers on the port ASIC: `show hardware port-info Ethernet<X/Y/Z>`",
+      "Step 10 – If SFP is suspect, reseat or swap with a known-good compatible transceiver, then verify link recovery: `show interfaces Ethernet<X/Y/Z> status`",
+      "Step 11 – Verify EOS hardware compatibility for the transceiver model using Arista's TOE (Transceiver Ordering Engine) or: `show version` and cross-reference Arista HW compatibility matrix",
+      "Step 12 – Confirm upstream/downstream device port status and negotiate with the remote end team to verify their port status"
+    ],
+    "keywords": [
+      "link down",
+      "sfp",
+      "transceiver",
+      "cable",
+      "physical layer",
+      "ethernet down",
+      "no signal",
+      "interface failure",
+      "port down"
+    ],
+    "reranker_text": "This runbook addresses an Arista EOS physical interface entering a down/down state caused by SFP transceiver failure or a faulty fiber/copper cable. Diagnosis involves checking interface status, transceiver DOM readings, error counters, and syslog events. Remediation includes reseating or replacing the SFP, bouncing the interface, and verifying hardware compatibility via Arista TOE. Escalate to Arista TAC if hardware defect is confirmed after SFP swap.",
+    "estimated_time_minutes": 30,
+    "risk_level": "medium",
+    "requires_maintenance_window": false,
+    "escalation": "If link remains down after SFP replacement and cable verification, open an Arista TAC case with `show tech-support` output, transceiver detail, and syslog. Escalate to on-site hands if physical inspection is required.",
+    "doc_links": [
+      "https://www.arista.com/en/support/toi/eos-4-21-0f/14073-transceiver-dom",
+      "https://arista.my.site.com/AristaCommunity/s/article/EOS-User-Manual-Troubleshooting-Interfaces",
+      "https://www.arista.com/assets/data/docs/Manuals/EOS-4.32.0F-manual.pdf"
+    ]
+  },
+  {
+    "remedy_id": "arista.eos.link.002",
+    "rca_id": "link.down",
+    "title": "Physical Interface Down – Transceiver DOM Threshold Exceeded",
+    "description": "An Arista EOS interface has been brought down or is reporting degraded performance because a transceiver's Digital Optical Monitoring (DOM) values have exceeded vendor-specified thresholds, such as receive (Rx) optical power falling below the sensitivity floor, transmit (Tx) power dropping, or temperature and voltage alarm conditions. EOS can optionally shut down a port automatically when DOM thresholds are crossed. This condition indicates optical signal degradation that typically stems from connector contamination, fiber bend/break, or an aging transceiver.",
+    "vendor": "arista",
+    "os_flavor": "eos",
+    "severity": "high",
+    "appliance_types": [
+      "DCS-7280CR3",
+      "DCS-7050CX3",
+      "DCS-7060CX2",
+      "DCS-7260CX3",
+      "DCS-7368",
+      "DCS-7150S"
+    ],
+    "symptom_patterns": [
+      "Syslog: Xcvr DOM alarm: Ethernet<X/Y/Z> Rx power LOW WARNING/ALARM",
+      "Syslog: Xcvr DOM alarm: Ethernet<X/Y/Z> Tx power LOW WARNING/ALARM",
+      "Interface intermittently flapping then going down",
+      "High bit-error rate reported on the interface",
+      "Interface line protocol down with transceiver physically present"
+    ],
+    "rca_keywords": [
+      "DOM alarm",
+      "transceiver threshold",
+      "rx power low",
+      "tx power low",
+      "xcvr alarm",
+      "optical power",
+      "dom warning",
+      "fiber degradation"
+    ],
+    "steps": [
+      "Step 1 – Confirm interface state and whether EOS auto-shutdown triggered: `show interfaces Ethernet<X/Y/Z> status`",
+      "Step 2 – Examine full transceiver DOM readings including Rx/Tx power, temperature, voltage, and bias current: `show interfaces Ethernet<X/Y/Z> transceiver detail`",
+      "Step 3 – Note the alarm/warning thresholds and compare measured values against thresholds in the output",
+      "Step 4 – Search syslog for DOM alarm events to establish timeline: `show logging last 500 | grep -i xcvr`",
+      "Step 5 – Check if EOS is configured to auto-shutdown the interface on DOM alarms: `show running-config interfaces Ethernet<X/Y/Z>`",
+      "Step 6 – Inspect the fiber connector on both ends for contamination using a fiber scope (physical inspection); clean with IEC 61300-3-35 compliant cleaner if dirty",
+      "Step 7 – Check fiber patch panel continuity and confirm fiber bend radius is within spec (typically > 30mm for SMF)",
+      "Step 8 – If Rx power is low and fiber is clean, verify remote end Tx power and laser health: coordinate with remote team",
+      "Step 9 – If DOM alarms persist after cleaning, swap the transceiver with a known-good Arista-qualified unit: `show interfaces Ethernet<X/Y/Z> transceiver detail` post-swap",
+      "Step 10 – Re-enable the interface if auto-shutdown engaged: `configure terminal` → `interface Ethernet<X/Y/Z>` → `no shutdown` → `end`",
+      "Step 11 – Monitor DOM values after recovery for 15–30 minutes: `watch 30 show interfaces Ethernet<X/Y/Z> transceiver`",
+      "Step 12 – Document DOM baseline values for future trend analysis and consider enabling DOM monitoring alerts in network management system"
+    ],
+    "keywords": [
+      "dom",
+      "transceiver",
+      "rx power",
+      "tx power",
+      "optical alarm",
+      "xcvr",
+      "fiber",
+      "sfp alarm",
+      "dom threshold",
+      "optical degradation"
+    ],
+    "reranker_text": "This runbook resolves Arista EOS interface-down events caused by transceiver DOM threshold violations such as low Rx/Tx optical power, temperature alarms, or voltage excursions. Diagnosis uses 'show interfaces transceiver detail' to compare live DOM readings against alarm thresholds, supplemented by syslog review. Remediation involves fiber cleaning, transceiver replacement, and re-enabling auto-shutdown ports. Escalate to Arista TAC if transceivers from multiple vendors exhibit the same DOM alarms on the same interface.",
+    "estimated_time_minutes": 45,
+    "risk_level": "medium",
+    "requires_maintenance_window": false,
+    "escalation": "If DOM alarms recur after transceiver swap and fiber cleaning, escalate to Arista TAC with 'show tech-support' and 'show interfaces transceiver detail' output. Engage optical transport team if the issue is suspected on the fiber plant.",
+    "doc_links": [
+      "https://www.arista.com/en/support/toi/eos-4-21-0f/14073-transceiver-dom",
+      "https://arista.my.site.com/AristaCommunity/s/article/Digital-Optical-Monitoring-DOM",
+      "https://www.arista.com/assets/data/docs/Manuals/EOS-4.32.0F-manual.pdf"
+    ]
+  },
+  {
+    "remedy_id": "arista.eos.link.003",
+    "rca_id": "link.flap",
+    "title": "Interface Flapping with Debounce Configuration",
+    "description": "An Arista EOS interface is repeatedly cycling between up and down states (flapping), causing routing protocol instability, spanning-tree topology changes, and traffic disruption. Flapping is typically caused by marginal physical connectivity (dirty connectors, failing SFP, exceeding cable distance limits), negotiation mismatches, or transient power issues on connected equipment. EOS provides link debounce timers to dampen rapid state changes and reduce control-plane churn.",
+    "vendor": "arista",
+    "os_flavor": "eos",
+    "severity": "high",
+    "appliance_types": [
+      "DCS-7050CX3",
+      "DCS-7280CR3",
+      "DCS-7060CX2",
+      "DCS-7150S",
+      "DCS-7260CX3",
+      "cEOSLab",
+      "vEOS-lab"
+    ],
+    "symptom_patterns": [
+      "Syslog: repeated LINEPROTO-5-UPDOWN messages for same interface",
+      "Spanning-tree topology change notifications",
+      "BGP/OSPF neighbor adjacency repeatedly forming and tearing down",
+      "Interface up/down counter incrementing rapidly in 'show interfaces'",
+      "SNMP linkUp and linkDown traps alternating for same interface"
+    ],
+    "rca_keywords": [
+      "interface flap",
+      "link flap",
+      "debounce",
+      "updown",
+      "topology change",
+      "unstable link",
+      "carrier loss"
+    ],
+    "steps": [
+      "Step 1 – Identify the flapping interface and count up/down transitions: `show interfaces Ethernet<X/Y/Z> | grep -i 'line protocol\\|flap\\|Last clearing'`",
+      "Step 2 – Check interface counters for input/output errors, CRC, and frame errors indicating physical layer issues: `show interfaces Ethernet<X/Y/Z>`",
+      "Step 3 – Review syslog for flap history and time between events: `show logging last 500 | grep Ethernet<X/Y/Z>`",
+      "Step 4 – Inspect DOM transceiver values for optical power trends: `show interfaces Ethernet<X/Y/Z> transceiver detail`",
+      "Step 5 – Verify interface speed and duplex settings match the remote end (auto-negotiation vs. hard-set): `show interfaces Ethernet<X/Y/Z> status`",
+      "Step 6 – Apply a link debounce timer to suppress rapid state changes (up to 20,000 ms) while investigating: `configure terminal` → `interface Ethernet<X/Y/Z>` → `link debounce time 5000` → `end`",
+      "Step 7 – Check if the interface is a member of a Port-Channel, and confirm LACP is not contributing to flaps: `show port-channel summary`",
+      "Step 8 – Review spanning-tree topology change counter for the affected VLAN: `show spanning-tree topology-change-history`",
+      "Step 9 – Physically inspect and clean fiber connectors/cable; check for excessive bend radius or pinched cables",
+      "Step 10 – Swap transceiver with a known-good unit and monitor for flap recurrence: `show interfaces Ethernet<X/Y/Z> transceiver detail`",
+      "Step 11 – Verify remote device port configuration and negotiate with the remote team to confirm link stability",
+      "Step 12 – Once stable, remove debounce timer if it was applied only for investigation, or keep per network policy: `configure terminal` → `interface Ethernet<X/Y/Z>` → `no link debounce` → `end`",
+      "Step 13 – Monitor the interface for 30–60 minutes to confirm sustained stability: `watch 10 show interfaces Ethernet<X/Y/Z> status`"
+    ],
+    "keywords": [
+      "flap",
+      "debounce",
+      "interface flapping",
+      "link instability",
+      "updown",
+      "crc errors",
+      "topology change",
+      "spanning-tree",
+      "marginal link"
+    ],
+    "reranker_text": "This runbook addresses Arista EOS interface flapping, where a port repeatedly transitions between up and down states causing routing and spanning-tree instability. Diagnosis involves reviewing syslog flap history, interface error counters, and DOM transceiver values. Mitigation uses EOS 'link debounce time' to dampen rapid transitions while the root physical cause is identified and remediated. Escalate to Arista TAC if flapping continues after physical remediation and debounce configuration.",
+    "estimated_time_minutes": 45,
+    "risk_level": "medium",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Arista TAC if flapping persists after SFP swap, cable replacement, and debounce timer application. Provide 'show tech-support', logging, and 'show interfaces transceiver detail' to TAC.",
+    "doc_links": [
+      "https://arista.my.site.com/AristaCommunity/s/article/Link-Debounce",
+      "https://www.arista.com/assets/data/docs/Manuals/EOS-4.32.0F-manual.pdf",
+      "https://arista.my.site.com/AristaCommunity/s/article/EOS-User-Manual-Troubleshooting-Interfaces"
+    ]
+  },
+  {
+    "remedy_id": "arista.eos.link.004",
+    "rca_id": "link.lag_down",
+    "title": "Port-Channel Down – LACP Negotiation Failure",
+    "description": "An Arista EOS Port-Channel (LAG) has entered a down state because LACP (Link Aggregation Control Protocol) failed to establish or maintain the bundle, leaving no active member interfaces. Common causes include LACP system-ID or key mismatch between peers, misconfigured member interfaces (wrong mode: on vs. active/passive), rate mismatch, or physical failures on all member links. A down Port-Channel causes complete loss of the logical bundle, impacting all VLANs and routing protocols that reference it.",
+    "vendor": "arista",
+    "os_flavor": "eos",
+    "severity": "critical",
+    "appliance_types": [
+      "DCS-7050CX3",
+      "DCS-7280CR3",
+      "DCS-7060CX2",
+      "DCS-7368",
+      "DCS-7260CX3",
+      "DCS-7150S",
+      "vEOS-lab",
+      "cEOSLab"
+    ],
+    "symptom_patterns": [
+      "Port-Channel interface is down, line protocol is down",
+      "All LACP member interfaces in 'inactive' or 'not bundled' state",
+      "Syslog: %LACP-5-BUNDLE_CHANGE: Port-Channel<X> bundle change",
+      "Traffic loss across the Port-Channel",
+      "Routing protocols referencing the Port-Channel report adjacency loss"
+    ],
+    "rca_keywords": [
+      "port-channel down",
+      "lacp failure",
+      "lag down",
+      "bundle failure",
+      "lacp mismatch",
+      "not bundled",
+      "inactive member"
+    ],
+    "steps": [
+      "Step 1 – Check overall Port-Channel and member interface status: `show port-channel summary`",
+      "Step 2 – Review LACP neighbor information and PDU exchange state: `show lacp interface Port-Channel<X> peer`",
+      "Step 3 – Verify LACP mode on all member interfaces (should be 'active' or 'passive', not 'on'): `show lacp interface Ethernet<X/Y/Z>`",
+      "Step 4 – Check physical state of all member interfaces: `show interfaces status | grep Eth`",
+      "Step 5 – Review interface counters for errors on member ports: `show interfaces Ethernet<X/Y/Z>`",
+      "Step 6 – Verify LACP system priority and system-ID are consistent on the local switch: `show lacp sys-id`",
+      "Step 7 – Confirm member interfaces have matching speed, duplex, and LACP key (port-channel group number): `show running-config interfaces Ethernet<X/Y/Z>`",
+      "Step 8 – Check MLAG configuration if this is an MLAG Port-Channel (cross-check peer state): `show mlag`",
+      "Step 9 – Review LACP PDU counters for LACPDU TX/RX activity to confirm PDUs are being exchanged: `show lacp counters`",
+      "Step 10 – Inspect syslog for LACP-specific events: `show logging last 200 | grep -i lacp`",
+      "Step 11 – If LACP mode mismatch is found, correct on both sides: `configure terminal` → `interface Ethernet<X/Y/Z>` → `channel-group <X> mode active` → `end`",
+      "Step 12 – After configuration correction, verify Port-Channel recovers with all members bundled: `show port-channel summary`",
+      "Step 13 – Confirm traffic flow is restored through the Port-Channel: `show interfaces Port-Channel<X>`"
+    ],
+    "keywords": [
+      "port-channel",
+      "lacp",
+      "lag",
+      "bundle",
+      "not bundled",
+      "channel-group",
+      "mlag",
+      "aggregation",
+      "trunk down"
+    ],
+    "reranker_text": "This runbook resolves an Arista EOS Port-Channel (LAG) that has gone down due to LACP negotiation failure. Diagnosis uses 'show port-channel summary', 'show lacp interface', and 'show lacp peer' to identify mode mismatches, key mismatches, or physical member failures. Remediation corrects LACP mode, speed, or duplex configuration on affected member interfaces and verifies recovery. For MLAG environments, 'show mlag' is used to verify peer-link health.",
+    "estimated_time_minutes": 40,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Arista TAC if Port-Channel remains down after correcting LACP configuration on both ends. Include 'show tech-support', 'show lacp interface', 'show mlag detail', and syslog in the TAC case.",
+    "doc_links": [
+      "https://arista.my.site.com/AristaCommunity/s/article/LACP-Configuration",
+      "https://www.arista.com/assets/data/docs/Manuals/EOS-4.32.0F-manual.pdf",
+      "https://arista.my.site.com/AristaCommunity/s/article/MLAG-Configuration-and-Troubleshooting"
+    ]
+  },
+  {
+    "remedy_id": "arista.eos.link.005",
+    "rca_id": "link.stp_loop",
+    "title": "MSTP/RSTP Loop Detected – Spanning-Tree Topology Event",
+    "description": "A spanning-tree loop or undesired topology change has been detected in the network, causing MAC address table instability, excessive broadcast traffic, or a forwarding loop that can saturate links and degrade network performance. In Arista EOS environments using MSTP or RSTP, loops can occur due to BPDU filter misconfiguration, PortFast on trunk ports, unidirectional link failures, or a root bridge election change. Loop Guard, BPDU Guard, and BPDU Filter are key preventive controls in EOS.",
+    "vendor": "arista",
+    "os_flavor": "eos",
+    "severity": "critical",
+    "appliance_types": [
+      "DCS-7050CX3",
+      "DCS-7280CR3",
+      "DCS-7060CX2",
+      "DCS-7150S",
+      "DCS-7368",
+      "vEOS-lab",
+      "cEOSLab"
+    ],
+    "symptom_patterns": [
+      "High CPU utilization due to flooding/broadcast storm",
+      "MAC address table flapping for same MAC on multiple ports",
+      "Syslog: %STP-6-TOPOLOGY_CHANGE: Topology change detected on Ethernet<X>",
+      "Syslog: %BPDU_GUARD-4-BPDU_GUARD_ENABLED_ERR_DISABLED: interface blocked by BPDU Guard",
+      "Network-wide traffic degradation and high latency"
+    ],
+    "rca_keywords": [
+      "stp loop",
+      "spanning-tree loop",
+      "topology change",
+      "bpdu guard",
+      "bpdu filter",
+      "broadcast storm",
+      "mac flapping",
+      "root bridge",
+      "portfast trunk"
+    ],
+    "steps": [
+      "Step 1 – Confirm spanning-tree topology and current root bridge for all MST instances: `show spanning-tree`",
+      "Step 2 – Check for topology change history and identify which interface triggered the TC: `show spanning-tree topology-change-history`",
+      "Step 3 – Examine spanning-tree detail for all active interfaces and their port roles (Root/Designated/Alternate/Blocked): `show spanning-tree detail`",
+      "Step 4 – Identify any interfaces in err-disabled state due to BPDU Guard: `show interfaces status err-disabled`",
+      "Step 5 – Check for MAC address table instability (same MAC on multiple ports): `show mac address-table`",
+      "Step 6 – Review syslog for topology change and BPDU-related events: `show logging last 500 | grep -i 'stp\\|bpdu\\|topology'`",
+      "Step 7 – Verify Loop Guard is enabled on non-designated ports to prevent loops from unidirectional failures: `show spanning-tree interface Ethernet<X/Y/Z> detail`",
+      "Step 8 – Confirm BPDU Guard is enabled on PortFast-configured access ports and NOT on trunk ports: `show spanning-tree interface Ethernet<X/Y/Z> portfast`",
+      "Step 9 – If a BPDU Guard err-disabled port is found, determine why a BPDU was received (rogue switch, misconfig), then recover: `configure terminal` → `interface Ethernet<X/Y/Z>` → `shutdown` → `no shutdown` → `end`",
+      "Step 10 – Verify MST region configuration consistency (name, revision, VLAN mapping) across all switches: `show spanning-tree mst configuration`",
+      "Step 11 – Enable storm control on access ports to limit broadcast rate during a loop event: `configure terminal` → `interface Ethernet<X/Y/Z>` → `storm-control broadcast level 20` → `end`",
+      "Step 12 – Harden configuration: enable PortFast only on verified access ports and enable BPDU Guard globally for PortFast ports: `spanning-tree portfast bpduguard default`",
+      "Step 13 – Monitor topology change rate until it returns to zero: `watch 30 show spanning-tree | grep 'Topology change'`"
+    ],
+    "keywords": [
+      "spanning-tree",
+      "stp loop",
+      "mstp",
+      "rstp",
+      "bpdu guard",
+      "loop guard",
+      "topology change",
+      "broadcast storm",
+      "portfast",
+      "root bridge"
+    ],
+    "reranker_text": "This runbook addresses MSTP/RSTP spanning-tree loops on Arista EOS switches causing MAC flapping, broadcast storms, and traffic disruption. Diagnosis involves reviewing 'show spanning-tree', topology change history, MAC address table stability, and syslog for BPDU events. Remediation includes recovering BPDU Guard err-disabled ports, verifying MST region consistency, and hardening PortFast/Loop Guard configuration. Storm control is applied as a traffic mitigation measure during the event.",
+    "estimated_time_minutes": 60,
+    "risk_level": "critical",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to senior network engineer if the root bridge election is unexpected or if loop persists after BPDU Guard recovery and topology verification. Engage Arista TAC if an EOS software bug is suspected. Provide 'show tech-support', 'show spanning-tree detail', and MAC table output.",
+    "doc_links": [
+      "https://arista.my.site.com/AristaCommunity/s/article/Spanning-Tree-Protocol-STP-on-EOS",
+      "https://www.arista.com/assets/data/docs/Manuals/EOS-4.32.0F-manual.pdf",
+      "https://arista.my.site.com/AristaCommunity/s/article/MSTP-Configuration"
+    ]
+  },
+  {
+    "remedy_id": "arista.eos.device.001",
+    "rca_id": "device.cpu_overload",
+    "title": "High CPU Utilization – EOS Agent Consuming Excessive CPU",
+    "description": "An Arista EOS switch is exhibiting sustained high CPU utilization caused by a specific EOS process (agent) consuming an abnormally large share of CPU resources. EOS is a multi-process operating system where individual agents handle specific protocol functions; a runaway or misbehaving agent can degrade overall switch performance, slow CLI response times, and impact control-plane forwarding of critical protocols like BFD and LACP. Identification of the offending agent and controlled restart is the primary remediation path.",
+    "vendor": "arista",
+    "os_flavor": "eos",
+    "severity": "high",
+    "appliance_types": [
+      "DCS-7050CX3",
+      "DCS-7280CR3",
+      "DCS-7060CX2",
+      "DCS-7260CX3",
+      "DCS-7368",
+      "DCS-7150S",
+      "vEOS-lab",
+      "cEOSLab"
+    ],
+    "symptom_patterns": [
+      "CLI response is slow or times out",
+      "SNMP polling showing CPU > 80% sustained over 5+ minutes",
+      "Syslog: %PROCMGR-5-PROC_RELOAD: Process <AgentName> has been restarted",
+      "BFD or LACP timeouts due to control-plane CPU starvation",
+      "Management plane SSH sessions dropping"
+    ],
+    "rca_keywords": [
+      "high cpu",
+      "cpu overload",
+      "agent cpu",
+      "process cpu",
+      "runaway process",
+      "procmgr",
+      "eos agent"
+    ],
+    "steps": [
+      "Step 1 – Check current overall CPU utilization: `show processes top once`",
+      "Step 2 – Identify the top CPU-consuming processes/agents: `show processes top once | head -20`",
+      "Step 3 – Get a sorted list of all processes by CPU usage: `show processes cpu sorted | head -30`",
+      "Step 4 – Examine detailed statistics for the identified offending process: `show processes cpu <PID>`",
+      "Step 5 – Review process manager event log for agent restarts or crashes: `show agent logs`",
+      "Step 6 – Check syslog for related process events: `show logging last 300 | grep -i 'proc\\|agent\\|cpu'`",
+      "Step 7 – Verify whether the spike correlates with a specific event (e.g., BGP update storm, large routing table change): `show bgp summary`",
+      "Step 8 – Check EOS version for known CPU-related bugs: `show version`",
+      "Step 9 – If safe, restart the offending agent (use with caution—this may cause brief protocol flap): `bash sudo killall -HUP <AgentName>` or via Arista's `restart agent <AgentName>` command in bash",
+      "Step 10 – Monitor CPU after agent restart: `watch 10 show processes top once`",
+      "Step 11 – Capture a snapshot of the agent's state before restart for TAC analysis if needed: `show agent <AgentName> logs`",
+      "Step 12 – Verify control-plane protocols recovered after CPU normalization: `show bgp summary` and `show interfaces status`",
+      "Step 13 – Check for EOS software updates that address the CPU issue in the Arista release notes"
+    ],
+    "keywords": [
+      "high cpu",
+      "cpu spike",
+      "eos agent",
+      "process",
+      "procmgr",
+      "cpu overload",
+      "control plane",
+      "slow cli"
+    ],
+    "reranker_text": "This runbook resolves high CPU utilization on an Arista EOS switch caused by a misbehaving EOS agent or process. Diagnosis uses 'show processes top' and 'show processes cpu sorted' to identify the offending process, supplemented by syslog and agent log review. Remediation involves a controlled agent restart and monitoring for CPU normalization. Correlation with protocol events (BGP update storms, large routing table) is essential to determine if the root cause is configuration-driven or a software defect.",
+    "estimated_time_minutes": 30,
+    "risk_level": "medium",
+    "requires_maintenance_window": false,
+    "escalation": "If CPU remains elevated after agent restart or if the same agent repeatedly crashes, escalate to Arista TAC with 'show tech-support', 'show processes top', and agent logs. Mention the EOS version and affected agent name.",
+    "doc_links": [
+      "https://arista.my.site.com/AristaCommunity/s/article/Troubleshooting-High-CPU-on-Arista-EOS",
+      "https://www.arista.com/assets/data/docs/Manuals/EOS-4.32.0F-manual.pdf",
+      "https://arista.my.site.com/AristaCommunity/s/article/EOS-Process-Management"
+    ]
+  },
+  {
+    "remedy_id": "arista.eos.device.002",
+    "rca_id": "device.cpu_overload",
+    "title": "High CPU Utilization – BGP Update Processing Storm",
+    "description": "An Arista EOS switch is experiencing high CPU utilization driven specifically by the BGP process (Bgp agent) processing a large number of routing updates, route withdrawals, or a full routing table re-advertisement following a peer reset. This condition is common when a BGP peer sends full table updates repeatedly, when route-map or prefix-list processing is computationally heavy, or when BGP timers are misconfigured causing rapid session cycling. Sustained BGP CPU overload can delay convergence and impact other control-plane processes.",
+    "vendor": "arista",
+    "os_flavor": "eos",
+    "severity": "high",
+    "appliance_types": [
+      "DCS-7280CR3",
+      "DCS-7368",
+      "DCS-7260CX3",
+      "DCS-7050CX3",
+      "DCS-7060CX2",
+      "vEOS-lab",
+      "cEOSLab"
+    ],
+    "symptom_patterns": [
+      "BGP process consuming > 60% CPU sustained",
+      "BGP neighbor sessions flapping repeatedly",
+      "BGP route table update rate abnormally high",
+      "CLI response slow during BGP convergence",
+      "Syslog: %BGP-3-NOTIFICATION: sent to neighbor <IP> 6/7 (max prefix)"
+    ],
+    "rca_keywords": [
+      "bgp cpu",
+      "bgp update storm",
+      "bgp convergence",
+      "high cpu bgp",
+      "route update storm",
+      "bgp hold timer",
+      "prefix explosion"
+    ],
+    "steps": [
+      "Step 1 – Confirm BGP agent is the top CPU consumer: `show processes top once | grep Bgp`",
+      "Step 2 – Review BGP neighbor summary to identify flapping peers and update counts: `show bgp summary`",
+      "Step 3 – Check BGP route counts and compare to baseline to detect a prefix explosion: `show bgp summary | grep -i 'prefixes\\|state'`",
+      "Step 4 – Identify the specific peer sending excessive updates and check message/update counters: `show bgp neighbors <peer-IP>`",
+      "Step 5 – Check BGP hold timer and keepalive configuration for aggressive timers: `show bgp neighbors <peer-IP> | grep -i timer`",
+      "Step 6 – Review route-maps and prefix-lists applied to the peer for excessive complexity: `show route-map`",
+      "Step 7 – Check if maximum-prefix limit is configured and has been breached: `show bgp neighbors <peer-IP> | grep -i prefix`",
+      "Step 8 – Review syslog for BGP notification messages and state changes: `show logging last 500 | grep -i bgp`",
+      "Step 9 – If one specific peer is causing the storm, consider a soft-reset or temporary route-map to limit prefixes: `clear bgp neighbors <peer-IP> soft in`",
+      "Step 10 – Apply or tighten maximum-prefix limits to prevent recurrence: `configure terminal` → `router bgp <ASN>` → `neighbor <peer-IP> maximum-routes 100000`",
+      "Step 11 – Verify BGP table stabilizes and CPU returns to baseline: `watch 30 show bgp summary`",
+      "Step 12 – Check hardware forwarding table capacity to confirm routes fit in FIB: `show ip route summary`",
+      "Step 13 – Review and optimize route-map and prefix-list policies for efficiency if computationally expensive regex or large lists are in use"
+    ],
+    "keywords": [
+      "bgp",
+      "cpu",
+      "bgp update",
+      "route storm",
+      "bgp flap",
+      "maximum-prefix",
+      "bgp convergence",
+      "hold timer",
+      "bgp neighbor"
+    ],
+    "reranker_text": "This runbook addresses Arista EOS high CPU utilization driven by the BGP agent processing a large volume of routing updates, route withdrawals, or repeated full-table re-advertisements. Diagnosis uses 'show bgp summary', 'show bgp neighbors', and 'show processes top' to identify the offending peer and update volume. Remediation includes soft-resets, maximum-prefix limit enforcement, and route-map optimization. Escalate to Arista TAC if BGP CPU remains elevated after peer isolation.",
+    "estimated_time_minutes": 45,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Arista TAC and upstream BGP peer team if the update storm cannot be stopped by soft-reset or maximum-prefix limits. Provide 'show tech-support', 'show bgp summary', and 'show bgp neighbors <IP>' output.",
+    "doc_links": [
+      "https://arista.my.site.com/AristaCommunity/s/article/BGP-Troubleshooting",
+      "https://www.arista.com/assets/data/docs/Manuals/EOS-4.32.0F-manual.pdf",
+      "https://arista.my.site.com/AristaCommunity/s/article/Troubleshooting-High-CPU-on-Arista-EOS"
+    ]
+  },
+  {
+    "remedy_id": "arista.eos.device.003",
+    "rca_id": "device.memory_exhaustion",
+    "title": "Kernel Memory Low – System Free Memory Critical",
+    "description": "An Arista EOS switch is reporting critically low available system (kernel) memory, causing the OOM (Out-of-Memory) killer to potentially terminate EOS agents, degrading switch stability and control-plane function. Low kernel memory can result from a large routing table consuming excessive FIB/RIB memory, a high number of MAC or ARP entries, or a combination of feature enablement that exceeds the platform's memory envelope. Early detection and reduction of memory consumers is essential to prevent unplanned reboots.",
+    "vendor": "arista",
+    "os_flavor": "eos",
+    "severity": "critical",
+    "appliance_types": [
+      "DCS-7050CX3",
+      "DCS-7280CR3",
+      "DCS-7060CX2",
+      "DCS-7260CX3",
+      "DCS-7368",
+      "DCS-7150S"
+    ],
+    "symptom_patterns": [
+      "SNMP memory utilization OID showing > 90% used",
+      "Syslog: Kernel OOM killer invoked, process <name> killed",
+      "EOS agent crashes or unexpected restarts",
+      "CLI response slow or unavailable",
+      "Syslog: %SYS-4-LOW_MEMORY: System free memory is critically low"
+    ],
+    "rca_keywords": [
+      "memory exhaustion",
+      "low memory",
+      "oom killer",
+      "kernel memory",
+      "free memory critical",
+      "memory low",
+      "out of memory"
+    ],
+    "steps": [
+      "Step 1 – Check overall system memory utilization: `show version | grep Memory`",
+      "Step 2 – Get detailed memory breakdown by process: `show processes memory sorted | head -30`",
+      "Step 3 – Check free memory and kernel buffer/cache usage: `bash free -m`",
+      "Step 4 – Identify the largest memory consumers: `show processes memory sorted`",
+      "Step 5 – Check routing table size as a potential memory consumer: `show ip route summary`",
+      "Step 6 – Check ARP table size: `show arp summary`",
+      "Step 7 – Check MAC address table size: `show mac address-table count`",
+      "Step 8 – Review syslog for OOM events and killed processes: `show logging last 500 | grep -i 'oom\\|memory\\|killed'`",
+      "Step 9 – Check agent memory limits and current usage for key agents: `show agent memory`",
+      "Step 10 – If routing table is large, consider route summarization or filtering to reduce prefix count",
+      "Step 11 – Clear stale ARP or MAC entries if applicable: `clear arp-cache` and `clear mac address-table dynamic`",
+      "Step 12 – If a specific agent is leaking memory, restart it in a controlled manner: `bash sudo killall -9 <AgentName>`",
+      "Step 13 – Consider upgrading to an EOS version with memory leak fixes if a software defect is identified: `show version` and cross-reference Arista release notes",
+      "Step 14 – Monitor free memory trend over time: `watch 60 show version | grep Memory`"
+    ],
+    "keywords": [
+      "memory",
+      "oom",
+      "kernel memory",
+      "low memory",
+      "memory exhaustion",
+      "free memory",
+      "routing table size",
+      "arp table",
+      "mac table"
+    ],
+    "reranker_text": "This runbook addresses Arista EOS kernel memory exhaustion causing OOM-killer events, agent crashes, and potential unplanned reboots. Diagnosis uses 'show processes memory sorted', 'bash free -m', and syslog OOM events to identify the largest memory consumers. Remediation involves reducing routing table size, clearing stale ARP/MAC entries, and restarting leaking agents. Escalate to Arista TAC if OOM persists after all optimization steps, especially if a software memory leak is suspected.",
+    "estimated_time_minutes": 60,
+    "risk_level": "critical",
+    "requires_maintenance_window": true,
+    "escalation": "Escalate immediately to Arista TAC if OOM killer is actively terminating agents. Provide 'show tech-support', 'show processes memory sorted', and syslog. If a reboot is required to recover, schedule a maintenance window.",
+    "doc_links": [
+      "https://arista.my.site.com/AristaCommunity/s/article/Memory-Troubleshooting-on-Arista-EOS",
+      "https://www.arista.com/assets/data/docs/Manuals/EOS-4.32.0F-manual.pdf",
+      "https://arista.my.site.com/AristaCommunity/s/article/EOS-Process-Management"
+    ]
+  },
+  {
+    "remedy_id": "arista.eos.device.004",
+    "rca_id": "device.memory_exhaustion",
+    "title": "EOS Agent Memory Leak – Specific Agent Consuming Growing Memory",
+    "description": "An individual Arista EOS agent (e.g., Stp, Fhrp, Rib, or a third-party EOS SDK agent) is exhibiting a memory leak, continuously growing its memory footprint over time without releasing allocated memory. This is distinguishable from general memory exhaustion by the steady, monotonic growth of one process in 'show processes memory'. Left unaddressed, the leaking agent will eventually exhaust system memory and trigger OOM conditions or spontaneous agent restarts that impact network stability.",
+    "vendor": "arista",
+    "os_flavor": "eos",
+    "severity": "high",
+    "appliance_types": [
+      "DCS-7050CX3",
+      "DCS-7280CR3",
+      "DCS-7060CX2",
+      "DCS-7260CX3",
+      "DCS-7368",
+      "DCS-7150S",
+      "cEOSLab",
+      "vEOS-lab"
+    ],
+    "symptom_patterns": [
+      "One EOS agent memory size monotonically growing over hours or days",
+      "Overall system free memory slowly declining",
+      "Periodic agent crashes or unexpected restarts of the leaking agent",
+      "Syslog: %PROCMGR-5-PROC_RELOAD: Process <AgentName> restarted after memory limit exceeded",
+      "SNMP memory polling shows gradual increase trend"
+    ],
+    "rca_keywords": [
+      "memory leak",
+      "agent memory",
+      "growing memory",
+      "memory trend",
+      "process memory",
+      "eos sdk agent",
+      "memory growth"
+    ],
+    "steps": [
+      "Step 1 – Take a baseline snapshot of agent memory consumption: `show processes memory sorted | head -20`",
+      "Step 2 – Wait 30–60 minutes and take a second snapshot to confirm the monotonic growth pattern: `show processes memory sorted | head -20`",
+      "Step 3 – Identify the specific agent with growing memory (note PID and VSZ/RSS values)",
+      "Step 4 – Check agent uptime to estimate the growth rate: `show processes top once | grep <AgentName>`",
+      "Step 5 – Review agent-specific logs for memory warnings: `show agent <AgentName> logs`",
+      "Step 6 – Review syslog for agent restart events related to memory: `show logging last 500 | grep -i '<AgentName>\\|memory\\|proc'`",
+      "Step 7 – Check if the agent is a custom EOS SDK application or a built-in EOS agent: `show agent`",
+      "Step 8 – Review current EOS version and check Arista release notes for known memory leak bugs affecting this agent: `show version`",
+      "Step 9 – Restart the leaking agent to recover memory (coordinate with change management for protocol-impacting agents): `bash sudo systemctl restart <AgentName>` or `bash sudo killall -HUP <AgentName>`",
+      "Step 10 – Verify memory returns to baseline after restart: `show processes memory sorted | grep <AgentName>`",
+      "Step 11 – Monitor memory growth rate post-restart to determine if leak recurs: `watch 300 show processes memory sorted | head -10`",
+      "Step 12 – If the leak recurs, capture memory dump for TAC analysis before restarting: `bash sudo gcore <PID>`",
+      "Step 13 – Plan EOS upgrade to a version with the memory leak fix if available in Arista release notes"
+    ],
+    "keywords": [
+      "memory leak",
+      "agent",
+      "process memory",
+      "growing memory",
+      "eos sdk",
+      "memory trend",
+      "procmgr",
+      "memory exhaustion"
+    ],
+    "reranker_text": "This runbook identifies and remediates an Arista EOS agent exhibiting a memory leak, characterized by monotonically increasing memory consumption in 'show processes memory sorted'. Diagnosis confirms the leak by taking timed snapshots and correlating with agent logs and syslog. Remediation involves restarting the leaking agent and planning an EOS upgrade if a known software defect is found in Arista release notes. A core dump may be captured before restart for TAC analysis.",
+    "estimated_time_minutes": 90,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "Open an Arista TAC case immediately if the agent is a built-in EOS agent with a confirmed memory leak. Provide 'show tech-support', 'show processes memory sorted' (two timestamped snapshots), agent logs, and EOS version.",
+    "doc_links": [
+      "https://arista.my.site.com/AristaCommunity/s/article/Memory-Troubleshooting-on-Arista-EOS",
+      "https://arista.my.site.com/AristaCommunity/s/article/EOS-SDK-Overview",
+      "https://www.arista.com/assets/data/docs/Manuals/EOS-4.32.0F-manual.pdf"
+    ]
+  },
+  {
+    "remedy_id": "arista.eos.device.005",
+    "rca_id": "device.unreachable",
+    "title": "Switch Unreachable – Management VRF Connectivity Lost",
+    "description": "An Arista EOS switch is unreachable via its management interface, preventing SSH, SNMP, and other management plane access. The device is configured with a dedicated management VRF (typically named 'MGMT' or 'management'), and loss of management reachability can be caused by a misconfigured or missing default route in the management VRF, management interface being administratively down, ACL denying management traffic, or a physical fault on the management port. Data-plane forwarding may be unaffected.",
+    "vendor": "arista",
+    "os_flavor": "eos",
+    "severity": "critical",
+    "appliance_types": [
+      "DCS-7050CX3",
+      "DCS-7280CR3",
+      "DCS-7060CX2",
+      "DCS-7260CX3",
+      "DCS-7368",
+      "DCS-7150S",
+      "vEOS-lab",
+      "cEOSLab"
+    ],
+    "symptom_patterns": [
+      "SSH/SNMP to management IP is timing out",
+      "Ping to management IP from NMS fails",
+      "Management VRF default route missing in routing table",
+      "Management interface is down (via out-of-band console)",
+      "AAA or TACACS server unreachable via management VRF"
+    ],
+    "rca_keywords": [
+      "device unreachable",
+      "management unreachable",
+      "management vrf",
+      "ssh timeout",
+      "snmp unreachable",
+      "mgmt vrf",
+      "management interface down",
+      "default route missing"
+    ],
+    "steps": [
+      "Step 1 – Access the device via out-of-band console or alternate management path (jump host with data-plane access)",
+      "Step 2 – Verify management interface operational status: `show interfaces Management1`",
+      "Step 3 – Confirm management interface IP address configuration: `show running-config interfaces Management1`",
+      "Step 4 – Check management VRF routing table for default route: `show ip route vrf MGMT`",
+      "Step 5 – Test ping from the management VRF to the default gateway: `ping vrf MGMT <gateway-IP>`",
+      "Step 6 – Verify management VRF is correctly associated with the management interface: `show vrf`",
+      "Step 7 – Check for ACLs applied to the management interface that may be blocking traffic: `show ip access-lists`",
+      "Step 8 – Review syslog for management interface events: `show logging last 300 | grep -i 'Management\\|mgmt'`",
+      "Step 9 – Check SSH server status and configuration: `show management ssh`",
+      "Step 10 – Verify AAA and login configuration has not locked out access: `show running-config | grep -i aaa`",
+      "Step 11 – If management interface is down, bring it up: `configure terminal` → `interface Management1` → `no shutdown` → `end`",
+      "Step 12 – If default route is missing in management VRF, restore it: `configure terminal` → `vrf instance MGMT` → `exit` → `ip route vrf MGMT 0.0.0.0/0 <gateway-IP>` → `end`",
+      "Step 13 – Verify management reachability from NMS after corrective action: `ping vrf MGMT <NMS-IP>`"
+    ],
+    "keywords": [
+      "management unreachable",
+      "management vrf",
+      "ssh",
+      "snmp",
+      "mgmt interface",
+      "out of band",
+      "default route",
+      "management1",
+      "vrf mgmt"
+    ],
+    "reranker_text": "This runbook addresses an Arista EOS switch that has become unreachable via its management plane due to management VRF misconfiguration, missing default route, management interface down state, or ACL policy blocking access. Diagnosis is performed via out-of-band console using 'show ip route vrf MGMT', 'show interfaces Management1', and 'show vrf'. Remediation restores the management interface, default route, and verifies SSH/SNMP reachability from the NMS.",
+    "estimated_time_minutes": 30,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "If management VRF configuration is correct and interface is up but switch remains unreachable, escalate to on-site team for physical inspection and Arista TAC for potential software-level management plane issue.",
+    "doc_links": [
+      "https://arista.my.site.com/AristaCommunity/s/article/Management-VRF",
+      "https://www.arista.com/assets/data/docs/Manuals/EOS-4.32.0F-manual.pdf",
+      "https://arista.my.site.com/AristaCommunity/s/article/EOS-Management-Interface-Configuration"
+    ]
+  },
+  {
+    "remedy_id": "arista.eos.device.006",
+    "rca_id": "device.unexpected_reboot",
+    "title": "Unexpected Device Reboot – Kernel Panic or Agent Crash",
+    "description": "An Arista EOS switch has rebooted unexpectedly without a scheduled maintenance window, indicated by an unplanned power-cycle event or kernel panic in the crash logs. Unexpected reboots can be caused by hardware faults (power supply, memory DIMM errors), EOS kernel panic triggered by a software defect, watchdog timer expiry due to a hung process, or a critical OOM condition that terminates the kernel. Post-reboot analysis of crash logs and core dumps is critical to determine root cause and prevent recurrence.",
+    "vendor": "arista",
+    "os_flavor": "eos",
+    "severity": "critical",
+    "appliance_types": [
+      "DCS-7050CX3",
+      "DCS-7280CR3",
+      "DCS-7060CX2",
+      "DCS-7260CX3",
+      "DCS-7368",
+      "DCS-7150S"
+    ],
+    "symptom_patterns": [
+      "Network monitoring shows device went unreachable and came back up",
+      "System uptime is unexpectedly short (minutes/hours vs. days)",
+      "Syslog shows reload event at start of log after the reboot",
+      "Crash log files present in /var/log/agents/ or /var/core/",
+      "Hardware event log shows power supply or temperature alarm prior to reboot"
+    ],
+    "rca_keywords": [
+      "unexpected reboot",
+      "kernel panic",
+      "agent crash",
+      "crash log",
+      "core dump",
+      "watchdog",
+      "unplanned reload",
+      "power cycle"
+    ],
+    "steps": [
+      "Step 1 – Verify device has rebooted by checking system uptime: `show version | grep Uptime`",
+      "Step 2 – Check the last reload reason to identify if it was a crash, watchdog, or planned reload: `show reload cause`",
+      "Step 3 – Review crash logs for kernel panics or agent crash events: `show logging last 1000 | head -50`",
+      "Step 4 – Check for core dump files generated at time of crash: `bash ls -lah /var/core/`",
+      "Step 5 – Review hardware event log for power supply, temperature, or fan faults preceding the reboot: `show logging | grep -i 'power\\|temperature\\|fan\\|thermal'`",
+      "Step 6 – Check power supply status post-reboot: `show environment power`",
+      "Step 7 – Check hardware environmental status (temperature, fans): `show environment all`",
+      "Step 8 – Review agent log files for pre-crash errors: `show agent logs`",
+      "Step 9 – Check EOS version for known crash/panic bugs: `show version`",
+      "Step 10 – Collect the crash artifacts for TAC analysis: `bash tar czf /mnt/flash/crash_artifacts.tar.gz /var/core/ /var/log/agents/`",
+      "Step 11 – Copy crash artifacts to a safe location for TAC: `copy flash:crash_artifacts.tar.gz ftp://<server>/arista/`",
+      "Step 12 – Verify current running-config matches intended configuration (check for any config loss): `show running-config | diff`",
+      "Step 13 – Monitor system stability post-reboot for 1–4 hours: `watch 60 show version | grep Uptime`",
+      "Step 14 – Plan EOS upgrade to a stable release if a software bug is identified as the crash cause"
+    ],
+    "keywords": [
+      "reboot",
+      "kernel panic",
+      "crash",
+      "core dump",
+      "watchdog",
+      "reload",
+      "uptime",
+      "power supply",
+      "unexpected restart"
+    ],
+    "reranker_text": "This runbook investigates an Arista EOS switch that rebooted unexpectedly due to a kernel panic, agent crash, watchdog expiry, or hardware fault. Post-reboot diagnosis uses 'show reload cause', 'show environment all', and crash log/core dump analysis. Hardware faults (PSU, thermal) are ruled out via 'show environment power' and 'show environment all'. Crash artifacts are collected and transferred for Arista TAC analysis to determine if an EOS software defect is responsible.",
+    "estimated_time_minutes": 60,
+    "risk_level": "critical",
+    "requires_maintenance_window": false,
+    "escalation": "Open a P1 Arista TAC case immediately with 'show tech-support', 'show reload cause', core dump files, and hardware event logs. If hardware fault (PSU/memory) is confirmed, engage Arista RMA process. Monitor closely for repeated reboots.",
+    "doc_links": [
+      "https://arista.my.site.com/AristaCommunity/s/article/EOS-Crash-Troubleshooting",
+      "https://www.arista.com/assets/data/docs/Manuals/EOS-4.32.0F-manual.pdf",
+      "https://arista.my.site.com/AristaCommunity/s/article/How-to-Collect-and-Analyze-EOS-Crash-Info"
+    ]
+  },
+  {
+    "remedy_id": "arista.eos.routing.001",
+    "rca_id": "routing.bgp_down",
+    "title": "BGP Neighbor Down – Session Failure and Reconvergence",
+    "description": "A BGP (Border Gateway Protocol) neighbor session on an Arista EOS switch has transitioned to the Idle or Active state, causing loss of learned routes from that peer and potential traffic black-holing or suboptimal routing. Common causes include physical link failure on the session path, BGP hold-timer expiry due to keepalive loss, TCP connection reset, MD5 authentication mismatch, or a routing policy change that invalidated the session source or destination IP. Rapid diagnosis and restoration of the BGP session is critical to minimize impact.",
+    "vendor": "arista",
+    "os_flavor": "eos",
+    "severity": "critical",
+    "appliance_types": [
+      "DCS-7280CR3",
+      "DCS-7368",
+      "DCS-7260CX3",
+      "DCS-7050CX3",
+      "DCS-7060CX2",
+      "vEOS-lab",
+      "cEOSLab"
+    ],
+    "symptom_patterns": [
+      "BGP neighbor state is Idle or Active (not Established)",
+      "Syslog: %BGP-5-ADJCHANGE: neighbor <IP> Down <reason>",
+      "Traffic using routes from this peer is being dropped",
+      "BGP route count drops to 0 for prefixes received from this peer",
+      "BFD session for BGP peer reports down event"
+    ],
+    "rca_keywords": [
+      "bgp down",
+      "bgp neighbor down",
+      "bgp session failure",
+      "bgp idle",
+      "bgp active",
+      "hold timer expired",
+      "bgp authentication",
+      "bgp reconvergence"
+    ],
+    "steps": [
+      "Step 1 – Check overall BGP summary to identify all down peers: `show bgp summary`",
+      "Step 2 – Get detailed state information for the specific down neighbor: `show bgp neighbors <peer-IP>`",
+      "Step 3 – Check the notification/error reason for the session drop: `show bgp neighbors <peer-IP> | grep -i 'notification\\|reason\\|hold'`",
+      "Step 4 – Verify IP reachability to the BGP peer's IP: `ping <peer-IP> source <local-IP>` or `ping vrf <VRF> <peer-IP>`",
+      "Step 5 – Check if BFD is configured for the peer and current BFD state: `show bfd peers`",
+      "Step 6 – Review the physical or logical interface used for the BGP session: `show interfaces <iface> status`",
+      "Step 7 – Verify BGP MD5 authentication password matches on both ends (if configured): `show bgp neighbors <peer-IP> | grep -i password`",
+      "Step 8 – Check if the BGP source interface is up and has the expected IP: `show running-config | grep 'update-source'`",
+      "Step 9 – Review syslog for BGP events and notification codes: `show logging last 500 | grep -i bgp`",
+      "Step 10 – Check BGP timers (hold and keepalive) for mismatches with the peer: `show bgp neighbors <peer-IP> | grep -i timer`",
+      "Step 11 – If a routing policy or route-map change caused the session to drop, review recent changes: `show running-config | section router bgp`",
+      "Step 12 – Attempt to reset the BGP session after fixing the root cause: `clear bgp neighbors <peer-IP>`",
+      "Step 13 – Confirm BGP session re-establishes and routes are received: `watch 30 show bgp summary`",
+      "Step 14 – Verify traffic is restored by checking routing table: `show ip route bgp | head -20`"
+    ],
+    "keywords": [
+      "bgp",
+      "bgp down",
+      "neighbor",
+      "bgp session",
+      "bgp reconvergence",
+      "hold timer",
+      "bfd",
+      "bgp authentication",
+      "bgp idle",
+      "route loss"
+    ],
+    "reranker_text": "This runbook resolves an Arista EOS BGP neighbor session that has transitioned to Idle or Active state, causing route loss and traffic impact. Diagnosis uses 'show bgp summary', 'show bgp neighbors', and 'show bfd peers' to determine the failure reason including hold-timer expiry, authentication mismatch, or physical connectivity loss. Remediation corrects the root cause and resets the session. Monitoring confirms route restoration and traffic recovery.",
+    "estimated_time_minutes": 30,
+    "risk_level": "critical",
+    "requires_maintenance_window": false,
+    "escalation": "If BGP session fails to re-establish after correcting all visible mismatches, escalate to Arista TAC and the BGP peer's network team. Provide 'show tech-support', 'show bgp neighbors', and a packet capture on the BGP session port (TCP 179) if possible.",
+    "doc_links": [
+      "https://arista.my.site.com/AristaCommunity/s/article/BGP-Troubleshooting",
+      "https://www.arista.com/assets/data/docs/Manuals/EOS-4.32.0F-manual.pdf",
+      "https://arista.my.site.com/AristaCommunity/s/article/BGP-Configuration-on-EOS"
+    ]
+  },
+  {
+    "remedy_id": "arista.eos.routing.002",
+    "rca_id": "routing.bgp_down",
+    "title": "BGP Prefix Limit Exceeded – Neighbor Shutdown by Maximum-Routes",
+    "description": "An Arista EOS BGP neighbor has been shut down because the number of prefixes received from the peer exceeded the configured maximum-routes (maximum-prefix) limit. EOS enforces this limit as a protection mechanism against route table overflow; when exceeded, EOS sends a BGP NOTIFICATION with code 6/1 (Cease/Maximum Number of Prefixes Reached) and tears down the session. This is commonly caused by a peer advertising more prefixes than expected due to a routing policy change at the remote end or a BGP misconfiguration.",
+    "vendor": "arista",
+    "os_flavor": "eos",
+    "severity": "high",
+    "appliance_types": [
+      "DCS-7280CR3",
+      "DCS-7368",
+      "DCS-7260CX3",
+      "DCS-7050CX3",
+      "DCS-7060CX2",
+      "vEOS-lab",
+      "cEOSLab"
+    ],
+    "symptom_patterns": [
+      "Syslog: %BGP-3-NOTIFICATION: sent to neighbor <IP> 6/1 (Maximum Number of Prefixes Reached)",
+      "BGP neighbor state is Idle with PfxRcd value at configured maximum",
+      "BGP session repeatedly establishes then immediately drops",
+      "Prefix count for peer reaches and holds at maximum-routes value",
+      "Traffic routed via this BGP peer is black-holed"
+    ],
+    "rca_keywords": [
+      "maximum-routes",
+      "prefix limit",
+      "bgp notification 6/1",
+      "maximum prefix",
+      "pfx limit exceeded",
+      "bgp shutdown",
+      "prefix explosion"
+    ],
+    "steps": [
+      "Step 1 – Confirm BGP neighbor is shut down and identify the reason: `show bgp neighbors <peer-IP> | grep -i 'state\\|max\\|prefix\\|notification'`",
+      "Step 2 – Check current maximum-routes configuration for the peer: `show running-config | section 'neighbor <peer-IP>'`",
+      "Step 3 – Review how many prefixes were being received before shutdown (check BGP logs): `show logging last 500 | grep -i 'bgp\\|prefix\\|maximum'`",
+      "Step 4 – Coordinate with the peer network team to understand why prefix count increased beyond the configured limit",
+      "Step 5 – Verify if the increase is legitimate (peer added new routes) or erroneous (misconfiguration on peer side)",
+      "Step 6 – If the prefix increase is legitimate and expected, raise the maximum-routes limit appropriately: `configure terminal` → `router bgp <ASN>` → `neighbor <peer-IP> maximum-routes <new-limit> [warning-only]`",
+      "Step 7 – If the prefix increase is erroneous, request the peer to fix their routing policy before re-enabling the session",
+      "Step 8 – Consider using 'warning-only' option to log instead of shutdown: `neighbor <peer-IP> maximum-routes <limit> warning-only`",
+      "Step 9 – Clear the BGP session to re-establish: `clear bgp neighbors <peer-IP>`",
+      "Step 10 – Monitor prefix count upon session recovery: `show bgp neighbors <peer-IP> | grep -i prefix`",
+      "Step 11 – Verify prefix count remains below new limit: `show bgp summary | grep <peer-IP>`",
+      "Step 12 – Apply an inbound prefix-list to filter unexpected prefixes as an additional safeguard: `configure terminal` → `router bgp <ASN>` → `neighbor <peer-IP> prefix-list <LIST-NAME> in`",
+      "Step 13 – Document the new maximum-routes value and peer agreement in network change records"
+    ],
+    "keywords": [
+      "maximum-routes",
+      "prefix limit",
+      "bgp notification",
+      "prefix explosion",
+      "bgp shutdown",
+      "pfx limit",
+      "bgp maximum prefix",
+      "route count"
+    ],
+    "reranker_text": "This runbook resolves an Arista EOS BGP session shutdown triggered by the maximum-routes (maximum-prefix) limit being exceeded when a peer advertises more prefixes than configured. Diagnosis confirms the notification code 6/1 in syslog and checks current maximum-routes configuration. Remediation involves coordinating with the peer to resolve the prefix explosion, optionally raising the limit or applying 'warning-only', and adding inbound prefix-list filtering as a safeguard before re-establishing the session.",
+    "estimated_time_minutes": 30,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to the BGP peer team if they cannot reduce prefix count to below the agreed limit. If maximum-routes adjustment is needed, obtain approval from network architect. Engage Arista TAC if the EOS maximum-routes mechanism is behaving incorrectly.",
+    "doc_links": [
+      "https://arista.my.site.com/AristaCommunity/s/article/BGP-Maximum-Prefix",
+      "https://www.arista.com/assets/data/docs/Manuals/EOS-4.32.0F-manual.pdf",
+      "https://arista.my.site.com/AristaCommunity/s/article/BGP-Troubleshooting"
+    ]
+  },
+  {
+    "remedy_id": "arista.eos.routing.003",
+    "rca_id": "routing.vxlan_down",
+    "title": "VXLAN VTEP Unreachable – VXLAN Tunnel Failure",
+    "description": "A VXLAN Virtual Tunnel Endpoint (VTEP) is unreachable on an Arista EOS switch, causing VXLAN-encapsulated traffic destined for remote hosts behind that VTEP to be dropped. VXLAN tunnel reachability depends on the underlay IP routing being functional (typically BGP EVPN or OSPF), the remote VTEP IP being reachable, and correct VXLAN VNI-to-VLAN/VRF mapping configuration. This issue can also be caused by MTU mismatches in the underlay (VXLAN adds 50 bytes of overhead), VTEP IP not being advertised in EVPN, or interface VTI misconfiguration.",
+    "vendor": "arista",
+    "os_flavor": "eos",
+    "severity": "critical",
+    "appliance_types": [
+      "DCS-7280CR3",
+      "DCS-7368",
+      "DCS-7260CX3",
+      "DCS-7050CX3",
+      "DCS-7060CX2",
+      "vEOS-lab",
+      "cEOSLab"
+    ],
+    "symptom_patterns": [
+      "Traffic to remote hosts behind a specific VTEP is being dropped",
+      "VXLAN MAC/IP address table missing entries for remote VTEP",
+      "BGP EVPN not advertising or receiving VTEP routes for the affected VTEP IP",
+      "Ping from local VTEP to remote VTEP IP fails across the underlay",
+      "Syslog: VXLAN tunnel to <VTEP-IP> is down or unreachable"
+    ],
+    "rca_keywords": [
+      "vxlan down",
+      "vtep unreachable",
+      "vxlan tunnel failure",
+      "evpn vxlan",
+      "vni down",
+      "vxlan mtu",
+      "vtep ip"
+    ],
+    "steps": [
+      "Step 1 – Check VXLAN VTEP status and learned MAC/IP entries: `show vxlan address-table`",
+      "Step 2 – Verify VXLAN interface (Vxlan1) is up and configured correctly: `show interfaces Vxlan1`",
+      "Step 3 – Check the VTEP source interface and local VTEP IP: `show running-config interfaces Vxlan1`",
+      "Step 4 – Verify underlay reachability to the remote VTEP IP: `ping <remote-VTEP-IP> source <local-VTEP-IP>`",
+      "Step 5 – Check BGP EVPN routes for the remote VTEP (Type-3 Inclusive Multicast routes): `show bgp evpn route-type imet`",
+      "Step 6 – Verify EVPN Type-2 (MAC/IP) routes from the remote VTEP are being received: `show bgp evpn route-type mac-ip`",
+      "Step 7 – Check VXLAN VNI to VLAN mapping configuration: `show vxlan vni`",
+      "Step 8 – Verify the VXLAN flood list (for static VXLAN) or EVPN control plane is providing the remote VTEP: `show vxlan flood list`",
+      "Step 9 – Check for MTU issues in the underlay (VXLAN requires at least 1550 MTU on underlay interfaces): `show interfaces <underlay-iface> | grep MTU`",
+      "Step 10 – Review MLAG status if this is an MLAG-VXLAN deployment: `show mlag`",
+      "Step 11 – Check EVPN BGP session to the route-reflector or peer: `show bgp evpn summary`",
+      "Step 12 – Review syslog for VXLAN or EVPN events: `show logging last 300 | grep -i 'vxlan\\|evpn\\|vtep'`",
+      "Step 13 – If underlay route to VTEP is missing, investigate underlay BGP/OSPF: `show ip route <remote-VTEP-IP>`",
+      "Step 14 – If MTU mismatch is found, correct the interface MTU: `configure terminal` → `interface <underlay-iface>` → `mtu 9214` → `end`"
+    ],
+    "keywords": [
+      "vxlan",
+      "vtep",
+      "evpn",
+      "vni",
+      "vxlan tunnel",
+      "vtep unreachable",
+      "overlay",
+      "underlay",
+      "mtu",
+      "bgp evpn",
+      "type-3 route"
+    ],
+    "reranker_text": "This runbook resolves Arista EOS VXLAN VTEP unreachability caused by underlay routing failure, MTU mismatch, BGP EVPN route advertisement failure, or VXLAN VNI misconfiguration. Diagnosis uses 'show vxlan address-table', 'show bgp evpn', 'show interfaces Vxlan1', and underlay ping tests to the remote VTEP IP. Remediation addresses underlay routing, MTU alignment (minimum 1550 on underlay), EVPN session health, and VNI-VLAN mapping correctness. MLAG configurations are verified with 'show mlag'.",
+    "estimated_time_minutes": 60,
+    "risk_level": "critical",
+    "requires_maintenance_window": false,
+    "escalation": "Escalate to Arista TAC if VTEP remains unreachable after verifying underlay routing, MTU, and EVPN configuration on both ends. Provide 'show tech-support', 'show bgp evpn', 'show vxlan address-table', and 'show interfaces Vxlan1' output.",
+    "doc_links": [
+      "https://arista.my.site.com/AristaCommunity/s/article/VXLAN-EVPN-Troubleshooting",
+      "https://www.arista.com/assets/data/docs/Manuals/EOS-4.32.0F-manual.pdf",
+      "https://arista.my.site.com/AristaCommunity/s/article/VXLAN-Configuration-on-EOS"
+    ]
+  }
+]

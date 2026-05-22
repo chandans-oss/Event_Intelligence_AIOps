@@ -1,0 +1,672 @@
+[
+  {
+    "remedy_id": "cisco.nxos.link.down_001",
+    "rca_id": "link.down",
+    "title": "Physical Interface Down – Layer 1 Signal Loss",
+    "description": "A Cisco NX-OS interface has transitioned to a down/down (protocol/hardware) state due to loss of physical Layer 1 signal. This is typically caused by a disconnected or damaged cable, a failed transceiver, or a disabled far-end port. Prompt diagnosis is required to restore connectivity and avoid traffic loss.",
+    "vendor": "cisco",
+    "os_flavor": "nxos",
+    "severity": "high",
+    "appliance_types": ["Nexus 9300", "Nexus 9500", "Nexus 7700", "Nexus 5600", "Nexus 3000"],
+    "symptom_patterns": [
+      "Interface <iface> is down, line protocol is down",
+      "SNMP linkDown trap received",
+      "Syslog: %ETH_PORT_CHANNEL-5-FOP_CHANGED",
+      "Syslog: %ETHPORT-5-IF_DOWN_LINK_FAILURE",
+      "Traffic blackhole on affected VLAN/segment"
+    ],
+    "rca_keywords": [
+      "link down", "interface down", "line protocol down", "physical down",
+      "cable fault", "no carrier", "eth_port down", "IF_DOWN_LINK_FAILURE"
+    ],
+    "steps": [
+      "1. Identify the affected interface: `show interface <iface>` – confirm 'line protocol is down' and check 'Last link flapped' timestamp.",
+      "2. Check interface error counters: `show interface <iface> counters errors` – look for input errors, CRC, giants, or runts.",
+      "3. Verify transceiver health: `show interface <iface> transceiver detail` – check Tx/Rx power levels against vendor thresholds (typically -3 dBm to -10 dBm for SR optics).",
+      "4. Review recent syslog entries for root cause: `show logging logfile | include <iface>` and `show logging last 100`.",
+      "5. Confirm whether the interface is administratively enabled: `show running-config interface <iface>` – ensure no `shutdown` is present.",
+      "6. Inspect CDPL/LLDP neighbor state: `show cdp neighbors <iface> detail` and `show lldp neighbors <iface> detail` – loss of neighbor confirms physical-layer issue.",
+      "7. Check DOM (Digital Optical Monitoring) alarms: `show interface <iface> transceiver` – flag any 'LOS' (Loss of Signal) or alarm bits.",
+      "8. Attempt interface bounce (if in maintenance window): `interface <iface>` → `shutdown` → `no shutdown` and monitor link state for 60 seconds.",
+      "9. Replace cable or SFP if physical fault is confirmed; use a known-good loopback or patch cable to isolate segment.",
+      "10. After restoration, verify traffic forwarding: `show interface <iface> counters` and `show mac address-table interface <iface>`.",
+      "11. Document findings and open a hardware RMA case with Cisco TAC if transceiver or linecard replacement is needed."
+    ],
+    "keywords": [
+      "interface down", "link down", "L1 failure", "cable fault", "SFP failure",
+      "physical down", "NX-OS", "Nexus", "IF_DOWN_LINK_FAILURE", "no carrier"
+    ],
+    "reranker_text": "A Cisco NX-OS interface has gone into a physical down state (line protocol down) due to Layer 1 signal loss. Investigation covers checking interface status with 'show interface', reviewing transceiver DOM data, inspecting syslog, and verifying CDP/LLDP neighbors to isolate whether the fault is a cable, SFP, or remote-end issue before performing an interface bounce or hardware replacement.",
+    "estimated_time_minutes": 30,
+    "risk_level": "medium",
+    "requires_maintenance_window": false,
+    "escalation": "If the interface remains down after cable and SFP replacement, escalate to the Cisco TAC with the output of 'show tech-support interface <iface>' and open an RMA for the linecard or supervisor module.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/interfaces/configuration/guide/b-cisco-nexus-9000-nx-os-interfaces-configuration-guide-93x/b-cisco-nexus-9000-nx-os-interfaces-configuration-guide-93x_chapter_010.html",
+      "https://www.cisco.com/c/en/us/support/docs/optical/digital-optical-monitoring/116285-qanda-dom-00.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.nxos.link.down_002",
+    "rca_id": "link.down",
+    "title": "Interface Down – Incompatible or Unsupported SFP/QSFP Transceiver",
+    "description": "A NX-OS interface reports 'err-disabled' or remains persistently down because an inserted transceiver is not on Cisco's Qualified (CVR) compatibility list or is a third-party optic with QSFP negotiation failure. NX-OS enforces strict transceiver compatibility by default, causing ports to refuse to come up when unsupported optics are detected. Resolution requires either enabling third-party SFP support or replacing the transceiver with a Cisco-qualified part.",
+    "vendor": "cisco",
+    "os_flavor": "nxos",
+    "severity": "high",
+    "appliance_types": ["Nexus 9300", "Nexus 9500", "Nexus 7700", "Nexus 5600", "Nexus 3000"],
+    "symptom_patterns": [
+      "Interface err-disabled, reason: SFP validation failed",
+      "Syslog: %ETHPORT-3-IF_SFP_WARNING: Interface <iface>, SFP vendor is not Cisco",
+      "show interface returns 'SFP not inserted' despite optic being present",
+      "DOM data unavailable for inserted transceiver",
+      "Port stays down after cable replacement"
+    ],
+    "rca_keywords": [
+      "SFP incompatible", "QSFP unsupported", "err-disabled SFP", "third-party optic",
+      "SFP_WARNING", "SFP validation", "transceiver not supported", "CVR mismatch"
+    ],
+    "steps": [
+      "1. Confirm interface state and err-disabled reason: `show interface <iface>` and `show interface <iface> status err-disabled`.",
+      "2. Check transceiver identity: `show interface <iface> transceiver` – note vendor name, part number, and serial number fields.",
+      "3. Verify compatibility against Cisco's Transceiver Compatibility Matrix: cross-check part number at https://tmgmatrix.cisco.com/.",
+      "4. Review syslog for SFP-related messages: `show logging logfile | include SFP` and `show logging logfile | include <iface>`.",
+      "5. If third-party optic must be used, enable service unsupported-transceiver: enter global config mode and run `service unsupported-transceiver` (requires valid Cisco SFP license on some platforms).",
+      "6. After enabling the service command, clear the err-disabled state: `interface <iface>` → `shutdown` → `no shutdown`.",
+      "7. Confirm link state after clearing err-disabled: `show interface <iface>` – look for 'connected' in the status field.",
+      "8. Validate DOM readings are now populated: `show interface <iface> transceiver detail` – confirm Tx/Rx power values are within nominal range.",
+      "9. If optic is Cisco-branded but still unsupported, check NX-OS version against the Cisco Optics-to-Platform compatibility list and upgrade NX-OS if a firmware fix exists.",
+      "10. Document the transceiver part number and record the workaround applied; plan for replacement with a Cisco-qualified optic at next maintenance window.",
+      "11. If the problem persists after the above steps, collect `show tech-support interface` and open a Cisco TAC case."
+    ],
+    "keywords": [
+      "SFP incompatible", "QSFP unsupported", "third-party transceiver", "err-disabled",
+      "service unsupported-transceiver", "NX-OS optic", "SFP validation", "CVR"
+    ],
+    "reranker_text": "A Cisco NX-OS interface is err-disabled or persistently down because an incompatible or non-Cisco-qualified SFP/QSFP transceiver was inserted. Diagnosis uses 'show interface transceiver' and syslog inspection. Remediation involves enabling 'service unsupported-transceiver' for third-party optics or replacing the SFP with a Cisco-qualified part after checking the Transceiver Compatibility Matrix.",
+    "estimated_time_minutes": 20,
+    "risk_level": "medium",
+    "requires_maintenance_window": false,
+    "escalation": "If the interface remains err-disabled after enabling 'service unsupported-transceiver' or after replacing with a Cisco-qualified optic, escalate to Cisco TAC with 'show tech-support interface <iface>' output and transceiver part number.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/interfaces/configuration/guide/b-cisco-nexus-9000-nx-os-interfaces-configuration-guide-93x/b-cisco-nexus-9000-nx-os-interfaces-configuration-guide-93x_chapter_010.html",
+      "https://tmgmatrix.cisco.com/"
+    ]
+  },
+  {
+    "remedy_id": "cisco.nxos.link.flap_001",
+    "rca_id": "link.flap",
+    "title": "Interface Flapping – Repeated Link Up/Down Transitions",
+    "description": "An interface on a Cisco NX-OS switch is cycling between up and down states, causing intermittent traffic disruption. Interface flapping is typically caused by a marginal physical connection (cable, SFP, or connector seating), duplex/speed auto-negotiation failure, or aggressive UDLD/BFD timers. Rapid flapping can also trigger spanning-tree reconvergence and routing protocol instability.",
+    "vendor": "cisco",
+    "os_flavor": "nxos",
+    "severity": "high",
+    "appliance_types": ["Nexus 9300", "Nexus 9500", "Nexus 7700", "Nexus 5600", "Nexus 3000"],
+    "symptom_patterns": [
+      "Repeated syslog: %ETHPORT-5-IF_DOWN_LINK_FAILURE followed by %ETHPORT-5-IF_UP",
+      "show interface shows 'Last link flapped' timestamp updating frequently",
+      "Spanning-tree topology changes correlating with interface transitions",
+      "BGP/OSPF route flaps originating from the affected segment",
+      "UDLD syslog: %UDLD-4-UDLD_PORT_DISABLED"
+    ],
+    "rca_keywords": [
+      "link flap", "interface flapping", "link up down", "UDLD disable", "STP topology change",
+      "last link flapped", "auto-negotiation failure", "physical instability"
+    ],
+    "steps": [
+      "1. Identify the flapping interface and count transitions: `show interface <iface>` – check 'Last link flapped' and note how recently it occurred.",
+      "2. Check detailed counters for physical-layer errors: `show interface <iface> counters errors` – high CRC or input errors indicate a cabling or optic issue.",
+      "3. Review syslog for the pattern and frequency of flaps: `show logging logfile | include <iface> | include ETHPORT` and `show logging last 200`.",
+      "4. Verify UDLD state: `show udld <iface>` – confirm UDLD is not toggling the port due to echo timeout; check neighbor detection status.",
+      "5. Check transceiver receive power stability: `show interface <iface> transceiver detail` – fluctuating Rx power (> 3 dBm variation) indicates a marginal fiber or dirty connector.",
+      "6. Inspect speed and duplex negotiation: `show interface <iface>` – confirm both ends agree; if mismatched, hard-code speed and duplex: `speed 10000` / `duplex full`.",
+      "7. Enable dampening if flapping is causing wider impact (temporary measure): `interface <iface>` → `dampening`.",
+      "8. Apply carrier-delay to reduce protocol-layer impact: `interface <iface>` → `carrier-delay msec 500`.",
+      "9. Physically re-seat the cable and SFP; clean fiber connectors with an appropriate lint-free swab and inspect with fiber scope.",
+      "10. After re-seating, monitor the interface for at least 15 minutes: `show interface <iface> counters | diff` every 2 minutes.",
+      "11. If the flap persists, replace the cable with a known-good DAC or patch cable and test; escalate to hardware replacement if the problem follows the port.",
+      "12. Remove carrier-delay and dampening once the root cause is resolved to restore normal operation."
+    ],
+    "keywords": [
+      "interface flapping", "link flap", "UDLD", "STP topology change", "auto-negotiation",
+      "carrier-delay", "dampening", "NX-OS", "Nexus", "physical instability"
+    ],
+    "reranker_text": "A Cisco NX-OS interface is flapping repeatedly between up and down states. The runbook covers checking 'show interface' for flap timestamps, inspecting error counters and DOM transceiver power, reviewing UDLD state, verifying speed/duplex negotiation, applying carrier-delay or dampening as a temporary measure, and performing physical cable/SFP inspection and replacement to resolve the root cause.",
+    "estimated_time_minutes": 45,
+    "risk_level": "medium",
+    "requires_maintenance_window": false,
+    "escalation": "If flapping continues after physical remediation and interface replacement, escalate to Cisco TAC with 'show tech-support interface' and 'show logging logfile' outputs. Request hardware diagnostic for the linecard slot.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/interfaces/configuration/guide/b-cisco-nexus-9000-nx-os-interfaces-configuration-guide-93x/b-cisco-nexus-9000-nx-os-interfaces-configuration-guide-93x_chapter_010.html",
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/layer2/configuration/guide/b-cisco-nexus-9000-nx-os-layer-2-switching-configuration-guide-93x/b-cisco-nexus-9000-nx-os-layer-2-switching-configuration-guide-93x_chapter_0110.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.nxos.link.lag_down_001",
+    "rca_id": "link.lag_down",
+    "title": "Port-Channel / vPC Peer-Link Down – LAG Failure",
+    "description": "A Port-Channel (LAG) interface has gone down on a Cisco NX-OS switch, resulting in loss of bundled bandwidth and potentially triggering vPC peer-link failure. This can be caused by all member interfaces going down simultaneously, LACP negotiation failure, or misconfiguration of port-channel mode. When the vPC peer-link is affected, orphan ports may lose connectivity and vPC domains can enter inconsistent state.",
+    "vendor": "cisco",
+    "os_flavor": "nxos",
+    "severity": "critical",
+    "appliance_types": ["Nexus 9300", "Nexus 9500", "Nexus 7700", "Nexus 5600"],
+    "symptom_patterns": [
+      "show port-channel summary shows Po<N> as (D) – Down",
+      "Syslog: %ETHPORT-5-IF_DOWN_PORT_CHANNEL_MEMBERS_DOWN",
+      "vPC peer-link reports suspended or inconsistent state",
+      "show vpc shows 'vPC Peer-link status: down'",
+      "Hosts connected via vPC losing connectivity to both switches"
+    ],
+    "rca_keywords": [
+      "port-channel down", "LAG down", "LACP failure", "bundle down",
+      "vpc peer-link down", "port-channel members down", "ETHPORT PC members down"
+    ],
+    "steps": [
+      "1. Check the port-channel summary: `show port-channel summary` – identify the port-channel number and confirm all member interfaces status (P=in-port-channel, D=down, S=suspended).",
+      "2. Inspect individual member interfaces: `show interface port-channel <N>` and `show interface <member-iface>` for each member listed in the bundle.",
+      "3. Review LACP details: `show lacp interface <iface>` and `show lacp neighbor` – confirm LACP PDU exchange is active on all members; look for 'defaulted' or 'expired' LACP state.",
+      "4. Check LACP system priority and port priority consistency: `show lacp sys-id` on both ends – mismatch in system ID can cause bundle negotiation failure.",
+      "5. Verify port-channel mode configuration: `show running-config interface port-channel <N>` and member interfaces – confirm 'channel-group <N> mode active' is consistent on both ends.",
+      "6. Check for vPC impact: `show vpc` – review 'vPC Peer-link Status', 'vPC Peer-Keepalive Status', and any vPC consistency parameters.",
+      "7. Review peer-keepalive reachability: `show vpc peer-keepalive` – confirm last received keepalive timestamp is recent (within peer-keepalive interval).",
+      "8. Inspect syslog for the triggering event: `show logging logfile | include port-channel` and `show logging logfile | include vPC`.",
+      "9. If member interfaces are down due to physical reasons, follow the link.down runbook for each member; once physical links recover, LACP should re-bundle automatically.",
+      "10. If LACP is stuck: on each member interface, do `shutdown` then `no shutdown` to reset LACP state machine; monitor `show lacp interface <iface>` for 'bundled' status.",
+      "11. Verify minimum-links setting does not exceed available active members: `show running-config interface port-channel <N> | include min-links`.",
+      "12. After port-channel recovery, validate vPC state: `show vpc consistency-parameters global` – ensure no type-1 inconsistencies remain."
+    ],
+    "keywords": [
+      "port-channel down", "LAG failure", "LACP", "vPC peer-link", "bundle down",
+      "channel-group", "NX-OS", "Nexus", "ETHPORT", "trunk bundle"
+    ],
+    "reranker_text": "A NX-OS Port-Channel (LAG) interface has failed, causing bundled link loss and potential vPC peer-link disruption. The runbook walks through 'show port-channel summary', inspecting LACP negotiation on each member via 'show lacp interface', verifying vPC peer-link and keepalive states with 'show vpc' and 'show vpc peer-keepalive', and recovering the bundle by bouncing member interfaces and verifying consistency parameters.",
+    "estimated_time_minutes": 40,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "If the port-channel cannot be recovered and vPC remains in a suspended or inconsistent state, escalate to Cisco TAC immediately. Collect 'show tech-support vpc', 'show tech-support lacp', and syslog. Consider activating the standby path or failover procedure per site DR plan.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/interfaces/configuration/guide/b-cisco-nexus-9000-nx-os-interfaces-configuration-guide-93x/b-cisco-nexus-9000-nx-os-interfaces-configuration-guide-93x_chapter_01101.html",
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/vpc/configuration/guide/b-cisco-nexus-9000-nx-os-vpc-configuration-guide-93x.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.nxos.device.cpu_overload_001",
+    "rca_id": "device.cpu_overload",
+    "title": "High CPU Utilization – Runaway NX-OS Process",
+    "description": "CPU utilization on a Cisco NX-OS switch has exceeded a critical threshold (typically 80%+) due to a specific software process consuming excessive CPU cycles. Common offenders include netstack (packet punting storms), ospf, bgp, or platinum processes during topology changes. Sustained high CPU degrades control-plane processing, causes protocol timeouts, and may lead to device unresponsiveness.",
+    "vendor": "cisco",
+    "os_flavor": "nxos",
+    "severity": "high",
+    "appliance_types": ["Nexus 9300", "Nexus 9500", "Nexus 7700", "Nexus 5600", "Nexus 3000"],
+    "symptom_patterns": [
+      "SNMP CPU utilization OID reports > 80% for sustained period",
+      "Syslog: %PLATFORM-2-MOD_DETECT_MAJOR_ALERT: CPU utilization above threshold",
+      "Control-plane protocols (BGP/OSPF) timeout or reset",
+      "SSH/Telnet sessions become sluggish or unresponsive",
+      "show processes cpu sort shows one process at > 40% CPU"
+    ],
+    "rca_keywords": [
+      "high CPU", "CPU overload", "CPU utilization", "runaway process",
+      "netstack high", "control plane overload", "process cpu spike", "MOD_DETECT_MAJOR_ALERT"
+    ],
+    "steps": [
+      "1. Check current CPU utilization by process: `show processes cpu sort` – identify the top CPU-consuming process by 1-minute average.",
+      "2. Review CPU utilization history: `show processes cpu history` – determine if the spike is sustained or periodic.",
+      "3. Check system resource utilization: `show system resources` – review 'CPU states' line for user/kernel/idle breakdown.",
+      "4. Identify if a control-plane policy is in place: `show policy-map interface control-plane` – excessive punted packets from a specific class can overload CPU.",
+      "5. Check for packet-punting storms (common cause): `show hardware rate-limiter` – look for drops or high-rate entries on ARP, BGP, OSPF, or ICMP class.",
+      "6. If netstack is the offending process, identify the punting source: `debug ip packet` (use with caution in production) or review `show ip traffic` for anomalous rates.",
+      "7. Check for routing protocol reconvergence triggering CPU: `show bgp summary` and `show ip ospf neighbor` – look for flapping peers coinciding with CPU spike timing.",
+      "8. Review recent configuration changes that may have introduced a loop or misconfiguration: `show accounting log | last 50`.",
+      "9. Apply or tighten CoPP (Control-Plane Policing) policy to rate-limit offending traffic class: modify the appropriate class in `policy-map type control-plane` to protect CPU.",
+      "10. If a specific process is stuck (not reducing CPU), attempt a graceful process restart: `restart <process-name>` from privileged exec mode (e.g., `restart bgp`).",
+      "11. Collect diagnostics before restarting: `show processes cpu sort > bootflash:cpu_diag.txt` and `show logging logfile > bootflash:syslog_diag.txt`.",
+      "12. Monitor CPU post-action: `show processes cpu sort` every 2 minutes for 10 minutes to confirm reduction."
+    ],
+    "keywords": [
+      "high CPU", "CPU overload", "NX-OS CPU", "runaway process", "netstack",
+      "CoPP", "control-plane policing", "process sort", "system resources", "Nexus CPU"
+    ],
+    "reranker_text": "CPU utilization on a Cisco NX-OS switch has spiked above critical thresholds due to a runaway software process or control-plane punting storm. The runbook uses 'show processes cpu sort', 'show system resources', and 'show hardware rate-limiter' to pinpoint the offending process or traffic class. Remediation includes tightening CoPP policy, restarting the offending process, and reviewing routing protocol adjacency stability.",
+    "estimated_time_minutes": 35,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "If CPU remains above 80% after CoPP tuning and process restart, escalate to Cisco TAC with 'show tech-support' output and 'show processes cpu history'. Consider an emergency NX-OS software upgrade if a known bug is identified.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/system-management/configuration/guide/b-cisco-nexus-9000-nx-os-system-management-configuration-guide-93x/b-cisco-nexus-9000-nx-os-system-management-configuration-guide-93x_chapter_01001.html",
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/qos/configuration/guide/b-cisco-nexus-9000-nx-os-quality-of-service-configuration-guide-93x/b-cisco-nexus-9000-nx-os-quality-of-service-configuration-guide-93x_chapter_01010.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.nxos.device.cpu_overload_002",
+    "rca_id": "device.cpu_overload",
+    "title": "Supervisor CPU High – Control-Plane Traffic Storm",
+    "description": "The active supervisor module on a Cisco NX-OS switch is experiencing sustained high CPU due to a control-plane traffic storm, typically caused by an ARP flood, broadcast storm, or excessive ICMP/BGP packets being punted to the supervisor. This condition can cause OSPF/BGP adjacency drops, delayed CLI responses, and in extreme cases a supervisor switchover.",
+    "vendor": "cisco",
+    "os_flavor": "nxos",
+    "severity": "critical",
+    "appliance_types": ["Nexus 9500", "Nexus 7700", "Nexus 9300", "Nexus 5600"],
+    "symptom_patterns": [
+      "Syslog: %KERN-2-SYSTEM_MSG: CPU high – supervisor module",
+      "show system resources shows CPU user+kernel > 90%",
+      "OSPF/BGP neighbors flapping due to hello timeout",
+      "ARP resolution delays observed for hosts in heavily loaded VLANs",
+      "show hardware rate-limiter shows drops for ARP or ICMP class"
+    ],
+    "rca_keywords": [
+      "supervisor CPU high", "control plane storm", "ARP flood", "broadcast storm",
+      "punted packet overload", "rate-limiter drops", "CPU supervisor", "BGP timeout CPU"
+    ],
+    "steps": [
+      "1. Confirm supervisor CPU usage: `show system resources` – note 'CPU states' including both user and kernel percentages.",
+      "2. Identify top processes by CPU: `show processes cpu sort` – focus on the top 5 processes; note if 'arp', 'netstack', or 'bgp' appear prominently.",
+      "3. Review hardware rate-limiter statistics: `show hardware rate-limiter` – identify classes with high 'passed' and 'dropped' rates, especially ARP, OSPF, BGP, ICMP.",
+      "4. Check for ARP or MAC address table storm indicators: `show ip arp summary` for unusually high ARP entry counts and `show mac address-table count` per VLAN.",
+      "5. Identify the source of the storm: `show interface <suspected-iface> counters` – look for high 'broadcast' or 'multicast' input rates.",
+      "6. Apply storm-control on the offending access interface: `interface <iface>` → `storm-control broadcast level 20` (adjust threshold appropriately).",
+      "7. Review and tighten CoPP policy for the identified traffic class: `show running-config | section policy-map type control-plane` – reduce rate in 'police rate' statement for the offending class.",
+      "8. If ARP inspection is not enabled on user-facing VLANs, consider enabling DAI: `ip arp inspection vlan <vlan-id>`.",
+      "9. Check standby supervisor readiness in case failover is needed: `show module` – confirm standby supervisor is in 'ha-standby' state.",
+      "10. After mitigation, re-check CPU: `show system resources` and `show processes cpu sort` – CPU should drop below 50% within 2–3 minutes.",
+      "11. Review event history for the control-plane: `show system internal event-history errors` to capture any kernel or dataplane messages.",
+      "12. Document the storm source, affected VLANs, and CoPP/storm-control changes made."
+    ],
+    "keywords": [
+      "supervisor CPU", "control plane storm", "ARP flood", "broadcast storm", "CoPP",
+      "storm-control", "rate-limiter", "punted packets", "NX-OS supervisor", "Nexus 9500"
+    ],
+    "reranker_text": "The active supervisor of a Cisco NX-OS switch is under sustained high CPU due to a control-plane traffic storm (ARP flood, broadcast storm, or excessive punted packets). Diagnosis uses 'show system resources', 'show processes cpu sort', and 'show hardware rate-limiter' to identify the storm class. Mitigation involves applying storm-control on access interfaces, tightening CoPP police rates, and verifying standby supervisor readiness for potential failover.",
+    "estimated_time_minutes": 45,
+    "risk_level": "critical",
+    "requires_maintenance_window": false,
+    "escalation": "If CPU does not recover after mitigation and standby supervisor is available, initiate a planned supervisor switchover: 'system switchover'. Escalate to Cisco TAC immediately with 'show tech-support' and 'show hardware rate-limiter' outputs.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/qos/configuration/guide/b-cisco-nexus-9000-nx-os-quality-of-service-configuration-guide-93x/b-cisco-nexus-9000-nx-os-quality-of-service-configuration-guide-93x_chapter_01010.html",
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/system-management/configuration/guide/b-cisco-nexus-9000-nx-os-system-management-configuration-guide-93x.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.nxos.device.memory_exhaustion_001",
+    "rca_id": "device.memory_exhaustion",
+    "title": "Process Memory Exhaustion – NX-OS Software Process Memory Leak",
+    "description": "A specific NX-OS software process is consuming an abnormally high and growing amount of memory, leading to system memory pressure. Memory leaks in processes such as bgp, ospf, urib, or m6rib can progressively exhaust available memory, eventually causing process crashes, unexpected reloads, or system instability. Early detection and process restart can prevent a full system outage.",
+    "vendor": "cisco",
+    "os_flavor": "nxos",
+    "severity": "high",
+    "appliance_types": ["Nexus 9300", "Nexus 9500", "Nexus 7700", "Nexus 5600", "Nexus 3000"],
+    "symptom_patterns": [
+      "Syslog: %PLATFORM-2-MOD_DETECT_MAJOR_ALERT: Memory utilization above threshold",
+      "show system resources shows 'Memory usage' > 85%",
+      "show processes memory sort shows a single process consuming > 500 MB",
+      "Process crash syslog: %MODULE-2-MOD_DIAG_FAIL for a specific process",
+      "BGP or OSPF session reset correlated with memory spike"
+    ],
+    "rca_keywords": [
+      "process memory leak", "memory exhaustion", "high memory process",
+      "memory utilization", "urib memory", "bgp memory leak", "MOD_DETECT_MAJOR_ALERT memory"
+    ],
+    "steps": [
+      "1. Check overall system memory: `show system resources` – note 'Memory usage' total, used, and free values.",
+      "2. Identify memory-hungry processes: `show processes memory sort` – look for processes with unusually high 'MemAlloced' values relative to their typical baseline.",
+      "3. Check memory allocation history for the top process: `show processes memory pid <pid>` – review memory growth over time.",
+      "4. Review syslog for memory-related alerts and process restarts: `show logging logfile | include MEMORY` and `show logging logfile | include malloc`.",
+      "5. Check for known software bugs related to the offending process: cross-reference NX-OS version with Cisco Bug Search Tool (https://bst.cloudapps.cisco.com) for memory leak defects.",
+      "6. Capture diagnostics before taking action: `show processes memory sort > bootflash:mem_diag.txt`.",
+      "7. If the offending process is a routing protocol (bgp, ospf), attempt a graceful restart: `restart bgp` or `restart ospf` from privileged exec mode.",
+      "8. After process restart, verify memory recovery: `show system resources` – free memory should increase within 2–5 minutes.",
+      "9. Monitor the process memory after restart: `show processes memory pid <pid>` every 5 minutes for 30 minutes to confirm memory is not growing again.",
+      "10. If memory continues to grow after restart, consider upgrading NX-OS to a version with the defect fix.",
+      "11. Set a memory utilization SNMP threshold alert to trigger at 80% to enable early detection in the future.",
+      "12. If memory is critically low (< 10% free) and the device is at risk of crashing, plan an emergency maintenance window for a device reload."
+    ],
+    "keywords": [
+      "memory leak", "process memory", "high memory", "system resources", "NX-OS memory",
+      "bgp memory", "urib memory", "memory exhaustion", "Nexus memory", "show processes memory"
+    ],
+    "reranker_text": "A Cisco NX-OS process is experiencing a memory leak, causing progressive memory exhaustion and system instability. Diagnosis uses 'show system resources' and 'show processes memory sort' to identify the offending process. Remediation involves capturing diagnostics, performing a graceful process restart, checking for known NX-OS software defects via Cisco Bug Search Tool, and planning an NX-OS upgrade or maintenance reload if memory growth continues.",
+    "estimated_time_minutes": 40,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "If process restart does not resolve memory growth and free memory falls below 5%, escalate to Cisco TAC immediately. Collect 'show tech-support' and 'show processes memory sort' outputs. Be prepared to initiate an emergency reload with minimal notice.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/system-management/configuration/guide/b-cisco-nexus-9000-nx-os-system-management-configuration-guide-93x/b-cisco-nexus-9000-nx-os-system-management-configuration-guide-93x_chapter_01001.html",
+      "https://bst.cloudapps.cisco.com/bugsearch"
+    ]
+  },
+  {
+    "remedy_id": "cisco.nxos.device.memory_exhaustion_002",
+    "rca_id": "device.memory_exhaustion",
+    "title": "System Memory Alert – Global Memory Pressure on NX-OS Platform",
+    "description": "The Cisco NX-OS switch has generated a system-level memory alert indicating that total available physical memory has dropped below a critical threshold. Unlike a single-process leak, this condition may be caused by multiple concurrently running processes collectively exhausting memory, large routing table sizes (full BGP Internet table), or an unusually large number of MAC/ARP entries overwhelming the control-plane memory. Immediate action is required to prevent system instability or an unplanned reload.",
+    "vendor": "cisco",
+    "os_flavor": "nxos",
+    "severity": "critical",
+    "appliance_types": ["Nexus 9300", "Nexus 9500", "Nexus 7700", "Nexus 5600"],
+    "symptom_patterns": [
+      "Syslog: %KERN-2-SYSTEM_MSG: Out of memory: Kill process <pid> score",
+      "Syslog: %PLATFORM-2-MOD_DETECT_MAJOR_ALERT: Memory utilization critical",
+      "show system resources shows memory usage > 95%",
+      "CLI commands taking > 30 seconds to return output",
+      "Feature processes (OSPF, BGP) crashing and auto-restarting repeatedly"
+    ],
+    "rca_keywords": [
+      "system memory alert", "global memory pressure", "OOM kill", "memory critical",
+      "memory utilization 95", "BGP table memory", "MAC table memory", "memory threshold exceeded"
+    ],
+    "steps": [
+      "1. Confirm memory criticality: `show system resources` – note exact memory usage percentage and available free memory in KB.",
+      "2. List all processes sorted by memory: `show processes memory sort` – identify the top 10 consumers.",
+      "3. Check routing table sizes: `show ip route summary` and `show bgp ipv4 unicast summary` – a full Internet table on a platform not sized for it is a common cause.",
+      "4. Check ARP and MAC table sizes: `show ip arp summary` and `show mac address-table count` – large L2 domains can consume significant memory.",
+      "5. Check NVE/VXLAN overlay tables if applicable: `show nve vni` and `show nve peers` – large EVPN tables contribute to memory usage.",
+      "6. Review kernel OOM messages in syslog: `show logging logfile | include OOM` and `show logging logfile | include killed`.",
+      "7. Identify and terminate any unnecessary feature daemons or debug sessions: `show debug` – disable all active debugs with `undebug all`.",
+      "8. Check for memory fragmentation: `show system internal memory detail` (if available on platform) – high fragmentation can make effective free memory less than reported.",
+      "9. Consider disabling optional features that consume memory (e.g., flow monitoring, large ACLs) until memory is recovered.",
+      "10. If a BGP table is the primary cause, consider applying route filtering (prefix-list or community filter) to reduce table size: modify BGP policy on peers.",
+      "11. Save current configuration and schedule an emergency reload during a maintenance window if memory does not recover.",
+      "12. Post-incident: right-size the platform by migrating large BGP/routing workloads to a higher-memory Nexus SKU or adding route reflectors to limit table size."
+    ],
+    "keywords": [
+      "system memory", "OOM", "memory critical", "global memory pressure", "NX-OS memory alert",
+      "show system resources", "BGP table size", "MAC table", "Nexus memory critical"
+    ],
+    "reranker_text": "A Cisco NX-OS switch has reached critical global memory exhaustion, potentially caused by large BGP routing tables, excessive MAC/ARP entries, or multiple process memory accumulation. The runbook diagnoses using 'show system resources', 'show processes memory sort', routing/ARP/MAC table size commands, and syslog OOM messages. Mitigation includes disabling debugs, applying route filters, and planning a maintenance reload if memory cannot be recovered.",
+    "estimated_time_minutes": 60,
+    "risk_level": "critical",
+    "requires_maintenance_window": true,
+    "escalation": "If the device is at imminent risk of a crash (memory < 3% free) and cannot be stabilized, immediately failover traffic to a redundant path and perform an emergency reload. Open a Cisco TAC P1 case with 'show tech-support' and 'show processes memory sort' outputs.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/system-management/configuration/guide/b-cisco-nexus-9000-nx-os-system-management-configuration-guide-93x.html",
+      "https://www.cisco.com/c/en/us/support/docs/switches/nexus-9000-series-switches/212971-nexus-9000-troubleshooting-memory.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.nxos.device.unreachable_001",
+    "rca_id": "device.unreachable",
+    "title": "Management VRF Connectivity Lost – Device Unreachable via OOB/In-Band Management",
+    "description": "A Cisco NX-OS switch has become unreachable via its management interface or in-band management VRF, preventing SNMP polling, SSH access, and syslog delivery. This can be caused by a misconfigured or missing management default route, a management interface physical failure, VRF misconfiguration, or an ACL inadvertently blocking management traffic. Restoration requires either console access or an alternative access path.",
+    "vendor": "cisco",
+    "os_flavor": "nxos",
+    "severity": "critical",
+    "appliance_types": ["Nexus 9300", "Nexus 9500", "Nexus 7700", "Nexus 5600", "Nexus 3000"],
+    "symptom_patterns": [
+      "SNMP polls to device management IP timing out",
+      "SSH connection refused or timing out to management IP",
+      "Ping from NMS to device management IP fails",
+      "Syslog stream from device stops",
+      "NMS shows device as 'unreachable' or 'unknown'"
+    ],
+    "rca_keywords": [
+      "device unreachable", "management VRF", "mgmt0 down", "OOB unreachable",
+      "management IP unreachable", "SSH timeout", "SNMP timeout", "default route mgmt VRF"
+    ],
+    "steps": [
+      "1. Attempt console access (physical or via console server) to the device – this is the primary access path when OOB/in-band is unavailable.",
+      "2. Once on console, check management interface status: `show interface mgmt0` – confirm 'line protocol is up' and note the assigned IP address.",
+      "3. Verify management VRF routing table: `show ip route vrf management` – confirm a default route (0.0.0.0/0) is present pointing to the management gateway.",
+      "4. If default route is missing, add it: `ip route 0.0.0.0/0 <gateway-ip> vrf management`.",
+      "5. Test reachability from the device: `ping <NMS-IP> vrf management count 5` – confirm ICMP echo replies are received.",
+      "6. Check for ACLs applied to mgmt0 that may be blocking traffic: `show running-config interface mgmt0` and `show ip access-lists` – look for any deny rules affecting SSH or SNMP source addresses.",
+      "7. Review VRF assignment of mgmt0: `show vrf interface mgmt0` – ensure mgmt0 is in the 'management' VRF and not the default VRF.",
+      "8. Check if SSH or SNMP services are running: `show feature | include ssh` and `show feature | include snmp` – if disabled, re-enable: `feature ssh` and `feature snmp`.",
+      "9. Verify SSH key is present: `show ssh server` – if SSH keys are missing, regenerate: `ssh key rsa 2048`.",
+      "10. After restoring reachability, test from NMS: ping management IP and attempt SSH login.",
+      "11. Review syslog for events around the time reachability was lost: `show logging logfile | include mgmt0` to identify the triggering change.",
+      "12. Implement management plane protection (MPP) and ensure OOB management redundancy is configured for future incidents."
+    ],
+    "keywords": [
+      "device unreachable", "management VRF", "mgmt0", "OOB management", "SSH timeout",
+      "SNMP unreachable", "management default route", "console access", "NX-OS management"
+    ],
+    "reranker_text": "A Cisco NX-OS switch is unreachable via its management interface or in-band management VRF, causing loss of SNMP, SSH, and syslog connectivity to the NMS. The runbook starts with console access, then checks mgmt0 interface state, verifies the management VRF default route, inspects ACLs and VRF assignments, and ensures SSH/SNMP features are enabled. Remediation restores the missing route or clears the blocking ACL.",
+    "estimated_time_minutes": 30,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "If console access is also unavailable (console server failure), dispatch a field engineer for physical console access. If the device is completely unresponsive on all interfaces, escalate to Cisco TAC for guidance on power-cycling under a maintenance window.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/fundamentals/configuration/guide/b-cisco-nexus-9000-nx-os-fundamentals-configuration-guide-93x/b-cisco-nexus-9000-nx-os-fundamentals-configuration-guide-93x_chapter_0110.html",
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/security/configuration/guide/b-cisco-nexus-9000-nx-os-security-configuration-guide-93x.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.nxos.device.unexpected_reboot_001",
+    "rca_id": "device.unexpected_reboot",
+    "title": "Unexpected Device Reload – Supervisor Kernel Panic or Switchover",
+    "description": "A Cisco NX-OS switch has undergone an unplanned reload, either due to a supervisor kernel panic, software watchdog expiry, or an unplanned in-service supervisor switchover triggered by hardware or software fault. Unexpected reloads cause brief to extended traffic outages depending on redundancy state and can corrupt running state if a graceful reload is not performed. Post-incident analysis is critical to prevent recurrence.",
+    "vendor": "cisco",
+    "os_flavor": "nxos",
+    "severity": "critical",
+    "appliance_types": ["Nexus 9500", "Nexus 9300", "Nexus 7700", "Nexus 5600"],
+    "symptom_patterns": [
+      "Device reloads without operator-initiated 'reload' command",
+      "Syslog gap indicating device was unreachable for a period",
+      "show version shows recent 'Last reset reason' as 'Kernel Panic' or 'Watchdog'",
+      "show module shows supervisor coming online from a cold-start state",
+      "Event: %MODULE-2-MOD_DIAG_FAIL on supervisor module before reload"
+    ],
+    "rca_keywords": [
+      "unexpected reload", "kernel panic", "supervisor switchover", "watchdog reset",
+      "unplanned reboot", "supervisor crash", "MOD_DIAG_FAIL", "cold start"
+    ],
+    "steps": [
+      "1. Confirm the reload reason: `show version` – check 'Last reset reason' field for 'Kernel Panic', 'Watchdog', 'Software failure', or 'Power Failure'.",
+      "2. Check the reload history: `show system reset-reason` – review all historical reset events with timestamps.",
+      "3. Review syslog immediately before the reload event: `show logging logfile | tail 500` – look for kernel messages, process crashes, or hardware alerts in the minutes preceding the reload.",
+      "4. Check core dump files generated by the crash: `show cores` – if present, copy core files to bootflash: and send to Cisco TAC.",
+      "5. Review module and hardware health post-reload: `show module` – confirm all linecards and supervisors are online and in 'ok' state.",
+      "6. Check the standby supervisor state: `show redundancy status` – confirm standby is in 'ha-standby' state and SSO (Stateful Switchover) is ready.",
+      "7. Inspect OBFL (On-Board Failure Logging): `show logging onboard module <sup-slot> status` and `show logging onboard module <sup-slot> exception-log` for hardware fault messages.",
+      "8. Check NX-OS software version for known reload/panic bugs: cross-reference with Cisco Bug Search Tool (https://bst.cloudapps.cisco.com).",
+      "9. Verify current NX-OS version and upgrade if a defect fix is available: `show version` and compare against the recommended release on https://software.cisco.com.",
+      "10. Check hardware temperature and power supply status to rule out environmental triggers: `show environment temperature` and `show environment power`.",
+      "11. Review fan status: `show environment fan` – overheating due to fan failure can trigger supervisor protection reload.",
+      "12. After stabilization, implement SNMP trap monitoring for %MODULE-2-MOD_DIAG_FAIL to get early warning of future supervisor issues."
+    ],
+    "keywords": [
+      "unexpected reload", "kernel panic", "watchdog", "supervisor switchover",
+      "show version reset reason", "OBFL", "core dump", "NX-OS crash", "Nexus reload"
+    ],
+    "reranker_text": "A Cisco NX-OS switch has undergone an unexpected reload due to a supervisor kernel panic, watchdog expiry, or hardware fault. Post-incident analysis uses 'show version', 'show system reset-reason', OBFL logs via 'show logging onboard', and core dump inspection to determine root cause. Remediation includes NX-OS software upgrade for known defects, hardware replacement if environmental or hardware faults are confirmed, and verifying SSO redundancy readiness.",
+    "estimated_time_minutes": 90,
+    "risk_level": "critical",
+    "requires_maintenance_window": true,
+    "escalation": "Open a Cisco TAC case immediately with severity 1 if the device reloads repeatedly. Provide 'show tech-support', 'show logging logfile', 'show system reset-reason', 'show logging onboard', and any core dump files. Request hardware RMA if OBFL indicates a supervisor hardware fault.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/hw/maintenance/guide/n9k_hig.html",
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/system-management/configuration/guide/b-cisco-nexus-9000-nx-os-system-management-configuration-guide-93x/b-cisco-nexus-9000-nx-os-system-management-configuration-guide-93x_chapter_01110.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.nxos.routing.bgp_down_001",
+    "rca_id": "routing.bgp_down",
+    "title": "eBGP Peer Session Down – External BGP Neighbor Unreachable",
+    "description": "An external BGP (eBGP) peering session on a Cisco NX-OS switch has dropped, causing withdrawal of external routes and potential traffic blackholing. eBGP session failures are commonly caused by physical link loss between peers, misconfigured or changed BGP authentication (MD5 password), hold-timer expiry due to high CPU, or prefix limit violation. Rapid restoration requires identifying whether the failure is at Layer 1/2 or BGP configuration/policy level.",
+    "vendor": "cisco",
+    "os_flavor": "nxos",
+    "severity": "critical",
+    "appliance_types": ["Nexus 9300", "Nexus 9500", "Nexus 7700", "Nexus 5600", "Nexus 3000"],
+    "symptom_patterns": [
+      "show bgp summary shows peer in 'Idle' or 'Active' state",
+      "Syslog: %BGP-5-ADJCHANGE: peer <IP> Down <reason>",
+      "Routes from eBGP peer withdrawn from routing table",
+      "Traffic to external prefixes dropping or rerouting via backup path",
+      "BGP notification messages in syslog (e.g., Hold Timer Expired, Open Message Error)"
+    ],
+    "rca_keywords": [
+      "eBGP down", "BGP peer down", "BGP session idle", "BGP hold timer expired",
+      "BGP notification", "ADJCHANGE", "external BGP failure", "BGP authentication failure"
+    ],
+    "steps": [
+      "1. Check BGP peer status: `show bgp summary` – note peer state (Idle/Active/Connect) and 'Up/Down' timer to understand how long the session has been down.",
+      "2. View detailed BGP neighbor information: `show bgp neighbors <peer-IP>` – review 'BGP state', 'Last reset reason', 'Hold time', and any BGP notification messages received.",
+      "3. Verify IP reachability to the peer: `ping <peer-IP> vrf <bgp-vrf> count 10` – if ping fails, the issue is at Layer 3 or below; follow the link.down or device.unreachable runbook.",
+      "4. Check interface toward eBGP peer: `show interface <peering-iface>` – confirm it is up/up and review error counters.",
+      "5. Verify BGP configuration on local router: `show running-config | section router bgp` – confirm remote-as, peer IP, and update-source are correct.",
+      "6. Check BGP authentication: if MD5 password is used, confirm the password matches on both ends – a password mismatch will keep the session in Active state indefinitely.",
+      "7. Review BGP notification messages in syslog: `show logging logfile | include BGP` – look for 'Hold Timer Expired', 'Open Message Error', 'Cease', or 'Prefix Limit Reached'.",
+      "8. Check if a prefix limit has been hit: `show bgp neighbors <peer-IP> | include prefix` – if prefix limit is reached, the session is automatically taken down; increase with `maximum-prefix <N> <threshold> restart <interval>`.",
+      "9. Verify the BGP process is healthy: `show processes | include bgp` – confirm bgp process is in a running state.",
+      "10. Attempt to clear the BGP session softly: `clear bgp <peer-IP> soft` – this refreshes inbound/outbound policy without dropping the session.",
+      "11. If a hard reset is needed: `clear bgp <peer-IP>` – note this drops the session briefly and triggers route reconvergence.",
+      "12. Monitor session recovery: `show bgp summary` every 30 seconds until the peer shows 'Established' and route counts match pre-incident baseline."
+    ],
+    "keywords": [
+      "eBGP down", "BGP session", "BGP peer", "ADJCHANGE", "BGP hold timer",
+      "BGP authentication", "prefix limit", "BGP idle", "NX-OS BGP", "show bgp summary"
+    ],
+    "reranker_text": "An eBGP peering session on a Cisco NX-OS switch has failed, causing route withdrawal and potential traffic loss. Diagnosis uses 'show bgp summary', 'show bgp neighbors', ping reachability tests, and syslog BGP notification messages to determine if the failure is physical, authentication-related, or a prefix limit violation. Remediation includes correcting configuration mismatches, adjusting prefix limits, or performing a soft/hard BGP clear to restore the session.",
+    "estimated_time_minutes": 30,
+    "risk_level": "critical",
+    "requires_maintenance_window": false,
+    "escalation": "If the eBGP session cannot be established after configuration verification and peer coordination, escalate to the upstream provider NOC or Cisco TAC. Provide 'show bgp neighbors <peer-IP>' and 'show logging logfile | include BGP' outputs.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/unicast/configuration/guide/b-cisco-nexus-9000-nx-os-unicast-routing-configuration-guide-93x/b-cisco-nexus-9000-nx-os-unicast-routing-configuration-guide-93x_chapter_01000.html",
+      "https://www.cisco.com/c/en/us/support/docs/ip/border-gateway-protocol-bgp/200952-Troubleshoot-BGP-Neighbor-Adjacency-Pr.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.nxos.routing.bgp_down_002",
+    "rca_id": "routing.bgp_down",
+    "title": "iBGP Session Reset – Internal BGP Peer Flapping Within AS",
+    "description": "An internal BGP (iBGP) session between two Cisco NX-OS switches within the same AS has reset, causing route withdrawals within the IBGP full-mesh or route-reflector topology. iBGP session resets are commonly triggered by high CPU on either end causing hold-timer expiry, a route-reflector reboot, changes to the loopback (update-source) reachability, or policy changes causing session reset notifications.",
+    "vendor": "cisco",
+    "os_flavor": "nxos",
+    "severity": "high",
+    "appliance_types": ["Nexus 9300", "Nexus 9500", "Nexus 7700", "Nexus 5600"],
+    "symptom_patterns": [
+      "show bgp summary shows iBGP peer in 'Idle' or 'Active' state",
+      "Syslog: %BGP-5-ADJCHANGE: peer <loopback-IP> Down Hold Timer Expired",
+      "EVPN/VPN routes from remote PE missing from local table",
+      "Route-reflector clients showing session flaps",
+      "OSPF-learned loopback routes for peer missing from routing table"
+    ],
+    "rca_keywords": [
+      "iBGP down", "iBGP session reset", "BGP hold timer iBGP", "route reflector down",
+      "loopback unreachable", "update-source unreachable", "iBGP flapping", "ADJCHANGE iBGP"
+    ],
+    "steps": [
+      "1. Check iBGP peer status: `show bgp summary` – identify all iBGP peers (same AS) in non-Established state.",
+      "2. View detailed neighbor state: `show bgp neighbors <peer-loopback-IP>` – note 'Last reset reason' and 'Hold time' expiry details.",
+      "3. Verify loopback (update-source) reachability: `ping <peer-loopback-IP> source loopback0 count 10` – iBGP typically uses loopbacks as update-source; unreachable loopback means IGP has lost the route.",
+      "4. Check IGP (OSPF/IS-IS) for the peer loopback route: `show ip route <peer-loopback-IP>` – if missing, troubleshoot OSPF/IS-IS convergence.",
+      "5. Review OSPF neighbor state: `show ip ospf neighbor` – confirm the OSPF adjacency to the peer is up; flapping OSPF can cause iBGP update-source reachability loss.",
+      "6. Check the BGP update-source configuration: `show running-config | section router bgp` – confirm 'update-source loopback0' is configured for all iBGP peers.",
+      "7. Check for CPU high on either peer that may cause hold-timer expiry: `show processes cpu sort` on both the local switch and (if accessible) the remote peer.",
+      "8. Review route-reflector state if applicable: `show bgp neighbors <RR-IP>` – confirm the RR is up and the cluster-id is correct.",
+      "9. Inspect BGP policy changes: `show accounting log | last 50` – confirm no recent route-policy or prefix-list changes were made that might have reset the session.",
+      "10. Perform a soft inbound policy refresh: `clear bgp <peer-IP> soft in` – applies updated inbound policy without dropping the session.",
+      "11. If session is stuck in Active state, perform a hard clear: `clear bgp <peer-IP>` and monitor reconvergence.",
+      "12. Verify routes are received after session recovery: `show bgp ipv4 unicast neighbors <peer-IP> received-routes` and confirm expected prefix counts."
+    ],
+    "keywords": [
+      "iBGP down", "internal BGP", "route reflector", "BGP hold timer", "loopback unreachable",
+      "update-source", "OSPF BGP interaction", "NX-OS iBGP", "BGP session reset"
+    ],
+    "reranker_text": "An iBGP session between Cisco NX-OS peers has reset, causing internal route withdrawals. Diagnosis involves checking 'show bgp summary', verifying loopback reachability via ping and 'show ip route', confirming IGP (OSPF/IS-IS) adjacency health, and reviewing CPU utilization for hold-timer expiry. Remediation focuses on restoring IGP convergence, correcting update-source configuration, and performing BGP soft/hard clears to re-establish the session.",
+    "estimated_time_minutes": 35,
+    "risk_level": "high",
+    "requires_maintenance_window": false,
+    "escalation": "If iBGP session cannot be re-established after IGP and loopback restoration, escalate to the network operations team and Cisco TAC. Provide 'show bgp neighbors', 'show ip ospf neighbor', and 'show logging logfile | include BGP' outputs.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/unicast/configuration/guide/b-cisco-nexus-9000-nx-os-unicast-routing-configuration-guide-93x/b-cisco-nexus-9000-nx-os-unicast-routing-configuration-guide-93x_chapter_01000.html",
+      "https://www.cisco.com/c/en/us/support/docs/ip/border-gateway-protocol-bgp/200952-Troubleshoot-BGP-Neighbor-Adjacency-Pr.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.nxos.routing.vxlan_down_001",
+    "rca_id": "routing.vxlan_down",
+    "title": "VXLAN NVE Tunnel Down – NVE Peer Unreachable or VNI Not Programmed",
+    "description": "A VXLAN NVE (Network Virtualization Edge) tunnel on a Cisco NX-OS VTEP has gone down or the NVE peer is no longer reachable, causing loss of overlay connectivity for VNIs (Virtual Network Identifiers) mapped to that tunnel. This is commonly caused by underlay VTEP IP reachability loss (BGP EVPN peer down), VTEP loopback interface going down, NVE interface misconfiguration, or VXLAN VNI provisioning inconsistency.",
+    "vendor": "cisco",
+    "os_flavor": "nxos",
+    "severity": "critical",
+    "appliance_types": ["Nexus 9300", "Nexus 9500", "Nexus 7700"],
+    "symptom_patterns": [
+      "show nve peers shows peer VTEP in 'Down' state",
+      "show nve vni shows VNI in 'Down' or not appearing in output",
+      "Hosts in VXLAN segment losing inter-VTEP connectivity",
+      "BGP EVPN routes for remote VTEP missing from local table",
+      "Syslog: %NVE-3-NVE_TUNNEL_DOWN: NVE peer <IP> tunnel is down"
+    ],
+    "rca_keywords": [
+      "VXLAN down", "NVE tunnel down", "VTEP unreachable", "VNI down",
+      "NVE peer down", "EVPN VXLAN failure", "NVE_TUNNEL_DOWN", "overlay down"
+    ],
+    "steps": [
+      "1. Check NVE interface status: `show interface nve1` – confirm the NVE interface is up and the source interface (loopback) is configured correctly.",
+      "2. View NVE peer states: `show nve peers` – identify which remote VTEPs are in 'Down' state and note the peer VTEP IP.",
+      "3. Check VNI operational state: `show nve vni` – confirm all expected VNIs are in 'Up' state; investigate any VNI showing 'Down' or 'CP Down'.",
+      "4. Verify underlay reachability to the remote VTEP: `ping <remote-VTEP-IP> source loopback0 count 10` – if ping fails, the underlay IGP/BGP has lost the route.",
+      "5. Check BGP EVPN session to the remote VTEP or Route-Reflector: `show bgp l2vpn evpn summary` – confirm EVPN peering is Established.",
+      "6. Verify EVPN routes for the remote VTEP are present: `show bgp l2vpn evpn` – look for Type-3 (Inclusive Multicast Ethernet Tag) routes from the remote VTEP.",
+      "7. Check the NVE source loopback interface: `show interface loopback0` – confirm it is up and has the expected IP address configured as the VTEP source.",
+      "8. Review VXLAN VNI-to-VLAN mapping: `show running-config | section nve` – confirm VNI-to-VLAN bindings are correct and consistent with the remote VTEP configuration.",
+      "9. Verify VTEP anycast IP (if used with vPC): `show nve vni detail` – confirm anycast-gateway MAC and primary/secondary loopback addresses are properly configured.",
+      "10. Check for hardware programming of VXLAN entries: `show hardware vxlan` (platform-specific) – confirm VNIs are programmed in the ASIC hardware table.",
+      "11. Review syslog for NVE events: `show logging logfile | include NVE` and `show logging logfile | include VXLAN`.",
+      "12. If configuration is correct but tunnel remains down, try bouncing the NVE interface: `interface nve1` → `shutdown` → `no shutdown` – monitor `show nve peers` for peer recovery."
+    ],
+    "keywords": [
+      "VXLAN down", "NVE tunnel", "VTEP", "VNI down", "EVPN", "BGP EVPN",
+      "NVE peer", "overlay network", "NX-OS VXLAN", "Nexus VXLAN"
+    ],
+    "reranker_text": "A VXLAN NVE tunnel on a Cisco NX-OS VTEP has failed, disrupting overlay connectivity for affected VNIs. Diagnosis uses 'show nve peers', 'show nve vni', 'show interface nve1', and 'show bgp l2vpn evpn summary' to identify whether the failure is underlay reachability, BGP EVPN session, or VNI configuration. Remediation targets restoring the underlay path, re-establishing BGP EVPN, and bouncing the NVE interface if misconfiguration is ruled out.",
+    "estimated_time_minutes": 45,
+    "risk_level": "critical",
+    "requires_maintenance_window": false,
+    "escalation": "If NVE tunnel remains down after underlay and BGP EVPN restoration, escalate to Cisco TAC with 'show tech-support nve', 'show bgp l2vpn evpn', and 'show nve peers detail' outputs. Check for known NX-OS VXLAN defects on Bug Search Tool.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/vxlan/configuration/guide/b-cisco-nexus-9000-series-nx-os-vxlan-configuration-guide-93x.html",
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/vxlan/configuration/guide/b-cisco-nexus-9000-series-nx-os-vxlan-configuration-guide-93x/b-cisco-nexus-9000-series-nx-os-vxlan-configuration-guide-93x_chapter_011.html"
+    ]
+  },
+  {
+    "remedy_id": "cisco.nxos.fabric.vpc_down_001",
+    "rca_id": "fabric.vpc_down",
+    "title": "vPC Peer-Link Failure – Dual-Active Detection and Orphan Port Isolation",
+    "description": "The vPC (Virtual Port Channel) peer-link between two Cisco Nexus switches has failed, causing one vPC peer to enter an operational isolation state and potentially triggering dual-active detection issues. When the peer-link goes down while the peer-keepalive link remains up, the secondary vPC peer will shut down all vPC member ports to prevent a split-brain scenario. This causes traffic disruption for all devices dual-homed to the vPC pair.",
+    "vendor": "cisco",
+    "os_flavor": "nxos",
+    "severity": "critical",
+    "appliance_types": ["Nexus 9300", "Nexus 9500", "Nexus 7700", "Nexus 5600"],
+    "symptom_patterns": [
+      "show vpc shows 'vPC Peer-link Status: down'",
+      "Secondary vPC peer suspends all vPC member port-channels",
+      "Syslog: %VPC-2-VPC_PEER_LINK_FAILED: vPC peer-link is down",
+      "Hosts connected via vPC losing connectivity on secondary switch",
+      "Syslog: %VPC-2-PEER_KEEP_ALIVE_RECV_FAIL after peer-link loss"
+    ],
+    "rca_keywords": [
+      "vPC peer-link down", "vpc failure", "dual active", "split brain vPC",
+      "peer-link failure", "VPC_PEER_LINK_FAILED", "vpc secondary suspended", "orphan port"
+    ],
+    "steps": [
+      "1. Confirm vPC domain state: `show vpc` on both vPC peers – note 'vPC Peer-link Status', 'vPC Peer-Keepalive Status', and 'vPC Role' (primary/secondary).",
+      "2. Check the peer-keepalive reachability: `show vpc peer-keepalive` – confirm 'Last keepalive status: Alive' and review last-received timestamp.",
+      "3. Inspect the vPC peer-link port-channel: `show interface port-channel <peer-link-po>` and `show port-channel summary` – identify which member interfaces are down.",
+      "4. Check member interface status: `show interface <peer-link-member-iface>` for each member – confirm if the failure is physical (link down) or logical (LACP suspended).",
+      "5. Review syslog for the sequence of events: `show logging logfile | include VPC` and `show logging logfile | include peer-link` – establish the timeline.",
+      "6. On the secondary vPC peer, check which vPC members were suspended: `show vpc` – the 'vPC Status' column will show suspended for all vPCs on the secondary.",
+      "7. If the peer-link failure is physical (cable/SFP), restore the physical links following the link.down runbook; the peer-link port-channel should auto-recover once member interfaces come up.",
+      "8. After peer-link restoration, verify vPC re-converges: `show vpc` – confirm 'vPC Peer-link Status: Up' and vPC member ports return to 'Up (SU)' state.",
+      "9. Verify no vPC consistency errors remain: `show vpc consistency-parameters global` – all Type-1 parameters must be consistent between peers.",
+      "10. Check orphan ports (devices single-homed to the secondary switch) during the outage – these should restore automatically after peer-link recovery.",
+      "11. Review peer-keepalive path configuration: `show running-config | section vpc` – confirm keepalive is on a dedicated management or out-of-band path separate from the peer-link.",
+      "12. Post-incident: ensure peer-link is sized with sufficient redundant physical members (minimum 2, recommended 4+) to prevent recurrence from a single interface failure."
+    ],
+    "keywords": [
+      "vPC peer-link", "vPC failure", "dual-active", "split-brain", "vpc suspend",
+      "peer-keepalive", "vPC secondary", "orphan port", "NX-OS vPC", "Nexus vPC"
+    ],
+    "reranker_text": "The vPC peer-link between two Cisco Nexus switches has failed, causing the secondary vPC peer to suspend all vPC member ports to avoid split-brain. Diagnosis uses 'show vpc', 'show vpc peer-keepalive', 'show port-channel summary', and syslog VPC events to identify whether the failure is physical or logical. Recovery involves restoring physical peer-link members, verifying vPC re-convergence with 'show vpc consistency-parameters global', and reviewing orphan port connectivity.",
+    "estimated_time_minutes": 60,
+    "risk_level": "critical",
+    "requires_maintenance_window": true,
+    "escalation": "If the vPC peer-link cannot be restored and the secondary peer remains in suspension, escalate to Cisco TAC with 'show tech-support vpc' from both peers. Consider temporarily converting affected hosts to active-backup bonding to restore connectivity during the outage.",
+    "doc_links": [
+      "https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/93x/vpc/configuration/guide/b-cisco-nexus-9000-nx-os-vpc-configuration-guide-93x.html",
+      "https://www.cisco.com/c/en/us/support/docs/switches/nexus-5000-series-switches/113881-vpc-config-guide-00.html"
+    ]
+  }
+]

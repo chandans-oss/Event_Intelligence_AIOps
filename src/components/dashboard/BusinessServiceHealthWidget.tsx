@@ -362,9 +362,6 @@ export function BusinessServiceHealthWidget({ onSelectService }: BusinessService
         borderBottom: '1px solid hsl(var(--border) / 0.4)',
         flexShrink: 0,
       }}>
-        {['Service name', 'Health', 'Events', 'Severity'].map(h => (
-          <div key={h} style={{ fontSize: 10, fontWeight: 700, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: h === 'Events' || h === 'Severity' ? 'right' : 'left' }}>{h}</div>
-        ))}
       </div>
 
       {/* ── Bar Chart ── */}

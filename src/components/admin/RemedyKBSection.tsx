@@ -41,7 +41,6 @@ export interface RemedyKBEntry {
   description: string;
   vendor: string;
   os_flavor: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
   appliance_types: string[];
   symptom_patterns: string[];
   rca_keywords: string[];
@@ -68,13 +67,6 @@ const VENDOR_COLORS: Record<string, any> = {
   default: { bg: 'bg-primary/10', text: 'text-primary', accent: 'bg-primary', border: 'border-primary/30', icon: <Wrench className="w-4 h-4" /> },
 };
 
-const SEVERITY_CONFIG: Record<string, { color: string; bg: string }> = {
-  critical: { color: 'text-red-500', bg: 'bg-red-500/10' },
-  high: { color: 'text-orange-500', bg: 'bg-orange-500/10' },
-  medium: { color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
-  low: { color: 'text-green-500', bg: 'bg-green-500/10' },
-};
-
 const RISK_ICON: Record<string, JSX.Element> = {
   critical: <AlertCircle className="w-3.5 h-3.5 text-red-500" />,
   high: <AlertTriangle className="w-3.5 h-3.5 text-orange-500" />,
@@ -91,7 +83,6 @@ const mapRawToEntry = (raw: any): RemedyKBEntry => ({
   description: raw.description || '',
   vendor: (raw.vendor || 'generic').toLowerCase(),
   os_flavor: raw.os_flavor || 'generic',
-  severity: raw.severity || 'medium',
   appliance_types: raw.appliance_types || [],
   symptom_patterns: raw.symptom_patterns || [],
   rca_keywords: raw.rca_keywords || [],
@@ -116,7 +107,6 @@ const createBlankEntry = (vendor = '', os_flavor = '', rca_id = ''): RemedyKBEnt
   description: '',
   vendor: vendor || 'cisco',
   os_flavor: os_flavor || 'ios',
-  severity: 'medium',
   appliance_types: [],
   symptom_patterns: [],
   rca_keywords: [],
@@ -265,19 +255,19 @@ export function RemedyKBSection({ highlightRemedyId }: { highlightRemedyId?: str
         : level === 1 ? entry.os_flavor
         : entry.rca_id;
 
-      if (!stats[name]) stats[name] = { count: 0, samples: new Set(), severities: [] };
+      if (!stats[name]) stats[name] = { count: 0, samples: new Set(), risks: [] };
       stats[name].count++;
       stats[name].samples.add(entry.title);
-      stats[name].severities.push(entry.severity);
+      stats[name].risks.push(entry.risk_level);
     });
 
     return Object.entries(stats).map(([name, data]) => ({
       name,
       count: data.count,
       samples: Array.from(data.samples).slice(0, 3),
-      topSeverity: data.severities.includes('critical') ? 'critical'
-        : data.severities.includes('high') ? 'high'
-        : data.severities.includes('medium') ? 'medium' : 'low',
+      topRisk: data.risks.includes('critical') ? 'critical'
+        : data.risks.includes('high') ? 'high'
+        : data.risks.includes('medium') ? 'medium' : 'low',
     }));
   }, [entries, drillPath]);
 
@@ -426,7 +416,6 @@ export function RemedyKBSection({ highlightRemedyId }: { highlightRemedyId?: str
               {currentDrillItems.map(item => {
                 const vendorKey = drillPath.length === 0 ? item.name : drillPath[0];
                 const config = VENDOR_COLORS[vendorKey] || VENDOR_COLORS.default;
-                const sevConf = SEVERITY_CONFIG[item.topSeverity] || SEVERITY_CONFIG.low;
                 return (
                   <Card
                     key={item.name}
@@ -440,7 +429,7 @@ export function RemedyKBSection({ highlightRemedyId }: { highlightRemedyId?: str
                           {config.icon}
                         </div>
                         <div className="flex items-center gap-1">
-                          {RISK_ICON[item.topSeverity]}
+                          {RISK_ICON[item.topRisk]}
                           <Badge variant="secondary" className="font-bold text-[8px] h-3.5 px-1">{item.count} Remedies</Badge>
                         </div>
                       </div>
@@ -481,7 +470,6 @@ export function RemedyKBSection({ highlightRemedyId }: { highlightRemedyId?: str
             <div className="space-y-3 animate-in fade-in slide-in-from-bottom-1 duration-200 max-w-5xl mx-auto">
               {filteredEntries.map(entry => {
                 const config = VENDOR_COLORS[entry.vendor] || VENDOR_COLORS.default;
-                const sev = SEVERITY_CONFIG[entry.severity] || SEVERITY_CONFIG.low;
                 return (
                   <Card
                     key={entry.remedy_id}
@@ -495,7 +483,6 @@ export function RemedyKBSection({ highlightRemedyId }: { highlightRemedyId?: str
                           <div className="space-y-0.5 flex-1 mr-4">
                             <div className="flex items-center gap-2 flex-wrap">
                               <Badge variant="outline" className={cn('text-[8px] font-bold h-4 px-1.5', config.text, config.border)}>{entry.remedy_id}</Badge>
-                              <Badge className={cn('text-[8px] font-bold h-4 px-1.5', sev.bg, sev.color)} variant="secondary">{entry.severity.toUpperCase()}</Badge>
                               {entry.requires_maintenance_window && (
                                 <Badge variant="outline" className="text-[7px] h-4 px-1.5 text-orange-500 border-orange-500/30">MW Required</Badge>
                               )}
@@ -549,9 +536,6 @@ export function RemedyKBSection({ highlightRemedyId }: { highlightRemedyId?: str
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge className="bg-primary/10 text-primary border-primary/20 font-bold px-2 py-0.5 text-[10px]">{selectedEntry.vendor.toUpperCase()}</Badge>
                   <Badge variant="outline" className="text-[10px] font-mono">{selectedEntry.os_flavor}</Badge>
-                  <Badge className={cn('text-[9px] font-bold uppercase', SEVERITY_CONFIG[selectedEntry.severity]?.bg, SEVERITY_CONFIG[selectedEntry.severity]?.color)}>
-                    {selectedEntry.severity} Severity
-                  </Badge>
                   {selectedEntry.requires_maintenance_window && (
                     <Badge variant="outline" className="text-[9px] font-bold text-orange-500 border-orange-500/30 uppercase">Maintenance Window Required</Badge>
                   )}
@@ -792,16 +776,6 @@ export function RemedyKBSection({ highlightRemedyId }: { highlightRemedyId?: str
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold uppercase">Severity</Label>
-                      <select
-                        className="w-full h-9 px-3 bg-background border rounded-lg text-sm"
-                        value={editingEntry.severity}
-                        onChange={e => setEditingEntry({ ...editingEntry, severity: e.target.value as any })}
-                      >
-                        {['low', 'medium', 'high', 'critical'].map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </div>
-                    <div className="space-y-1.5">
                       <Label className="text-[10px] font-bold uppercase">Risk Level</Label>
                       <select
                         className="w-full h-9 px-3 bg-background border rounded-lg text-sm"
@@ -811,12 +785,12 @@ export function RemedyKBSection({ highlightRemedyId }: { highlightRemedyId?: str
                         {['low', 'medium', 'high', 'critical'].map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label className="text-[10px] font-bold uppercase">Est. Time (minutes)</Label>
                       <Input type="number" value={editingEntry.estimated_time_minutes} onChange={e => setEditingEntry({ ...editingEntry, estimated_time_minutes: Number(e.target.value) })} />
                     </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label className="text-[10px] font-bold uppercase">Status</Label>
                       <select

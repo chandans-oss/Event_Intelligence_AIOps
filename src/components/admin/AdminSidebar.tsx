@@ -78,11 +78,8 @@ export function AdminSidebar({ activeSection, onSectionChange }: AdminSidebarPro
                 isActive && "scale-110"
               )} />
               {!isCollapsed && (
-                <span className="flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis animate-in fade-in slide-in-from-left-2 duration-300 flex items-center gap-2">
+                <span className="flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis animate-in fade-in slide-in-from-left-2 duration-300">
                   {item.label}
-                  {item.id === 'RAGKB' && (
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold border border-emerald-500/30">NEW</span>
-                  )}
                 </span>
               )}
 

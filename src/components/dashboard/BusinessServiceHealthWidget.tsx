@@ -231,7 +231,6 @@ function getSummary(services: BusinessService[]) {
     total: services.length,
     critical: services.filter(s => s.severity === 'Critical').length,
     degraded: services.filter(s => s.severity === 'Warning').length,
-    healthy: services.filter(s => s.severity === 'Healthy').length,
   };
 }
 
@@ -258,10 +257,14 @@ interface BusinessServiceHealthWidgetProps {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function BusinessServiceHealthWidget({ onSelectService }: BusinessServiceHealthWidgetProps) {
-  const [filter, setFilter] = useState<'All' | 'Critical' | 'Warning' | 'Healthy'>('All');
+  const [filter, setFilter] = useState<'All' | 'Critical' | 'Warning'>('All');
   const [serviceType, setServiceType] = useState<'Business' | 'Network'>('Business');
 
-  const activeServices = serviceType === 'Business' ? BUSINESS_SERVICES : NETWORK_SERVICES;
+  const activeServices = useMemo(() => {
+    const list = serviceType === 'Business' ? BUSINESS_SERVICES : NETWORK_SERVICES;
+    return list.filter(s => s.severity !== 'Healthy');
+  }, [serviceType]);
+
   const summary = useMemo(() => getSummary(activeServices), [activeServices]);
 
   const visible = useMemo(() =>
@@ -324,12 +327,11 @@ export function BusinessServiceHealthWidget({ onSelectService }: BusinessService
       </div>
 
       {/* ── Summary KPI strip ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14, flexShrink: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 14, flexShrink: 0 }}>
         {[
-          { label: 'Total services', filterVal: 'All', value: summary.total, color: 'hsl(var(--foreground))' },
+          { label: 'Total Impacted', filterVal: 'All', value: summary.total, color: 'hsl(var(--foreground))' },
           { label: 'Critical',       filterVal: 'Critical', value: summary.critical, color: '#ef4444' },
           { label: 'Degraded',       filterVal: 'Warning', value: summary.degraded, color: '#f97316' },
-          { label: 'Healthy',        filterVal: 'Healthy', value: summary.healthy,  color: '#22c55e' },
         ].map(k => {
           const isActive = filter === k.filterVal;
           return (

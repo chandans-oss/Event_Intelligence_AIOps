@@ -22,6 +22,10 @@ import { RCASidebar } from '@/features/rca/components/RcaSidebar';
 import { RemediationSidebar } from '@/features/rca/components/RemediationSidebar';
 import { mockClusters } from '@/data/mock/mockData';
 import { Cluster } from '@/shared/types';
+import { BusinessServiceHealthWidget, BusinessService } from '@/components/dashboard/BusinessServiceHealthWidget';
+import { RemedyQualityAssuranceWidget } from '@/components/dashboard/RemedyQAWidget';
+import { AutoRemediationFailureWidget } from '@/components/dashboard/AutoRemediationFailureWidget';
+import { BusinessServiceHealthSidebar } from '@/components/dashboard/BusinessServiceHealthSidebar';
 
 ChartJS.register(
   CategoryScale,
@@ -80,6 +84,7 @@ export default function AnalyticsDashboard() {
   const [activeSidebar, setActiveSidebar] = useState<'rca' | 'remediation' | null>(null);
   const [rcaView, setRcaView] = useState<'list' | 'graph'>('graph');
   const [hoveredRca, setHoveredRca] = useState<any>(null);
+  const [selectedService, setSelectedService] = useState<BusinessService | null>(null);
 
   const baseOptions = useMemo(() => ({
     responsive: true,
@@ -199,6 +204,7 @@ export default function AnalyticsDashboard() {
         .grid-2-1-wide { display: grid; grid-template-columns: 1.5fr 1fr 1.5fr; gap: 16px; margin-bottom: 16px; }
         .grid-3b { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 16px; }
         .grid-2-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-3-equal { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
         .card { background: hsl(var(--card)); color: hsl(var(--card-foreground)); border-radius: 14px; padding: 18px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); position: relative; border: 1px solid hsl(var(--border) / 0.5); }
         .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
         .card-title { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: hsl(var(--card-foreground)); text-transform: uppercase; letter-spacing: 0.05em; }
@@ -245,7 +251,7 @@ export default function AnalyticsDashboard() {
         <div className="page">
           <div className="page-title">Dashboard</div>
 
-          <div className="grid-2-1 mb-4">
+          <div className="grid-3-equal mb-4">
             <div className="card flex flex-col min-w-0">
               <div className="card-header shrink-0">
                 <div className="card-title">Root Cause Insights</div>
@@ -461,6 +467,9 @@ export default function AnalyticsDashboard() {
                 />
               </div>
             </div>
+
+            {/* Business Service Health Widget */}
+            <BusinessServiceHealthWidget onSelectService={(svc) => setSelectedService(svc)} />
           </div>
 
           <div className="grid-2-1 mb-4">
@@ -587,6 +596,10 @@ export default function AnalyticsDashboard() {
           </div>
 
           <div className="mt-4 text-[13px] font-bold text-foreground mb-3 tracking-tight">Intelligence & Prediction</div>
+          
+          <RemedyQualityAssuranceWidget />
+          <AutoRemediationFailureWidget />
+
           <div className="grid-2-1 mb-4">
             <div className="card">
               <div className="card-header">
@@ -867,9 +880,15 @@ export default function AnalyticsDashboard() {
               onBack={() => setActiveSidebar('rca')}
             />
           )}
-
-
         </>
+      )}
+
+      {/* ── Business Service Health Sidebar ── */}
+      {selectedService && (
+        <BusinessServiceHealthSidebar
+          service={selectedService}
+          onClose={() => setSelectedService(null)}
+        />
       )}
     </MainLayout>
   );

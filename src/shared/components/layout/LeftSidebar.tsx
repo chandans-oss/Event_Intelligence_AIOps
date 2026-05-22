@@ -11,6 +11,7 @@ import {
   BarChart3,
   FolderArchive,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/components/ui/button";
@@ -33,6 +34,7 @@ const navItems: NavItem[] = [
       { path: "/", label: "AIOps Dashboard", icon: LayoutDashboard },
       { path: "/dashboard/prediction", label: "Topology Dashboard", icon: Activity },
       { path: "/dashboard/kpi", label: "ROI/KPI Dashboard", icon: BarChart3 },
+      { path: "/dashboard/advanced", label: "Advanced Widgets", icon: Sparkles },
     ]
   },
   {

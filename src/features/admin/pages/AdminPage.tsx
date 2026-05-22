@@ -6,6 +6,7 @@ import { RulesSection } from '@/components/admin/RulesSection';
 import { IntentsSection } from '@/components/admin/IntentsSection';
 import { KBSection } from '@/components/admin/KBSection';
 import { RAGKBSection } from '@/components/admin/RAGKBSection';
+import { RemedyKBSection } from '@/components/admin/RemedyKBSection';
 import { AutoRemediationSection } from '@/components/admin/AutoRemediationSection';
 import { PatternPredictionContent } from '@/pages/PatternPage';
 
@@ -29,6 +30,8 @@ export default function Admin() {
         return <KBSection />;
       case 'RAGKB':
         return <RAGKBSection highlightDocId={highlightIntent} />;
+      case 'RemedyKB':
+        return <RemedyKBSection />;
       case 'AutoRemediation':
         return <AutoRemediationSection />;
       default:

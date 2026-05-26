@@ -2,6 +2,7 @@
   "pythonVersion": "3.12",
   "typeCheckingMode": "basic",
   "extraPaths": [
+    ".",
     "backend/rag",
     "backend/django_project",
     "backend/django_project/rca_source_backend",

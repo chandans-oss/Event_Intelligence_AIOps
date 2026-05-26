@@ -36,6 +36,21 @@ export const runRagAnalysis = async (payload: any) => {
     return response.data;
 };
 
+export const runRagV6Analysis = async (payload: any, runConfig?: any) => {
+    if (!API_BASE_URL) {
+        throw new Error('API_BASE_URL is missing in the .env file.');
+    }
+
+    const response = await axios.post(`${API_BASE_URL}/api/rag/v6/analyze`, {
+        payload,
+        run_config: runConfig || {},
+    }, {
+        headers: { 'Content-Type': 'application/json' },
+    });
+
+    return response.data;
+};
+
 export const fetchRAGKB = async () => {
     const response = await axios.get(`${API_BASE_URL}/api/rag/kb/`);
     return response.data;

@@ -5,7 +5,8 @@ import tempfile
 import pandas as pd
 import copy
 from django.http import JsonResponse
-from rest_framework.views import APIView
+from adrf.views import APIView
+from asgiref.sync import sync_to_async
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
@@ -18,7 +19,7 @@ from pathlib import Path
 CURRENT_FILE = Path(__file__).resolve()
 BACKEND_ROOT = CURRENT_FILE.parents[2]  # Goes up to: .../backend/
 RAG_DIR = BACKEND_ROOT / 'rag'
-RAG_KB_PATH = RAG_DIR / 'rca_json.json'
+RAG_KB_PATH = Path(r"D:\new_event_AIOps\Event_Intelligence_AIOps\network_rca_v5_hierarchy 2.json")
 RCA_BASE = BACKEND_ROOT / 'django_project' / 'rca_source_backend'
 
 # Force inject paths at top priority
@@ -51,7 +52,7 @@ except ImportError:
 class RunRCAFlowView(APIView):
     parser_classes = (MultiPartParser, FormParser)
 
-    def post(self, request, *args, **kwargs):
+    async def post(self, request, *args, **kwargs):
         file_obj = request.FILES.get('file')
         if not file_obj:
             return Response({"error": "No Excel file provided. Please upload a file."}, status=status.HTTP_400_BAD_REQUEST)
@@ -66,12 +67,16 @@ class RunRCAFlowView(APIView):
                 temp_file.write(chunk)
             temp_file_path = temp_file.name
 
+        def read_excel_file():
+            try:
+                df = pd.read_excel(temp_file_path, "NMS_Trigger_Events")
+            except ValueError:
+                df = pd.read_excel(temp_file_path, "Events")
+            return df
+
         try:
             # Extract trigger event from the "NMS_Trigger_Events" sheet
-            try:
-                events_df = pd.read_excel(temp_file_path, "NMS_Trigger_Events")
-            except ValueError:
-                events_df = pd.read_excel(temp_file_path, "Events")
+            events_df = await sync_to_async(read_excel_file, thread_sensitive=False)()
 
             if events_df.empty:
                 return Response({"error": "No events found."}, status=status.HTTP_400_BAD_REQUEST)
@@ -92,7 +97,7 @@ class RunRCAFlowView(APIView):
                 return Response({"error": "RCA Engine (trigger_agentic_flow) could not be loaded. Please check backend logs for import errors."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # Call the agentic flow generator
-            generator = trigger_agentic_flow(trigger_event, file_path=temp_file_path, dashboard_call=1)
+            generator = await sync_to_async(trigger_agentic_flow, thread_sensitive=False)(trigger_event, file_path=temp_file_path, dashboard_call=1)
             
             steps = []
             
@@ -145,7 +150,7 @@ class RunRCAFlowView(APIView):
 
 
 class RunRAGAnalysisView(APIView):
-    def post(self, request, *args, **kwargs):
+    async def post(self, request, *args, **kwargs):
         try:
             data = request.data
             payload = data.get('payload', {})
@@ -156,15 +161,16 @@ class RunRAGAnalysisView(APIView):
 
             if not run_full_pipeline:
                 return Response({"error": "RAG Pipeline module not found."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            # Change CWD to RAG_DIR so it can find KB file
-            old_cwd = os.getcwd()
-            os.chdir(RAG_DIR)
             
-            try:
-                raw_output = run_full_pipeline(raw_logs, root_event, metrics_payload, topology)
-            finally:
-                os.chdir(old_cwd)
+            def run_pipeline():
+                old_cwd = os.getcwd()
+                os.chdir(RAG_DIR)
+                try:
+                    return run_full_pipeline(raw_logs, root_event, metrics_payload, topology)
+                finally:
+                    os.chdir(old_cwd)
+
+            raw_output = await sync_to_async(run_pipeline, thread_sensitive=False)()
 
             # --- Normalize results to match the terminal formatted output ---
             raw_results = raw_output.get('results', [])
@@ -258,41 +264,49 @@ class RunRAGAnalysisView(APIView):
 class RAGKBView(APIView):
     permission_classes = [AllowAny]
     
-    def get(self, request):
+    async def get(self, request):
         try:
-            if not os.path.exists(RAG_KB_PATH):
-                return Response([], status=status.HTTP_200_OK)
-            with open(RAG_KB_PATH, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+            def read_kb():
+                if not os.path.exists(RAG_KB_PATH):
+                    return []
+                with open(RAG_KB_PATH, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            data = await sync_to_async(read_kb, thread_sensitive=False)()
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def post(self, request):
+    async def post(self, request):
         new_entry = request.data
-        if not os.path.exists(RAG_KB_PATH):
-            data = []
-        else:
+        def read_kb():
+            if not os.path.exists(RAG_KB_PATH):
+                return []
             with open(RAG_KB_PATH, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+                return json.load(f)
+        
+        data = await sync_to_async(read_kb, thread_sensitive=False)()
         
         doc_id = new_entry.get('_id') or new_entry.get('doc_id')
         if any(e.get('_id') == doc_id or e.get('doc_id') == doc_id for e in data):
             return Response({"error": "Entry with this ID already exists"}, status=status.HTTP_400_BAD_REQUEST)
         
         data.append(new_entry)
-        with open(RAG_KB_PATH, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4)
+        def write_kb(dt):
+            with open(RAG_KB_PATH, 'w', encoding='utf-8') as f:
+                json.dump(dt, f, indent=4)
+        await sync_to_async(write_kb, thread_sensitive=False)(data)
         return Response(new_entry, status=status.HTTP_201_CREATED)
 
-    def put(self, request):
+    async def put(self, request):
         updated_entry = request.data
         doc_id = updated_entry.get('_id') or updated_entry.get('doc_id')
         if not doc_id:
             return Response({"error": "No ID provided"}, status=status.HTTP_400_BAD_REQUEST)
 
-        with open(RAG_KB_PATH, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        def read_kb():
+            with open(RAG_KB_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        data = await sync_to_async(read_kb, thread_sensitive=False)()
 
         found = False
         for i, entry in enumerate(data):
@@ -304,24 +318,173 @@ class RAGKBView(APIView):
         if not found:
             return Response({"error": "Entry not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        with open(RAG_KB_PATH, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4)
+        def write_kb(dt):
+            with open(RAG_KB_PATH, 'w', encoding='utf-8') as f:
+                json.dump(dt, f, indent=4)
+        await sync_to_async(write_kb, thread_sensitive=False)(data)
         return Response(updated_entry, status=status.HTTP_200_OK)
 
-    def delete(self, request):
+    async def delete(self, request):
         doc_id = request.query_params.get('id')
         if not doc_id:
             return Response({"error": "No ID provided"}, status=status.HTTP_400_BAD_REQUEST)
 
-        with open(RAG_KB_PATH, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        def read_kb():
+            with open(RAG_KB_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        data = await sync_to_async(read_kb, thread_sensitive=False)()
 
         new_data = [e for e in data if e.get('_id') != doc_id and e.get('doc_id') != doc_id]
         
         if len(new_data) == len(data):
             return Response({"error": "Entry not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        with open(RAG_KB_PATH, 'w', encoding='utf-8') as f:
-            json.dump(new_data, f, indent=4)
+        def write_kb(dt):
+            with open(RAG_KB_PATH, 'w', encoding='utf-8') as f:
+                json.dump(dt, f, indent=4)
+        await sync_to_async(write_kb, thread_sensitive=False)(new_data)
         return Response({"status": "deleted"}, status=status.HTTP_200_OK)
+
+
+# --- RAG v6 Pipeline ---
+
+# The models are stored in HuggingFace cache format under backend/rag/models
+# Set HF_HOME before importing sentence-transformers so it finds the local cache
+LOCAL_MODEL_CACHE = str(BACKEND_ROOT / "rag" / "models")
+os.environ.setdefault("HF_HOME", LOCAL_MODEL_CACHE)
+os.environ.setdefault("TRANSFORMERS_CACHE", LOCAL_MODEL_CACHE)
+os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", LOCAL_MODEL_CACHE)
+
+# Inject root directory for ierag6_rca_pgvector
+ROOT_DIR = BACKEND_ROOT.parent
+sys.path.insert(0, str(ROOT_DIR))
+
+try:
+    # Attempt to load the v6 script
+    import ierag6_rca_pgvector
+    
+    def _patch_config():
+        assert ierag6_rca_pgvector is not None, "ierag6_rca_pgvector must be loaded"
+        from pathlib import Path
+        cfg  = ierag6_rca_pgvector.Config()
+        rcfg = ierag6_rca_pgvector.RemedyConfig()
+        
+        # Override KB path to the user's provided KB
+        cfg.KB_PATH  = Path(r"D:\new_event_AIOps\Event_Intelligence_AIOps\network_rca_v5_hierarchy 2.json")
+        rcfg.REMEDY_BASE = Path(r"D:\new_event_AIOps\Event_Intelligence_AIOps\src\data\remedy")
+        
+        # Models are stored as HF cache — use the HF repo IDs.
+        # HF_HOME is already pointed at backend/rag/models so no download occurs.
+        cfg.EMBEDDING_MODEL  = "BAAI/bge-base-en-v1.5"
+        rcfg.EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
+        cfg.RERANKER_MODEL   = "BAAI/bge-reranker-base"
+        rcfg.RERANKER_MODEL  = "BAAI/bge-reranker-base"
+
+        return cfg, rcfg
+
+    # Lazy-loaded singletons
+    _pipeline        = None
+    _remedy_pipeline = None
+
+    def get_v6_pipelines():
+        global _pipeline, _remedy_pipeline
+        assert ierag6_rca_pgvector is not None, "ierag6_rca_pgvector must be loaded"
+        if _pipeline is None:
+            cfg, rcfg    = _patch_config()
+            _pipeline        = ierag6_rca_pgvector.RCAPipeline(config=cfg)
+            _remedy_pipeline = ierag6_rca_pgvector.RemedyPipeline(config=rcfg)
+        return _pipeline, _remedy_pipeline
+
+except ImportError as e:
+    ierag6_rca_pgvector = None
+    print(f"Failed to import ierag6_rca_pgvector: {e}")
+
+
+class RunRAGV6AnalysisView(APIView):
+    async def post(self, request, *args, **kwargs):
+        if not ierag6_rca_pgvector:
+            return Response({"error": "ierag6_rca_pgvector module not found or failed to load."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        try:
+            data        = request.data
+            payload     = data.get('payload', {})
+            run_config  = data.get('run_config', {})   # ← per-request config flags from UI
+
+            raw_logs        = payload.get('raw_logs', [])
+            root_event      = payload.get('root_event', {})
+            metrics_payload = payload.get('metrics_payload', {})
+            topology        = payload.get('topology', {})
+
+            def run_v6_pipeline():
+                old_cwd = os.getcwd()
+                os.chdir(ROOT_DIR)
+                try:
+                    pipeline, remedy_pipeline = get_v6_pipelines()
+
+                    # Apply per-request config overrides on the shared pipeline config
+                    # (safe because the actual model/db objects are reused; only flags change)
+                    cfg = pipeline.config
+                    use_llm_flag = bool(run_config.get('use_llm', False))
+                    cfg.USE_LLM_QUERY_BUILDER      = use_llm_flag
+                    cfg.USE_ENHANCED_QUERY_BUILDER = bool(run_config.get('use_enhanced', False))
+                    cfg.RETRIEVE_K = int(run_config.get('retrieve_k', cfg.RETRIEVE_K))
+                    cfg.RERANK_K   = int(run_config.get('rerank_k',   cfg.RERANK_K))
+                    cfg.TOP_K      = int(run_config.get('top_k',      cfg.TOP_K))
+                    
+                    # Also apply the LLM toggle to the remedy pipeline so it doesn't take 300+ seconds
+                    remedy_pipeline.config.USE_LLM_QUERY_REMEDY_BUILDER = use_llm_flag
+
+                    # Run RCA pipeline
+                    pipeline_output = pipeline.run(raw_logs, root_event, metrics_payload, topology)
+
+                    # Run remedy pipeline if we have RCA results
+                    if pipeline_output and pipeline_output.get("rca_results"):
+                        entities_obj = pipeline._run_ner(raw_logs)
+                        remedy_result = remedy_pipeline.find(
+                            pipeline_output["rca_results"],
+                            root_event,
+                            entities_obj.__dict__,
+                            device_details=None,
+                        )
+                        pipeline_output["remedy_results"] = remedy_result
+
+                    # Build final structured response
+                    ui_response: dict = pipeline.build_response(pipeline_output, root_event) if pipeline_output else {"error": "Pipeline returned empty"}
+
+                    if pipeline_output and "error" not in ui_response:
+                        ui_response.update({
+                            "query": pipeline_output.get("query", {}),
+                            "anomalies": pipeline_output.get("anomalies", []),
+                            "templates": pipeline_output.get("templates", []),
+                            "entities": pipeline_output.get("entities", {}),
+                            "log_features": pipeline_output.get("query", {}).get("log_features", []),
+                            "metric_facts": pipeline_output.get("query", {}).get("metric_facts", []),
+                            "build_ms": pipeline_output.get("query", {}).get("build_ms", 0),
+                            
+                            # Add raw search_results for the Hybrid Retrieval UI
+                            "search_results": [
+                                {
+                                    "doc": r.get("doc"),
+                                    "hybrid_score": round(r.get("prerank_score", 0), 4),
+                                    "cross_encoder_score": round(r.get("cross_encoder_score", 0), 4) if r.get("cross_encoder_score") is not None else 0,
+                                    "final_score": round(r.get("final_score", 0), 4),
+                                    "title": r.get("doc", {}).get("raw", {}).get("title", "N/A") if isinstance(r.get("doc"), dict) else r.get("doc", {}).get("title", "N/A"),
+                                    "rca_id": r.get("doc", {}).get("raw", {}).get("rca_id", "N/A") if isinstance(r.get("doc"), dict) else r.get("doc", {}).get("rca_id", "N/A"),
+                                }
+                                for r in pipeline_output.get("rca_results", [])
+                            ]
+                        })
+                    return ui_response
+                finally:
+                    os.chdir(old_cwd)
+                    
+            ui_response = await sync_to_async(run_v6_pipeline, thread_sensitive=False)()
+
+            return Response(ui_response, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({"error": f"Error running RAG v6 analysis: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 

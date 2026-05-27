@@ -629,8 +629,8 @@ const RAGPlaygroundPage = () => {
                             </CardContent>
                         </Card>
                     </div>
-                    <ScrollArea className="flex-1">
-                        <div className="space-y-2 pr-4 pb-4">
+                    <div className="flex-1">
+                        <div className="space-y-2 pb-4">
                             {(results.search_results || results.results || []).map((res: any, i: number) => (
                                 <div key={i} className="p-4 rounded-xl border bg-card flex gap-4 hover:border-primary/30 transition-all group">
                                     <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center font-bold text-xs text-muted-foreground group-hover:text-primary transition-colors shrink-0">#{i + 1}</div>
@@ -650,7 +650,7 @@ const RAGPlaygroundPage = () => {
                                 </div>
                             ))}
                         </div>
-                    </ScrollArea>
+                    </div>
                 </div>
             )}
         </div>
@@ -689,11 +689,11 @@ const RAGPlaygroundPage = () => {
                             </Card>
                         ))}
                     </div>
-                    <Card className="flex-1 flex flex-col overflow-hidden">
+                    <Card className="flex-1 flex flex-col">
                         <CardHeader className="py-3 border-b bg-muted/20">
                             <CardTitle className="text-[10px] uppercase tracking-widest font-black text-muted-foreground">CROSS-ENCODER SCORES</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-5 space-y-4 overflow-y-auto">
+                        <CardContent className="p-5 space-y-4">
                             {(results.search_results || results.results || []).slice(0, 10).map((res: any, i: number) => (
                                 <div key={i} className="space-y-1.5">
                                     <div className="flex justify-between items-end">
@@ -858,8 +858,8 @@ const RAGPlaygroundPage = () => {
                                                                 <Card key={idx} className="bg-muted/10 border-dashed p-3">
                                                                     <div className="flex justify-between items-start mb-2">
                                                                         <span className="text-xs font-bold text-foreground line-clamp-1" title={anomaly.metric}>{anomaly.metric}</span>
-                                                                        <Badge variant="outline" className={cn("text-[9px] font-mono", anomaly.direction === 'up' ? "text-rose-500 border-rose-500/30 bg-rose-500/10" : "text-amber-500 border-amber-500/30 bg-amber-500/10")}>
-                                                                            {anomaly.direction === 'up' ? 'SPIKE' : 'DROP'}
+                                                                        <Badge variant="outline" className={cn("text-[9px] font-mono", anomaly.direction === 'spike' ? "text-rose-500 border-rose-500/30 bg-rose-500/10" : "text-amber-500 border-amber-500/30 bg-amber-500/10")}>
+                                                                            {anomaly.direction === 'spike' ? 'SPIKE' : 'DROP'}
                                                                         </Badge>
                                                                     </div>
                                                                     <div className="flex justify-between text-[11px]">

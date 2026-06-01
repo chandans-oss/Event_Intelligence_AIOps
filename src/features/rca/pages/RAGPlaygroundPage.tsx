@@ -1,7 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/shared/lib/utils';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
     Settings, Play, FileJson, Brain, Activity, Shield,
     Cpu, Zap, X, Database, Maximize2, RefreshCw, Sliders,
@@ -130,11 +129,9 @@ const PipelineTimeline = ({ activeId, completedIds, onStageClick, timings, isLoa
                     </button>
                     {idx < STAGES.length - 1 && (
                         <div className="flex-1 h-[1.5px] bg-border mx-2 relative -mt-3.5">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: isCompleted || isPast ? "100%" : "0%" }}
+                            <div
+                                style={{ width: completedIds.includes(stage.id) ? "100%" : "0%" }}
                                 className="h-full bg-emerald-500"
-                                transition={{ duration: 0.4 }}
                             />
                         </div>
                     )}
@@ -157,10 +154,10 @@ const RiskBadge = ({ level }: { level: string }) => {
 
 const RemedyExpanderCard = ({ remedy, index }: { remedy: any, index: number }) => {
     const [isExpanded, setIsExpanded] = useState(false);
-    
+
     return (
         <Card className={cn("border-dashed overflow-hidden transition-colors", isExpanded ? "bg-muted/10" : "bg-card hover:bg-muted/5")}>
-            <div 
+            <div
                 className="px-4 py-3 border-b flex items-center justify-between cursor-pointer select-none"
                 onClick={() => setIsExpanded(!isExpanded)}
             >
@@ -187,44 +184,37 @@ const RemedyExpanderCard = ({ remedy, index }: { remedy: any, index: number }) =
                     {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground ml-2" /> : <ChevronDown className="w-4 h-4 text-muted-foreground ml-2" />}
                 </div>
             </div>
-            
-            <AnimatePresence>
-                {isExpanded && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                    >
-                        <div className="p-4 space-y-4 bg-muted/5">
-                            {remedy.steps?.length > 0 && (
-                                <div className="space-y-3">
-                                    <h5 className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Execution Steps</h5>
-                                    <div className="grid gap-2">
-                                        {remedy.steps.map((step: any, k: number) => (
-                                            <div key={k} className="flex gap-3 bg-background border rounded-lg p-3 shadow-sm">
-                                                <div className="mt-0.5 shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-muted text-[10px] font-bold text-muted-foreground">
-                                                    {k+1}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="text-sm font-medium">{step.action || String(step)}</p>
-                                                    {step.cli_command && (
-                                                        <div className="mt-2 p-2.5 bg-[#0d1117] rounded-md border border-gray-800 flex items-center shadow-inner">
-                                                            <code className="text-xs font-mono text-emerald-400">
-                                                                {step.cli_command}
-                                                            </code>
-                                                        </div>
-                                                    )}
-                                                </div>
+
+            {isExpanded && (
+                <div className="overflow-hidden">
+                    <div className="p-4 space-y-4 bg-muted/5">
+                        {remedy.steps?.length > 0 && (
+                            <div className="space-y-3">
+                                <h5 className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Execution Steps</h5>
+                                <div className="grid gap-2">
+                                    {remedy.steps.map((step: any, k: number) => (
+                                        <div key={k} className="flex gap-3 bg-background border rounded-lg p-3 shadow-sm">
+                                            <div className="mt-0.5 shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-muted text-[10px] font-bold text-muted-foreground">
+                                                {k + 1}
                                             </div>
-                                        ))}
-                                    </div>
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium">{step.action || String(step)}</p>
+                                                {step.cli_command && (
+                                                    <div className="mt-2 p-2.5 bg-[#0d1117] rounded-md border border-gray-800 flex items-center shadow-inner">
+                                                        <code className="text-xs font-mono text-emerald-400">
+                                                            {step.cli_command}
+                                                        </code>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            )}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </Card>
     );
 };
@@ -240,14 +230,48 @@ const RAGPlaygroundPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [results, setResults] = useState<any>(null);
     const [timings, setTimings] = useState<Record<string, number>>({});
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(activeStageId === 'input');
+
+    useEffect(() => {
+        setSidebarOpen(activeStageId === 'input');
+    }, [activeStageId]);
+
+    const DEFAULT_PROMPT = `You are a senior Network Operations expert specializing in Root Cause Analysis.
+
+**Incident Summary:**
+- Device: {device}
+- Severity: {severity}
+- Primary Alarm: {alarm}
+- Key Log Messages:
+{logs}
+- Metric Anomalies:
+{metrics}
+- Affected Interfaces: {interfaces}
+
+Write a **highly effective, natural language search query** to find the most relevant RCA document in the knowledge base.
+
+Rules:
+- Be specific and technical
+- Include symptoms, impact, and likely root causes
+- Keep total length under 80 words
+- Do not add explanations, only return the query text.
+
+Query:`;
+
     const [config, setConfig] = useState({
         retrieveK: 30,
         rerankK: 15,
         topK: 3,
-        useLlm: false,   // Ollama LLM query builder
-        useEnhanced: false,   // Enhanced semantic query builder
+        rcaConfidenceThreshold: 0.35,
+        runRerankSearch: true,
+        runNormalHybridSearch: false,
+        llmTemperature: 0.0,
+        llmMaxTokens: 500,
+        llmCustomPrompt: DEFAULT_PROMPT,
+        useLlm: false,
+        useEnhanced: false,
     });
+    const [isPromptEditorOpen, setIsPromptEditorOpen] = useState(false);
 
     // ── INPUT: 4 JSON panels ──────────────────────────────────────────────────
     const [rootEventJson, setRootEventJson] = useState(JSON.stringify(DEFAULT_ROOT_EVENT, null, 2));
@@ -259,7 +283,7 @@ const RAGPlaygroundPage = () => {
 
     // ── Mindmap tree state ────────────────────────────────────────────────────
     const [selectedRCAIdx, setSelectedRCAIdx] = useState<number>(0);
-    
+
     const setError = (k: string, msg: string) => setJsonErrors(p => ({ ...p, [k]: msg }));
     const clearError = (k: string) => setJsonErrors(p => { const q = { ...p }; delete q[k]; return q; });
 
@@ -309,10 +333,16 @@ const RAGPlaygroundPage = () => {
             retrieve_k: config.retrieveK,
             rerank_k: config.rerankK,
             top_k: config.topK,
+            rca_confidence_threshold: config.rcaConfidenceThreshold,
+            run_rerank_search: config.runRerankSearch,
+            run_normal_hybrid_search: config.runNormalHybridSearch,
+            llm_temperature: config.llmTemperature,
+            llm_max_tokens: config.llmMaxTokens,
+            llm_custom_prompt: config.llmCustomPrompt,
             use_llm: config.useLlm,
             use_enhanced: config.useEnhanced,
         };
-        
+
         let isApiDone = false;
         const apiPromise = runRagV6Analysis(payload, runConfig).then(r => {
             isApiDone = true;
@@ -360,7 +390,7 @@ const RAGPlaygroundPage = () => {
             const finalTs = performance.now() - startTs;
             setCompleted(stageOrder); // Ensure all stages marked complete
             setTimings(p => ({ ...p, 'topk': Math.round(finalTs) })); // Exact final time
-            
+
             setResults(resp);
             setActiveStageId('topk');
             toast.success(`RCA complete — ${resp.total_rca_count || 0} diagnosis(es) found`);
@@ -404,7 +434,7 @@ const RAGPlaygroundPage = () => {
                 <div className="flex items-center justify-between shrink-0">
                     <div>
                         <h2 className="text-xl font-bold flex items-center gap-2">
-                            <FileJson className="w-5 h-5 text-primary" /> INCIDENT PAYLOAD
+                            <FileJson className="w-2 h-2 text-primary" /> INCIDENT PAYLOAD
                         </h2>
                     </div>
                     <Button variant="outline" size="sm" className="h-8 rounded-full gap-2" onClick={() => {
@@ -424,7 +454,7 @@ const RAGPlaygroundPage = () => {
                     let parsedRootEvent: any = null;
                     try {
                         parsedRootEvent = JSON.parse(rootEventJson);
-                    } catch (e) {}
+                    } catch (e) { }
 
                     if (!parsedRootEvent) return null;
 
@@ -456,18 +486,18 @@ const RAGPlaygroundPage = () => {
                         const err = jsonErrors[p.id];
 
                         return (
-                            <motion.div
+                            <div
                                 key={p.id}
-                                layout
+
                                 onClick={() => !isActive && setActiveInputPanel(p.id)}
                                 className={cn(
-                                    "rounded-xl border overflow-hidden flex flex-col transition-all duration-300 relative bg-card",
-                                    isActive ? "flex-[4] shadow-md border-primary/20" : "flex-[1] cursor-pointer hover:bg-muted/30 opacity-70 hover:opacity-100",
+                                    "rounded-xl border overflow-hidden flex flex-col relative bg-card",
+                                    isActive ? "flex-1 shadow-md border-primary/20" : "w-[72px] shrink-0 cursor-pointer hover:bg-muted/30 opacity-70 hover:opacity-100",
                                     err && !isActive && "border-rose-500/50 bg-rose-500/5"
                                 )}
                             >
                                 {/* Header */}
-                                <motion.div layout="position" className={cn(
+                                <div className={cn(
                                     "p-4 flex items-center justify-between shrink-0",
                                     isActive ? "border-b bg-muted/10" : "flex-col gap-4 h-full pt-8",
                                     err && isActive && "bg-rose-500/5 border-rose-500/20"
@@ -487,29 +517,22 @@ const RAGPlaygroundPage = () => {
                                             ? <span className="text-[10px] text-rose-500 font-mono flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{err}</span>
                                             : <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> VALID</span>
                                     )}
-                                </motion.div>
+                                </div>
 
                                 {/* Editor Body (only when active) */}
-                                <AnimatePresence mode="popLayout">
-                                    {isActive && (
-                                        <motion.div
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            className="flex-1 flex flex-col min-h-0"
-                                        >
-                                            <textarea
-                                                className="flex-1 w-full p-4 bg-transparent text-foreground font-mono text-xs resize-none outline-none leading-relaxed"
-                                                value={p.value}
-                                                onChange={e => p.onChange(e.target.value)}
-                                                spellCheck={false}
-                                                placeholder={p.placeholder}
-                                            />
+                                {isActive && (
+                                    <div className="flex-1 flex flex-col min-h-0">
+                                        <textarea
+                                            className="flex-1 w-full p-4 bg-transparent text-foreground font-mono text-xs resize-none outline-none leading-relaxed"
+                                            value={p.value}
+                                            onChange={e => p.onChange(e.target.value)}
+                                            spellCheck={false}
+                                            placeholder={p.placeholder}
+                                        />
 
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </motion.div>
+                                    </div>
+                                )}
+                            </div>
                         );
                     })}
                 </div>
@@ -629,6 +652,30 @@ const RAGPlaygroundPage = () => {
                             </CardContent>
                         </Card>
                     </div>
+                    {results.llm_usage && results.llm_usage.total_tokens > 0 && (
+                        <Card className="bg-purple-500/5 border-purple-500/20">
+                            <CardContent className="p-3 flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-2">
+                                    <Cpu className="w-4 h-4 text-purple-500" />
+                                    <span className="text-[10px] font-black text-purple-600 uppercase tracking-wider">LLM Token Utilization</span>
+                                </div>
+                                <div className="flex gap-6 text-[10px] font-mono">
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-muted-foreground uppercase text-[8px] font-bold">Prompt</span>
+                                        <span className="text-foreground">{results.llm_usage.prompt_tokens}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-muted-foreground uppercase text-[8px] font-bold">Completion</span>
+                                        <span className="text-foreground">{results.llm_usage.completion_tokens}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-purple-600 uppercase text-[8px] font-bold">Total</span>
+                                        <span className="text-purple-600 font-bold">{results.llm_usage.total_tokens}</span>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
                     <div className="flex-1">
                         <div className="space-y-2 pb-4">
                             {(results.search_results || results.results || []).map((res: any, i: number) => (
@@ -704,11 +751,9 @@ const RAGPlaygroundPage = () => {
                                         <span className="text-primary font-black font-mono text-xs">{(res.cross_encoder_score || 0).toFixed(4)}</span>
                                     </div>
                                     <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                        <motion.div
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${Math.max(4, Math.min(100, (res.cross_encoder_score || 0) * 100))}%` }}
+                                        <div
+                                            style={{ width: `${Math.max(0, Math.min(100, (res.cross_encoder_score || 0) * 100))}%` }}
                                             className="h-full bg-primary"
-                                            transition={{ duration: 0.8, ease: "easeOut", delay: i * 0.05 }}
                                         />
                                     </div>
                                 </div>
@@ -775,10 +820,10 @@ const RAGPlaygroundPage = () => {
                                     {diagnoses.map((diag: any, i: number) => {
                                         const isSelected = i === selectedRCAIdx;
                                         return (
-                                            <Card 
-                                                key={i} 
+                                            <Card
+                                                key={i}
                                                 className={cn(
-                                                    "cursor-pointer transition-all hover:border-primary/50 relative overflow-hidden", 
+                                                    "cursor-pointer transition-all hover:border-primary/50 relative overflow-hidden",
                                                     isSelected ? "border-primary/50 ring-1 ring-primary/20 bg-primary/5" : ""
                                                 )}
                                                 onClick={() => setSelectedRCAIdx(i)}
@@ -871,7 +916,7 @@ const RAGPlaygroundPage = () => {
                                                         </div>
                                                     </div>
                                                 )}
-                                                
+
                                                 {(!activeDiagnosis.relevant_logs?.length && !results.anomalies?.length) && (
                                                     <p className="text-sm text-muted-foreground italic">No supporting log or metric evidence found.</p>
                                                 )}
@@ -884,7 +929,7 @@ const RAGPlaygroundPage = () => {
                                             <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
                                                 <Activity className="w-4 h-4 text-emerald-500" /> RECOMMENDED REMEDIES
                                             </h3>
-                                            
+
                                             {(!activeDiagnosis.remedies || activeDiagnosis.remedies.length === 0) ? (
                                                 <p className="text-sm text-muted-foreground italic">No specific remedies provided for this diagnosis.</p>
                                             ) : (
@@ -965,132 +1010,177 @@ const RAGPlaygroundPage = () => {
                 {/* Body */}
                 <div className="flex-1 flex overflow-hidden">
                     <div className="flex-1 p-6 overflow-hidden">
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={activeStageId}
-                                initial={{ opacity: 0, y: 6 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -6 }}
-                                transition={{ duration: 0.2 }}
-                                className="h-full overflow-y-auto pr-1"
-                            >
-                                {renderStageContent()}
-                            </motion.div>
-                        </AnimatePresence>
+                        <div
+                            key={activeStageId}
+                            className="h-full overflow-y-auto pr-1"
+                        >
+                            {renderStageContent()}
+                        </div>
                     </div>
 
                     {/* Settings Sidebar */}
-                    <AnimatePresence>
-                        {sidebarOpen && (
-                            <motion.div
-                                initial={{ width: 0, opacity: 0 }}
-                                animate={{ width: 280, opacity: 1 }}
-                                exit={{ width: 0, opacity: 0 }}
-                                className="border-l bg-card/80 backdrop-blur-lg overflow-hidden z-10 shrink-0"
-                            >
-                                <div className="w-[280px] h-full flex flex-col p-5">
-                                    <div className="flex items-center justify-between mb-5">
-                                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                                            <Sliders className="w-4 h-4 text-primary" /> Pipeline Config
-                                        </h3>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSidebarOpen(false)}>
-                                            <X className="w-4 h-4" />
-                                        </Button>
-                                    </div>
+                    {sidebarOpen && (
+                        <div className="border-l bg-card/80 backdrop-blur-lg overflow-hidden z-10 shrink-0">
+                            <div className="w-[380px] h-full flex flex-col p-5">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                                        <Sliders className="w-3.5 h-3.5 text-primary" /> Pipeline Config
+                                    </h3>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSidebarOpen(false)}>
+                                        <X className="w-3.5 h-3.5" />
+                                    </Button>
+                                </div>
 
-                                    <ScrollArea className="flex-1">
-                                        <div className="space-y-6 pr-1">
+                                <ScrollArea className="flex-1">
+                                    <div className="space-y-4 pr-1">
 
-                                            {/* ── Query Builder Mode ── */}
-                                            <div>
-                                                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">Query Builder Mode</p>
-                                                <div className="space-y-3">
-                                                    <div className="flex items-start justify-between gap-3 p-3 rounded-lg border bg-muted/20 hover:bg-muted/40 transition-colors">
+                                        {/* ── Query Builder Mode ── */}
+                                        <div>
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1.5">Query Builder Mode</p>
+                                            <div className="space-y-1">
+                                                <div className="flex flex-col gap-2 p-1.5 rounded border bg-muted/20 hover:bg-muted/40 transition-colors">
+                                                    <div className="flex items-center justify-between gap-2">
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="text-xs font-bold">LLM Query Builder</p>
-                                                            <p className="text-[9px] text-muted-foreground mt-0.5 leading-relaxed">Uses Ollama locally for richer semantic queries. Requires Ollama running at localhost:11434.</p>
-                                                            {config.useLlm && (
-                                                                <Badge className="mt-1.5 text-[8px] h-4 bg-primary/10 text-primary border-primary/20">ACTIVE</Badge>
-                                                            )}
+                                                            <p className="text-[10px] font-bold">LLM Builder</p>
                                                         </div>
                                                         <Switch
                                                             checked={config.useLlm}
                                                             onCheckedChange={v => setConfig(p => ({ ...p, useLlm: v, useEnhanced: v ? false : p.useEnhanced }))}
-                                                            className="shrink-0 mt-0.5"
+                                                            className="scale-[0.6] shrink-0 m-0"
                                                         />
                                                     </div>
+                                                    {config.useLlm && (
+                                                        <div className="pt-1 border-t border-muted-foreground/10">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-5 px-2 text-[9px] w-full flex justify-between items-center text-muted-foreground hover:text-primary hover:bg-primary/5"
+                                                                onClick={() => setIsPromptEditorOpen(!isPromptEditorOpen)}
+                                                            >
+                                                                <span className="font-mono">Edit Prompt</span>
+                                                                {isPromptEditorOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                                            </Button>
 
-                                                    <div className={cn(
-                                                        "flex items-start justify-between gap-3 p-3 rounded-lg border transition-colors",
-                                                        config.useLlm ? "opacity-40 pointer-events-none bg-muted/10" : "bg-muted/20 hover:bg-muted/40"
-                                                    )}>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-xs font-bold">Enhanced Query Builder</p>
-                                                            <p className="text-[9px] text-muted-foreground mt-0.5 leading-relaxed">Enriched heuristic query with intent phrases & log evidence. Faster than LLM.</p>
-                                                            {config.useEnhanced && !config.useLlm && (
-                                                                <Badge className="mt-1.5 text-[8px] h-4 bg-amber-500/10 text-amber-600 border-amber-500/20">ACTIVE</Badge>
+                                                            {isPromptEditorOpen && (
+                                                                <div className="overflow-hidden">
+                                                                    <div className="pt-2">
+                                                                        <p className="text-[8px] text-muted-foreground mb-1 leading-tight">Use placeholders: {'{device}, {severity}, {alarm}, {logs}, {metrics}, {interfaces}'}</p>
+                                                                        <textarea
+                                                                            value={config.llmCustomPrompt}
+                                                                            onChange={(e) => setConfig(p => ({ ...p, llmCustomPrompt: e.target.value }))}
+                                                                            className="w-full h-32 p-2 bg-background border rounded text-[9px] font-mono leading-relaxed resize-y focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground"
+                                                                            placeholder="Leave blank to use default prompt..."
+                                                                            spellCheck={false}
+                                                                        />
+                                                                    </div>
+                                                                </div>
                                                             )}
-                                                        </div>
-                                                        <Switch
-                                                            checked={config.useEnhanced && !config.useLlm}
-                                                            onCheckedChange={v => setConfig(p => ({ ...p, useEnhanced: v }))}
-                                                            disabled={config.useLlm}
-                                                            className="shrink-0 mt-0.5"
-                                                        />
-                                                    </div>
-
-                                                    {!config.useLlm && !config.useEnhanced && (
-                                                        <div className="px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-                                                            <p className="text-[9px] text-emerald-600 font-bold">✓ Standard heuristic builder active (fastest)</p>
                                                         </div>
                                                     )}
                                                 </div>
-                                            </div>
 
-                                            {/* ── Search Parameters ── */}
-                                            <div>
-                                                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">Search Parameters</p>
-                                                <div className="space-y-5">
-                                                    {[
-                                                        { label: 'Retrieve K', key: 'retrieveK', max: 50, desc: 'pgvector candidates fetched' },
-                                                        { label: 'Rerank K', key: 'rerankK', max: 20, desc: 'Top-K after cross-encoder' },
-                                                        { label: 'Top K', key: 'topK', max: 10, desc: 'Final diagnoses returned' },
-                                                    ].map(s => (
-                                                        <div key={s.key} className="space-y-2">
-                                                            <div className="flex justify-between text-[10px] font-black uppercase">
-                                                                <span className="text-muted-foreground">{s.label}</span>
-                                                                <span className="text-primary font-mono">{(config as any)[s.key]}</span>
-                                                            </div>
-                                                            <Slider
-                                                                value={[(config as any)[s.key]]}
-                                                                max={s.max} min={1}
-                                                                onValueChange={([v]) => setConfig(p => ({ ...p, [s.key]: v }))}
-                                                            />
-                                                            <p className="text-[9px] text-muted-foreground">{s.desc}</p>
-                                                        </div>
-                                                    ))}
+                                                <div className={cn(
+                                                    "flex items-center justify-between gap-2 p-1.5 rounded border transition-colors",
+                                                    config.useLlm ? "opacity-40 pointer-events-none bg-muted/10" : "bg-muted/20 hover:bg-muted/40"
+                                                )}>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[10px] font-bold">Enhanced Builder</p>
+                                                    </div>
+                                                    <Switch
+                                                        checked={config.useEnhanced && !config.useLlm}
+                                                        onCheckedChange={v => setConfig(p => ({ ...p, useEnhanced: v }))}
+                                                        disabled={config.useLlm}
+                                                        className="scale-[0.6] shrink-0 m-0"
+                                                    />
                                                 </div>
-                                            </div>
 
-                                            {/* ── Model / Stack Info ── */}
-                                            <div>
-                                                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">Stack Info</p>
-                                                <div className="space-y-2 p-3 rounded-lg bg-muted/20 border text-[10px] text-muted-foreground">
-                                                    <div className="flex justify-between"><span>Embeddings</span><span className="font-mono text-foreground">BAAI/bge-base-en-v1.5</span></div>
-                                                    <div className="flex justify-between"><span>Reranker</span><span className="font-mono text-foreground">bge-reranker-base</span></div>
-                                                    <div className="flex justify-between"><span>Vector DB</span><span className="font-mono text-foreground">pgvector</span></div>
-                                                    <div className="flex justify-between"><span>Lexical</span><span className="font-mono text-foreground">BM25 (rank-bm25)</span></div>
-                                                    <div className="flex justify-between"><span>Log Parse</span><span className="font-mono text-foreground">Drain3</span></div>
-                                                    {config.useLlm && <div className="flex justify-between"><span>LLM</span><span className="font-mono text-amber-500">Ollama llama3.2</span></div>}
-                                                </div>
+                                                {!config.useLlm && !config.useEnhanced && (
+                                                    <div className="px-1.5 py-1 rounded bg-emerald-500/5 border border-emerald-500/20">
+                                                        <p className="text-[8px] text-emerald-600 font-bold">✓ Standard active</p>
+                                                    </div>
+                                                )}
                                             </div>
-
                                         </div>
-                                    </ScrollArea>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+
+                                        {/* ── Search Parameters ── */}
+                                        <div>
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1.5">Search Params</p>
+                                            <div className="space-y-2.5">
+                                                {[
+                                                    { label: 'Retrieve K', key: 'retrieveK', max: 50, min: 1, step: 1 },
+                                                    { label: 'Rerank K', key: 'rerankK', max: 20, min: 1, step: 1 },
+                                                    { label: 'Top K', key: 'topK', max: 10, min: 1, step: 1 },
+                                                    { label: 'RCA Threshold', key: 'rcaConfidenceThreshold', max: 1.0, min: 0.0, step: 0.05 },
+                                                ].map(s => (
+                                                    <div key={s.key} className="space-y-1">
+                                                        <div className="flex justify-between text-[9px] font-black uppercase">
+                                                            <span className="text-muted-foreground">{s.label}</span>
+                                                            <span className="text-primary font-mono">{(config as any)[s.key]}</span>
+                                                        </div>
+                                                        <Slider
+                                                            value={[(config as any)[s.key]]}
+                                                            max={s.max} min={s.min} step={s.step}
+                                                            onValueChange={([v]) => setConfig(p => ({ ...p, [s.key]: v }))}
+                                                            className="py-1"
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* ── Advanced Flags ── */}
+                                        <div>
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1.5">Advanced Flags</p>
+                                            <div className="space-y-1">
+                                                <div className="flex items-center justify-between gap-2 p-1.5 rounded border bg-muted/20 hover:bg-muted/40">
+                                                    <p className="text-[10px] font-bold">Rerank Search</p>
+                                                    <Switch checked={config.runRerankSearch} onCheckedChange={v => setConfig(p => ({ ...p, runRerankSearch: v }))} className="scale-[0.6] shrink-0 m-0" />
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2 p-1.5 rounded border bg-muted/20 hover:bg-muted/40">
+                                                    <p className="text-[10px] font-bold">Normal Hybrid Search</p>
+                                                    <Switch checked={config.runNormalHybridSearch} onCheckedChange={v => setConfig(p => ({ ...p, runNormalHybridSearch: v }))} className="scale-[0.6] shrink-0 m-0" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* ── LLM Settings ── */}
+                                        {config.useLlm && (
+                                            <div>
+                                                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1.5">LLM Settings</p>
+                                                <div className="space-y-2.5">
+                                                    <div className="space-y-1">
+                                                        <div className="flex justify-between text-[9px] font-black uppercase">
+                                                            <span className="text-muted-foreground">Temperature</span>
+                                                            <span className="text-primary font-mono">{config.llmTemperature}</span>
+                                                        </div>
+                                                        <Slider value={[config.llmTemperature]} max={1.0} min={0.0} step={0.1} onValueChange={([v]) => setConfig(p => ({ ...p, llmTemperature: v }))} className="py-1" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <div className="flex justify-between text-[9px] font-black uppercase">
+                                                            <span className="text-muted-foreground">Max Tokens</span>
+                                                            <span className="text-primary font-mono">{config.llmMaxTokens}</span>
+                                                        </div>
+                                                        <Slider value={[config.llmMaxTokens]} max={2000} min={100} step={100} onValueChange={([v]) => setConfig(p => ({ ...p, llmMaxTokens: v }))} className="py-1" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* ── Model / Stack Info ── */}
+                                        <div>
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1.5">Stack Info</p>
+                                            <div className="space-y-1 p-2 rounded bg-muted/20 border text-[9px] text-muted-foreground">
+                                                <div className="flex justify-between"><span>Embed</span><span className="font-mono text-foreground truncate max-w-[120px] text-right">bge-base-en</span></div>
+                                                <div className="flex justify-between"><span>Rerank</span><span className="font-mono text-foreground truncate max-w-[120px] text-right">bge-reranker</span></div>
+                                                <div className="flex justify-between"><span>DB</span><span className="font-mono text-foreground">pgvector</span></div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </ScrollArea>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </MainLayout>

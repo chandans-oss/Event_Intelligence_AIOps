@@ -19,7 +19,7 @@ from pgvector.psycopg2 import register_vector
 try:
     from langchain_community.vectorstores import PGVector
 except ImportError:
-    from langchain.vectorstores import PGVector
+    from langchain.vectorstores import PGVector  # type: ignore
 
 from drain3 import TemplateMiner
 from drain3.template_miner_config import TemplateMinerConfig
@@ -50,13 +50,13 @@ CONNECTION_STRING = PGVector.connection_string_from_db_params(
 
 # ========================= CONFIGURATION =========================
 class Config:
-    KB_PATH = Path(r"C:\Users\Pranay\Desktop\IE\network_rca_v5_hierarchy.json")
+    KB_PATH = Path(r"network_rca_v5_hierarchy.json")
 
     RUN_RERANK_SEARCH        = True
     RUN_NORMAL_HYBRID_SEARCH = False
 
-    EMBEDDING_MODEL = r"C:\Users\Pranay\Desktop\IE\model\bge-base-en-v1.5"
-    RERANKER_MODEL  = r"C:\Users\Pranay\Desktop\IE\model\cross-encoder\bge-reranker-base"
+    EMBEDDING_MODEL = r"model\bge-base-en-v1.5"
+    RERANKER_MODEL  = r"model\cross-encoder\bge-reranker-base"
 
     RETRIEVE_K = 30
     RERANK_K   = 15
@@ -75,6 +75,7 @@ class Config:
     LLM_TEMPERATURE = 0.0
     LLM_MAX_TOKENS  = 500
     LLM_TIMEOUT     = 60
+    CUSTOM_PROMPT   = ""
 
 
 # ──────────────────────────── HELPERS ────────────────────────────────────────
@@ -195,13 +196,13 @@ _METRIC_TO_DOMAIN = {
 class RCAPipeline:
     def __init__(self, config=None):
         self.config   = config or Config()
-        self.model    = None
-        self.reranker = None
-        self.conn     = None
+        self.model: Any = None
+        self.reranker: Any = None
+        self.conn: Any = None
         self.docs     = []
         self.metadata = []
-        self.bm25     = None
-        self.raw_logs = None
+        self.bm25: Any = None
+        self.raw_logs: Any = None
 
         self._connect_db()
         self._load_or_build_index()
@@ -243,7 +244,8 @@ class RCAPipeline:
     def _load_or_build_index(self):
         self.model    = SentenceTransformer(self.config.EMBEDDING_MODEL, local_files_only=True)
         self.reranker = CrossEncoder(self.config.RERANKER_MODEL, max_length=512)
-        dim = self.model.get_sentence_embedding_dimension()
+        dim = self.model.get_embedding_dimension()
+        assert dim is not None, "Failed to determine embedding dimension"
         self._ensure_table(dim)
 
         table = self.config.PG_TABLE
@@ -854,10 +856,11 @@ class RCAPipeline:
     # LLM (Ollama) query builder
     # ------------------------------------------------------------------
 
-    def _call_ollama(self, prompt: str, timeout: int = None) -> str:
-        """Call Ollama API and return generated text, or empty string on failure."""
+    def _call_ollama(self, prompt: str, timeout: Optional[int] = None) -> Tuple[str, dict]:
+        """Call Ollama API and return (generated text, usage_stats)."""
         import requests
         timeout = timeout or self.config.LLM_TIMEOUT
+        usage_stats = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         try:
             response = requests.post(
                 self.config.OLLAMA_URL,
@@ -875,12 +878,16 @@ class RCAPipeline:
                 timeout=timeout,
             )
             if response.status_code == 200:
-                return response.json().get("response", "").strip()
+                data = response.json()
+                usage_stats["prompt_tokens"] = data.get("prompt_eval_count", 0)
+                usage_stats["completion_tokens"] = data.get("eval_count", 0)
+                usage_stats["total_tokens"] = usage_stats["prompt_tokens"] + usage_stats["completion_tokens"]
+                return data.get("response", "").strip(), usage_stats
             print(f"[Ollama] Error {response.status_code}: {response.text[:200]}")
-            return ""
+            return "", usage_stats
         except Exception as e:
             print(f"[Ollama] Request failed: {e}")
-            return ""
+            return "", usage_stats
 
     def _build_query_with_llm(self, root_event, templates, entities, anomalies, topology=None, kb_vocab=None):
         """
@@ -904,7 +911,16 @@ class RCAPipeline:
             f"• {a.metric} {a.direction} by {a.change_pct:+.1f}%" for a in anomalies[:6]
         )
 
-        prompt = f"""You are a senior Network Operations expert specializing in Root Cause Analysis.
+        if self.config.CUSTOM_PROMPT and self.config.CUSTOM_PROMPT.strip():
+            prompt = self.config.CUSTOM_PROMPT
+            prompt = prompt.replace("{device}", str(device or "Unknown"))
+            prompt = prompt.replace("{severity}", str(root_event.get('severity', 'Unknown')))
+            prompt = prompt.replace("{alarm}", str(root_event.get('alarm_msg') or root_event.get('probable_cause') or 'Unknown'))
+            prompt = prompt.replace("{logs}", log_summary)
+            prompt = prompt.replace("{metrics}", metric_summary)
+            prompt = prompt.replace("{interfaces}", ', '.join(entities.interfaces[:5]) if entities.interfaces else 'None')
+        else:
+            prompt = f"""You are a senior Network Operations expert specializing in Root Cause Analysis.
 
 **Incident Summary:**
 - Device: {device}
@@ -926,7 +942,7 @@ Rules:
 
 Query:"""
 
-        llm_query = self._call_ollama(prompt)
+        llm_query, llm_usage = self._call_ollama(prompt)
 
         if not llm_query or len(llm_query) < 30:
             print("[LLM Query] LLM returned poor result, falling back to enhanced rule-based")
@@ -961,6 +977,7 @@ Query:"""
             "topology":     topology,
             "build_ms":     round((time.monotonic() - t0) * 1000, 2),
             "query_source": "llm_ollama",
+            "llm_usage":    llm_usage,
         }
     # ------------------------------------------------------------------
     # Enhanced query builder helpers
@@ -1465,7 +1482,7 @@ Query:"""
         print(f"   bgp_neighbors : {entities.bgp_neighbors}")
         print(f"   protocols     : {entities.protocols}")
 
-    def format_drain3_results(self, templates):
+    def format_drain3_results(self, templates: Any):
         print("\n Drain3 templates")
         print(f"   {len(templates)} clusters from {len(self.raw_logs)} log lines")
         for t in templates[:6]:
@@ -1773,8 +1790,8 @@ topology = {}
 class RemedyConfig:
     REMEDY_BASE          = Path("kb/remedy")
     PG_TABLE             = "remedie_kb_embeddings"
-    EMBEDDING_MODEL      = r"C:\Users\Pranay\Desktop\IE\model\bge-base-en-v1.5"
-    RERANKER_MODEL       = r"C:\Users\Pranay\Desktop\IE\model\cross-encoder\bge-reranker-base"
+    EMBEDDING_MODEL      = r"model\bge-base-en-v1.5"
+    RERANKER_MODEL       = r"model\cross-encoder\bge-reranker-base"
     RETRIEVE_K           = 20
     RERANK_K             = 10
     TOP_K                = 3
@@ -1808,16 +1825,16 @@ class RemedyPipeline:
     _infer_vendor() maps root_event hints → file stem.
     """
 
-    def __init__(self, config: RemedyConfig = None):
+    def __init__(self, config: Optional['RemedyConfig'] = None):
         self.config = config or RemedyConfig()
-        self.conn   = None
+        self.conn: Any = None
 
         self.vendor_docs:     Dict[str, List[dict]] = {}
         self.vendor_metadata: Dict[str, List[dict]] = {}
         self.vendor_bm25:     Dict[str, BM25Okapi]  = {}
 
-        self.model    = None
-        self.reranker = None
+        self.model: Any = None
+        self.reranker: Any = None
 
         # ///intillegent event integration/////
         # Fallback SOP disabled for Phase 2 — re-enable in Phase 3 (feedback loop)
@@ -1868,7 +1885,8 @@ class RemedyPipeline:
         self.reranker = CrossEncoder(self.config.RERANKER_MODEL, max_length=512)
 
     def _load_or_build_indices(self):
-        dim = self.model.get_sentence_embedding_dimension()
+        dim = self.model.get_embedding_dimension()
+        assert dim is not None, "Failed to determine embedding dimension"
         self._ensure_table(dim)
 
         remedy_kbs = sorted(p for p in self.config.REMEDY_BASE.glob("*.json"))
@@ -2027,7 +2045,7 @@ class RemedyPipeline:
 
     # ── public API ────────────────────────────────────────────────────────────
 
-    def find(self, rca_results: List[Dict], root_event: Dict, entities: Dict, device_details: Dict = None) -> Dict:
+    def find(self, rca_results: List[Dict], root_event: Dict, entities: Dict, device_details: Optional[Dict] = None) -> Dict:
         """
         Phase 2 — 1:1 per-RCA remedy mapping.
 
@@ -2067,7 +2085,7 @@ class RemedyPipeline:
         logger.info("Target vendors for remedy lookup: %s", target_vendors)
 
         risk_order     = self.config.RISK_LEVEL_ORDER
-        rca_remedy_map = [None] * len(rca_results)
+        rca_remedy_map: List[Any] = [None] * len(rca_results)
 
         def process_rca(rca_rank, rca_result, index):
             doc_field = rca_result.get("doc", {})
@@ -2160,7 +2178,7 @@ class RemedyPipeline:
             "ip_address":    (device_details.get("ip_address") or "").strip(),
         }
 
-    def _infer_vendor(self, root_event: Dict, device_details: dict = None) -> List[str]:
+    def _infer_vendor(self, root_event: Dict, device_details: Optional[Dict] = None) -> List[str]:
         """
         Determine which remedy KB index stems to search.
 
@@ -2259,7 +2277,7 @@ class RemedyPipeline:
         ]
         return " ".join(filter(None, parts)).strip()
 
-    def _call_ollama(self, prompt: str, timeout: int = None) -> str:
+    def _call_ollama(self, prompt: str, timeout: Optional[int] = None) -> str:
         """Call Ollama API and return generated text, or empty string on failure."""
         import requests
         timeout = timeout or self.config.LLM_TIMEOUT

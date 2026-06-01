@@ -430,6 +430,12 @@ class RunRAGV6AnalysisView(APIView):
                     cfg.RETRIEVE_K = int(run_config.get('retrieve_k', cfg.RETRIEVE_K))
                     cfg.RERANK_K   = int(run_config.get('rerank_k',   cfg.RERANK_K))
                     cfg.TOP_K      = int(run_config.get('top_k',      cfg.TOP_K))
+                    cfg.RCA_CONFIDENCE_THRESHOLD = float(run_config.get('rca_confidence_threshold', cfg.RCA_CONFIDENCE_THRESHOLD))
+                    cfg.RUN_RERANK_SEARCH = bool(run_config.get('run_rerank_search', cfg.RUN_RERANK_SEARCH))
+                    cfg.RUN_NORMAL_HYBRID_SEARCH = bool(run_config.get('run_normal_hybrid_search', cfg.RUN_NORMAL_HYBRID_SEARCH))
+                    cfg.LLM_TEMPERATURE = float(run_config.get('llm_temperature', cfg.LLM_TEMPERATURE))
+                    cfg.LLM_MAX_TOKENS = int(run_config.get('llm_max_tokens', cfg.LLM_MAX_TOKENS))
+                    cfg.CUSTOM_PROMPT = run_config.get('llm_custom_prompt', cfg.CUSTOM_PROMPT)
                     
                     # Also apply the LLM toggle to the remedy pipeline so it doesn't take 300+ seconds
                     remedy_pipeline.config.USE_LLM_QUERY_REMEDY_BUILDER = use_llm_flag
@@ -460,6 +466,7 @@ class RunRAGV6AnalysisView(APIView):
                             "log_features": pipeline_output.get("query", {}).get("log_features", []),
                             "metric_facts": pipeline_output.get("query", {}).get("metric_facts", []),
                             "build_ms": pipeline_output.get("query", {}).get("build_ms", 0),
+                            "llm_usage": pipeline_output.get("query", {}).get("llm_usage", {}),
                             
                             # Add raw search_results for the Hybrid Retrieval UI
                             "search_results": [

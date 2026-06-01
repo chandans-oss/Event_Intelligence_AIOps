@@ -14,6 +14,7 @@ import Events from "@/features/events/pages/EventsPage";
 import EventAnalysisPage from "@/features/events/pages/EventAnalysisPage";
 
 import Admin from "@/features/admin/pages/AdminPage";
+import ModelTrainingPage from "@/features/admin/pages/ModelTrainingPage";
 import RCADetailPage from "@/features/rca/pages/RcaDetailPage";
 import ImpactDetailPage from "@/features/impact/pages/ImpactDetailPage";
 import KBDetailPage from "@/features/admin/pages/KBDetailPage";
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="/impact/detail/:id" element={<ImpactDetailPage />} />
 
               <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/model-training" element={<ModelTrainingPage />} />
               <Route path="/dashboard/prediction" element={<PredictionDashboard />} />
               <Route path="/dashboard/kpi" element={<KpiDashboard />} />
               <Route path="/dashboard/advanced" element={<AIOpsAdvancedAnalytics />} />

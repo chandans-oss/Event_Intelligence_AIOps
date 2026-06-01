@@ -258,6 +258,28 @@ Rules:
 
 Query:`;
 
+    const DEFAULT_REMEDY_PROMPT = `You are a senior Network Operations expert.
+
+Given the following root cause analysis result, generate a concise search query
+to find the most relevant remediation procedure, fix steps, and CLI commands.
+
+Root Cause:
+- RCA ID   : {rca_id}
+- Title    : {title}
+- Symptoms : {symptoms}
+- Keywords : {keywords}
+- Interfaces: {interfaces}
+- Alarm codes: {alarm_codes}
+
+Rules:
+- Output ONLY the query text, no explanation
+- Be specific and technical
+- Focus on fix actions, CLI commands, and recovery steps
+- Maximum 30 words
+
+Query:`;
+
+    // queryMode: 'standard' | 'enhanced' | 'llm'
     const [config, setConfig] = useState({
         retrieveK: 30,
         rerankK: 15,
@@ -268,10 +290,12 @@ Query:`;
         llmTemperature: 0.0,
         llmMaxTokens: 500,
         llmCustomPrompt: DEFAULT_PROMPT,
-        useLlm: false,
-        useEnhanced: false,
+        llmRemedyCustomPrompt: DEFAULT_REMEDY_PROMPT,
+        queryMode: 'standard' as 'standard' | 'enhanced' | 'llm',
+        useLlmRefinement: true,
     });
     const [isPromptEditorOpen, setIsPromptEditorOpen] = useState(false);
+    const [isRemedyPromptEditorOpen, setIsRemedyPromptEditorOpen] = useState(false);
 
     // ── INPUT: 4 JSON panels ──────────────────────────────────────────────────
     const [rootEventJson, setRootEventJson] = useState(JSON.stringify(DEFAULT_ROOT_EVENT, null, 2));
@@ -339,8 +363,12 @@ Query:`;
             llm_temperature: config.llmTemperature,
             llm_max_tokens: config.llmMaxTokens,
             llm_custom_prompt: config.llmCustomPrompt,
-            use_llm: config.useLlm,
-            use_enhanced: config.useEnhanced,
+            llm_remedy_custom_prompt: config.llmRemedyCustomPrompt,
+            // query builder mode
+            use_llm_rca: config.queryMode === 'llm',
+            use_enhanced: config.queryMode === 'enhanced',
+            // post-retrieval LLM refinement (remedy pipeline)
+            use_llm_remedy: config.useLlmRefinement,
         };
 
         let isApiDone = false;
@@ -430,10 +458,10 @@ Query:`;
         ];
 
         return (
-            <div className="h-full flex flex-col gap-4 animate-in fade-in duration-300">
+            <div className="h-full flex flex-col gap-1 animate-in fade-in duration-300">
                 <div className="flex items-center justify-between shrink-0">
                     <div>
-                        <h2 className="text-xl font-bold flex items-center gap-2">
+                        <h2 className="text-xl font-bold flex items-center gap-1">
                             <FileJson className="w-2 h-2 text-primary" /> INCIDENT PAYLOAD
                         </h2>
                     </div>
@@ -459,20 +487,20 @@ Query:`;
                     if (!parsedRootEvent) return null;
 
                     return (
-                        <div className="flex items-center gap-6 px-4 py-3 bg-card border rounded-xl shadow-sm shrink-0">
-                            <div className="flex-1 flex flex-col gap-1">
+                        <div className="flex flex-wrap items-center justify-between gap-y-4 px-8 py-3 bg-card border rounded-xl shadow-sm shrink-0">
+                            <div className="flex flex-col gap-1">
                                 <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1.5"><Server className="w-3.5 h-3.5" /> DEVICE</span>
                                 <span className="font-bold text-sm truncate">{parsedRootEvent.managed_object_name || parsedRootEvent.device_name || "N/A"}</span>
                             </div>
-                            <div className="flex-1 flex flex-col gap-1">
+                            <div className="flex flex-col gap-1">
                                 <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1.5"><Wifi className="w-3.5 h-3.5" /> IP</span>
                                 <span className="font-bold text-sm truncate">{parsedRootEvent.ip_address || "N/A"}</span>
                             </div>
-                            <div className="flex-[2] flex flex-col gap-1">
+                            <div className="flex flex-col gap-1">
                                 <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> PROBABLE CAUSE</span>
                                 <span className="font-bold text-sm truncate">{parsedRootEvent.probable_cause || "N/A"}</span>
                             </div>
-                            <div className="flex-1 flex flex-col gap-1">
+                            <div className="flex flex-col gap-1">
                                 <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1.5"><Activity className="w-3.5 h-3.5" /> SEVERITY</span>
                                 <span className="font-bold text-sm truncate">{parsedRootEvent.severity || "N/A"}</span>
                             </div>
@@ -498,7 +526,7 @@ Query:`;
                             >
                                 {/* Header */}
                                 <div className={cn(
-                                    "p-4 flex items-center justify-between shrink-0",
+                                    "px-4 py-2 flex items-center justify-between shrink-0",
                                     isActive ? "border-b bg-muted/10" : "flex-col gap-4 h-full pt-8",
                                     err && isActive && "bg-rose-500/5 border-rose-500/20"
                                 )}>
@@ -1009,7 +1037,7 @@ Query:`;
 
                 {/* Body */}
                 <div className="flex-1 flex overflow-hidden">
-                    <div className="flex-1 p-6 overflow-hidden">
+                    <div className="flex-1 px-6 py-2 overflow-hidden">
                         <div
                             key={activeStageId}
                             className="h-full overflow-y-auto pr-1"
@@ -1036,70 +1064,94 @@ Query:`;
 
                                         {/* ── Query Builder Mode ── */}
                                         <div>
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1.5">Query Builder Mode</p>
-                                            <div className="space-y-1">
-                                                <div className="flex flex-col gap-2 p-1.5 rounded border bg-muted/20 hover:bg-muted/40 transition-colors">
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-[10px] font-bold">LLM Builder</p>
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2">Query Builder Mode</p>
+                                            <p className="text-[8px] text-muted-foreground mb-2 leading-relaxed">Select how the search query is constructed from incoming events and logs.</p>
+                                            <div className="flex flex-col gap-1.5">
+                                                {([
+                                                    {
+                                                        key: 'standard',
+                                                        label: 'Standard',
+                                                        badge: 'RULE',
+                                                        desc: 'Fast rule-based keyword mapping from event fields & log templates.',
+                                                        badgeClass: 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30',
+                                                        activeClass: 'border-emerald-500/50 bg-emerald-500/10',
+                                                        iconDot: 'bg-emerald-500',
+                                                    },
+                                                    {
+                                                        key: 'enhanced',
+                                                        label: 'Enhanced',
+                                                        badge: 'RULES+',
+                                                        desc: 'Richer rule-based builder with topology, anomaly, and metric context.',
+                                                        badgeClass: 'bg-amber-500/15 text-amber-600 border border-amber-500/30',
+                                                        activeClass: 'border-amber-500/50 bg-amber-500/10',
+                                                        iconDot: 'bg-amber-500',
+                                                    },
+                                                    {
+                                                        key: 'llm',
+                                                        label: 'LLM Builder',
+                                                        badge: 'OLLAMA',
+                                                        desc: 'Uses local LLM (Ollama) to craft a semantic query. Slower but context-aware.',
+                                                        badgeClass: 'bg-violet-500/15 text-violet-600 border border-violet-500/30',
+                                                        activeClass: 'border-violet-500/50 bg-violet-500/10',
+                                                        iconDot: 'bg-violet-500',
+                                                    },
+                                                ] as const).map(opt => (
+                                                    <div
+                                                        key={opt.key}
+                                                        onClick={() => setConfig(p => ({ ...p, queryMode: opt.key }))}
+                                                        className={cn(
+                                                            'w-full text-left p-2 rounded-lg border transition-all cursor-pointer select-none',
+                                                            config.queryMode === opt.key
+                                                                ? opt.activeClass
+                                                                : 'border-border bg-muted/10 hover:bg-muted/30'
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', opt.iconDot)} />
+                                                                <span className="text-[11px] font-bold">{opt.label}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={cn('text-[8px] font-black px-1.5 py-0.5 rounded', opt.badgeClass)}>{opt.badge}</span>
+                                                                <Switch
+                                                                    checked={config.queryMode === opt.key}
+                                                                    onCheckedChange={() => setConfig(p => ({ ...p, queryMode: opt.key }))}
+                                                                    onClick={e => e.stopPropagation()}
+                                                                    className="scale-[0.55] shrink-0 m-0"
+                                                                />
+                                                            </div>
                                                         </div>
-                                                        <Switch
-                                                            checked={config.useLlm}
-                                                            onCheckedChange={v => setConfig(p => ({ ...p, useLlm: v, useEnhanced: v ? false : p.useEnhanced }))}
-                                                            className="scale-[0.6] shrink-0 m-0"
-                                                        />
+                                                        <p className="text-[8px] text-muted-foreground leading-snug pl-3">{opt.desc}</p>
                                                     </div>
-                                                    {config.useLlm && (
-                                                        <div className="pt-1 border-t border-muted-foreground/10">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="h-5 px-2 text-[9px] w-full flex justify-between items-center text-muted-foreground hover:text-primary hover:bg-primary/5"
-                                                                onClick={() => setIsPromptEditorOpen(!isPromptEditorOpen)}
-                                                            >
-                                                                <span className="font-mono">Edit Prompt</span>
-                                                                {isPromptEditorOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                                            </Button>
+                                                ))}
+                                            </div>
 
-                                                            {isPromptEditorOpen && (
-                                                                <div className="overflow-hidden">
-                                                                    <div className="pt-2">
-                                                                        <p className="text-[8px] text-muted-foreground mb-1 leading-tight">Use placeholders: {'{device}, {severity}, {alarm}, {logs}, {metrics}, {interfaces}'}</p>
-                                                                        <textarea
-                                                                            value={config.llmCustomPrompt}
-                                                                            onChange={(e) => setConfig(p => ({ ...p, llmCustomPrompt: e.target.value }))}
-                                                                            className="w-full h-32 p-2 bg-background border rounded text-[9px] font-mono leading-relaxed resize-y focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground"
-                                                                            placeholder="Leave blank to use default prompt..."
-                                                                            spellCheck={false}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                            )}
+                                            {/* LLM custom prompt – shown only when LLM Builder is active */}
+                                            {config.queryMode === 'llm' && (
+                                                <div className="mt-2 p-2 rounded-lg border border-violet-500/30 bg-violet-500/5">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-5 px-0 text-[9px] w-full flex justify-between items-center text-muted-foreground hover:text-primary"
+                                                        onClick={() => setIsPromptEditorOpen(!isPromptEditorOpen)}
+                                                    >
+                                                        <span className="font-mono font-bold">Custom Prompt</span>
+                                                        {isPromptEditorOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                                    </Button>
+                                                    {isPromptEditorOpen && (
+                                                        <div className="pt-1">
+                                                            <p className="text-[8px] text-muted-foreground mb-1">Placeholders: {'{device}, {severity}, {alarm}, {logs}, {metrics}, {interfaces}'}</p>
+                                                            <textarea
+                                                                value={config.llmCustomPrompt}
+                                                                onChange={(e) => setConfig(p => ({ ...p, llmCustomPrompt: e.target.value }))}
+                                                                className="w-full h-28 p-2 bg-background border rounded text-[9px] font-mono leading-relaxed resize-y focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground"
+                                                                placeholder="Leave blank to use default prompt..."
+                                                                spellCheck={false}
+                                                            />
                                                         </div>
                                                     )}
                                                 </div>
-
-                                                <div className={cn(
-                                                    "flex items-center justify-between gap-2 p-1.5 rounded border transition-colors",
-                                                    config.useLlm ? "opacity-40 pointer-events-none bg-muted/10" : "bg-muted/20 hover:bg-muted/40"
-                                                )}>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-[10px] font-bold">Enhanced Builder</p>
-                                                    </div>
-                                                    <Switch
-                                                        checked={config.useEnhanced && !config.useLlm}
-                                                        onCheckedChange={v => setConfig(p => ({ ...p, useEnhanced: v }))}
-                                                        disabled={config.useLlm}
-                                                        className="scale-[0.6] shrink-0 m-0"
-                                                    />
-                                                </div>
-
-                                                {!config.useLlm && !config.useEnhanced && (
-                                                    <div className="px-1.5 py-1 rounded bg-emerald-500/5 border border-emerald-500/20">
-                                                        <p className="text-[8px] text-emerald-600 font-bold">✓ Standard active</p>
-                                                    </div>
-                                                )}
-                                            </div>
+                                            )}
                                         </div>
 
                                         {/* ── Search Parameters ── */}
@@ -1128,6 +1180,98 @@ Query:`;
                                             </div>
                                         </div>
 
+                                        {/* ── LLM Refinement ── */}
+                                        <div>
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2">Post-Retrieval Refinement</p>
+                                            <p className="text-[8px] text-muted-foreground mb-2 leading-relaxed">After fetching top-K RCA candidates, an LLM re-ranks and refines the explanation using a targeted remedy query.</p>
+                                            <div className={cn(
+                                                'rounded-lg border transition-all',
+                                                config.useLlmRefinement
+                                                    ? 'border-indigo-500/50 bg-indigo-500/10'
+                                                    : 'border-border bg-muted/10'
+                                            )}>
+                                                {/* Header row — click toggles the card */}
+                                                <div
+                                                    className="flex items-center justify-between gap-2 p-2 cursor-pointer select-none"
+                                                    onClick={() => setConfig(p => ({ ...p, useLlmRefinement: !p.useLlmRefinement }))}
+                                                >
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', config.useLlmRefinement ? 'bg-indigo-500' : 'bg-muted-foreground/40')} />
+                                                        <span className="text-[11px] font-bold">LLM Refinement</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-600 border border-indigo-500/30">OLLAMA</span>
+                                                        <Switch
+                                                            checked={config.useLlmRefinement}
+                                                            onCheckedChange={v => setConfig(p => ({ ...p, useLlmRefinement: v }))}
+                                                            onClick={e => e.stopPropagation()}
+                                                            className="scale-[0.55] shrink-0 m-0"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <p className="text-[8px] text-muted-foreground leading-snug px-2 pb-2">Remedy pipeline uses LLM to generate precise, context-aware remedy queries from top RCA results.</p>
+
+                                                {/* Prompt editor — shown only when refinement is ON */}
+                                                {config.useLlmRefinement && (
+                                                    <div className="border-t border-indigo-500/20 px-2 pb-2 pt-1.5">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-5 px-0 text-[9px] w-full flex justify-between items-center text-muted-foreground hover:text-indigo-500"
+                                                            onClick={() => setIsRemedyPromptEditorOpen(!isRemedyPromptEditorOpen)}
+                                                        >
+                                                            <span className="font-mono font-bold">Edit Remedy Prompt</span>
+                                                            {isRemedyPromptEditorOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                                        </Button>
+                                                        {isRemedyPromptEditorOpen && (
+                                                            <div className="pt-1">
+                                                                <p className="text-[8px] text-muted-foreground mb-1">Placeholders: {'{rca_id}, {title}, {symptoms}, {keywords}, {interfaces}, {alarm_codes}'}</p>
+                                                                <textarea
+                                                                    value={config.llmRemedyCustomPrompt}
+                                                                    onChange={(e) => setConfig(p => ({ ...p, llmRemedyCustomPrompt: e.target.value }))}
+                                                                    className="w-full h-36 p-2 bg-background border border-indigo-500/30 rounded text-[9px] font-mono leading-relaxed resize-y focus:outline-none focus:ring-1 focus:ring-indigo-500/50 text-foreground"
+                                                                    placeholder="Leave blank to use default prompt..."
+                                                                    spellCheck={false}
+                                                                />
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-5 px-1 mt-1 text-[8px] text-muted-foreground hover:text-indigo-500"
+                                                                    onClick={() => setConfig(p => ({ ...p, llmRemedyCustomPrompt: DEFAULT_REMEDY_PROMPT }))}
+                                                                >
+                                                                    ↺ Reset to default
+                                                                </Button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* ── LLM Shared Settings ── */}
+                                        {(config.queryMode === 'llm' || config.useLlmRefinement) && (
+                                            <div>
+                                                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1.5">LLM Settings</p>
+                                                <p className="text-[8px] text-muted-foreground mb-2">Applied to both LLM Builder and Refinement steps.</p>
+                                                <div className="space-y-2.5">
+                                                    <div className="space-y-1">
+                                                        <div className="flex justify-between text-[9px] font-black uppercase">
+                                                            <span className="text-muted-foreground">Temperature</span>
+                                                            <span className="text-primary font-mono">{config.llmTemperature.toFixed(1)}</span>
+                                                        </div>
+                                                        <Slider value={[config.llmTemperature]} max={1.0} min={0.0} step={0.1} onValueChange={([v]) => setConfig(p => ({ ...p, llmTemperature: v }))} className="py-1" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <div className="flex justify-between text-[9px] font-black uppercase">
+                                                            <span className="text-muted-foreground">Max Tokens</span>
+                                                            <span className="text-primary font-mono">{config.llmMaxTokens}</span>
+                                                        </div>
+                                                        <Slider value={[config.llmMaxTokens]} max={2000} min={100} step={100} onValueChange={([v]) => setConfig(p => ({ ...p, llmMaxTokens: v }))} className="py-1" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* ── Advanced Flags ── */}
                                         <div>
                                             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1.5">Advanced Flags</p>
@@ -1142,29 +1286,6 @@ Query:`;
                                                 </div>
                                             </div>
                                         </div>
-
-                                        {/* ── LLM Settings ── */}
-                                        {config.useLlm && (
-                                            <div>
-                                                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1.5">LLM Settings</p>
-                                                <div className="space-y-2.5">
-                                                    <div className="space-y-1">
-                                                        <div className="flex justify-between text-[9px] font-black uppercase">
-                                                            <span className="text-muted-foreground">Temperature</span>
-                                                            <span className="text-primary font-mono">{config.llmTemperature}</span>
-                                                        </div>
-                                                        <Slider value={[config.llmTemperature]} max={1.0} min={0.0} step={0.1} onValueChange={([v]) => setConfig(p => ({ ...p, llmTemperature: v }))} className="py-1" />
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <div className="flex justify-between text-[9px] font-black uppercase">
-                                                            <span className="text-muted-foreground">Max Tokens</span>
-                                                            <span className="text-primary font-mono">{config.llmMaxTokens}</span>
-                                                        </div>
-                                                        <Slider value={[config.llmMaxTokens]} max={2000} min={100} step={100} onValueChange={([v]) => setConfig(p => ({ ...p, llmMaxTokens: v }))} className="py-1" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
 
                                         {/* ── Model / Stack Info ── */}
                                         <div>

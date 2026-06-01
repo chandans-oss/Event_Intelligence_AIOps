@@ -1806,6 +1806,7 @@ class RemedyConfig:
     LLM_TEMPERATURE = 0.0
     LLM_MAX_TOKENS  = 500
     LLM_TIMEOUT     = 60
+    CUSTOM_PROMPT   = ""   # If set, overrides the default remedy LLM prompt
 
 
 # ========================= REMEDY PIPELINE =========================
@@ -2310,8 +2311,21 @@ class RemedyPipeline:
         LLM-powered remedy query construction.
         Returns a plain string — same return type as _build_remedy_query().
         Falls back to _build_remedy_query() if the LLM returns a poor result.
+        If config.CUSTOM_PROMPT is set, it is used (with placeholder substitution)
+        instead of the built-in default prompt.
         """
-        prompt = f"""You are a senior Network Operations expert.
+        # Build or use custom prompt
+        if self.config.CUSTOM_PROMPT and self.config.CUSTOM_PROMPT.strip():
+            prompt = self.config.CUSTOM_PROMPT
+            # Substitute placeholders
+            prompt = prompt.replace('{rca_id}',     rca_ctx.get('rca_id', ''))
+            prompt = prompt.replace('{title}',      rca_ctx.get('title', ''))
+            prompt = prompt.replace('{symptoms}',   '; '.join(rca_ctx.get('symptoms', [])[:4]))
+            prompt = prompt.replace('{keywords}',   ', '.join(rca_ctx.get('keywords', [])[:8]))
+            prompt = prompt.replace('{interfaces}', ', '.join((entities.get('interfaces') or [])[:3]) or 'None')
+            prompt = prompt.replace('{alarm_codes}', ', '.join((entities.get('alarm_codes') or [])[:4]) or 'None')
+        else:
+            prompt = f"""You are a senior Network Operations expert.
 
 Given the following root cause analysis result, generate a concise search query
 to find the most relevant remediation procedure, fix steps, and CLI commands.

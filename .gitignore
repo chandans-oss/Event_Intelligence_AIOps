@@ -35,3 +35,7 @@ __pycache__/
 *.pyc
 backend/rag/models/
 
+
+# Machine Learning Models
+model/
+backend/model/

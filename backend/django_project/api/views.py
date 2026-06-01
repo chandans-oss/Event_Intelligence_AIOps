@@ -391,8 +391,14 @@ try:
         assert ierag6_rca_pgvector is not None, "ierag6_rca_pgvector must be loaded"
         if _pipeline is None:
             cfg, rcfg    = _patch_config()
-            _pipeline        = ierag6_rca_pgvector.RCAPipeline(config=cfg)
-            _remedy_pipeline = ierag6_rca_pgvector.RemedyPipeline(config=rcfg)
+            try:
+                _pipeline        = ierag6_rca_pgvector.RCAPipeline(config=cfg)
+                _remedy_pipeline = ierag6_rca_pgvector.RemedyPipeline(config=rcfg)
+            except Exception as db_err:
+                # Reset so next request retries rather than reusing a broken singleton
+                _pipeline        = None
+                _remedy_pipeline = None
+                raise db_err
         return _pipeline, _remedy_pipeline
 
 except ImportError as e:
@@ -419,13 +425,30 @@ class RunRAGV6AnalysisView(APIView):
                 old_cwd = os.getcwd()
                 os.chdir(ROOT_DIR)
                 try:
-                    pipeline, remedy_pipeline = get_v6_pipelines()
+                    try:
+                        pipeline, remedy_pipeline = get_v6_pipelines()
+                    except Exception as db_err:
+                        err_msg = str(db_err)
+                        # Detect common DB unavailability patterns
+                        recovery_hints = [
+                            'recovery mode',
+                            'connection refused',
+                            'could not connect',
+                            'OperationalError',
+                            'timeout expired',
+                            'server closed the connection',
+                        ]
+                        if any(hint.lower() in err_msg.lower() for hint in recovery_hints):
+                            raise RuntimeError(
+                                f"DATABASE_UNAVAILABLE: Cannot connect to PostgreSQL at "
+                                f"{db_err.__class__.__name__}: {err_msg}"
+                            )
+                        raise
 
                     # Apply per-request config overrides on the shared pipeline config
                     # (safe because the actual model/db objects are reused; only flags change)
                     cfg = pipeline.config
-                    use_llm_flag = bool(run_config.get('use_llm', False))
-                    cfg.USE_LLM_QUERY_BUILDER      = use_llm_flag
+                    cfg.USE_LLM_QUERY_BUILDER = bool(run_config.get('use_llm_rca', False))
                     cfg.USE_ENHANCED_QUERY_BUILDER = bool(run_config.get('use_enhanced', False))
                     cfg.RETRIEVE_K = int(run_config.get('retrieve_k', cfg.RETRIEVE_K))
                     cfg.RERANK_K   = int(run_config.get('rerank_k',   cfg.RERANK_K))
@@ -438,7 +461,10 @@ class RunRAGV6AnalysisView(APIView):
                     cfg.CUSTOM_PROMPT = run_config.get('llm_custom_prompt', cfg.CUSTOM_PROMPT)
                     
                     # Also apply the LLM toggle to the remedy pipeline so it doesn't take 300+ seconds
-                    remedy_pipeline.config.USE_LLM_QUERY_REMEDY_BUILDER = use_llm_flag
+                    remedy_pipeline.config.USE_LLM_QUERY_REMEDY_BUILDER = bool(run_config.get('use_llm_remedy', True))
+                    remedy_pipeline.config.LLM_TEMPERATURE = float(run_config.get('llm_temperature', remedy_pipeline.config.LLM_TEMPERATURE))
+                    remedy_pipeline.config.LLM_MAX_TOKENS = int(run_config.get('llm_max_tokens', remedy_pipeline.config.LLM_MAX_TOKENS))
+                    remedy_pipeline.config.CUSTOM_PROMPT = run_config.get('llm_remedy_custom_prompt', remedy_pipeline.config.CUSTOM_PROMPT)
 
                     # Run RCA pipeline
                     pipeline_output = pipeline.run(raw_logs, root_event, metrics_payload, topology)
@@ -458,15 +484,30 @@ class RunRAGV6AnalysisView(APIView):
                     ui_response: dict = pipeline.build_response(pipeline_output, root_event) if pipeline_output else {"error": "Pipeline returned empty"}
 
                     if pipeline_output and "error" not in ui_response:
+                        query_data = pipeline_output.get("query")
+                        if not isinstance(query_data, dict):
+                            query_data = {}
+                            
+                        entities_data = pipeline_output.get("entities", {})
+                        import dataclasses
+                        if dataclasses.is_dataclass(entities_data) and not isinstance(entities_data, type):
+                            entities_data = dataclasses.asdict(entities_data)
+                        elif hasattr(entities_data, "__dict__"):
+                            entities_data = entities_data.__dict__
+
+                        rca_list = pipeline_output.get("rca_results", [])
+                        if not isinstance(rca_list, list):
+                            rca_list = []
+                            
                         ui_response.update({
-                            "query": pipeline_output.get("query", {}),
+                            "query": query_data,
                             "anomalies": pipeline_output.get("anomalies", []),
                             "templates": pipeline_output.get("templates", []),
-                            "entities": pipeline_output.get("entities", {}),
-                            "log_features": pipeline_output.get("query", {}).get("log_features", []),
-                            "metric_facts": pipeline_output.get("query", {}).get("metric_facts", []),
-                            "build_ms": pipeline_output.get("query", {}).get("build_ms", 0),
-                            "llm_usage": pipeline_output.get("query", {}).get("llm_usage", {}),
+                            "entities": entities_data,
+                            "log_features": query_data.get("log_features", []),
+                            "metric_facts": query_data.get("metric_facts", []),
+                            "build_ms": query_data.get("build_ms", 0),
+                            "llm_usage": query_data.get("llm_usage", {}),
                             
                             # Add raw search_results for the Hybrid Retrieval UI
                             "search_results": [
@@ -475,10 +516,10 @@ class RunRAGV6AnalysisView(APIView):
                                     "hybrid_score": round(r.get("prerank_score", 0), 4),
                                     "cross_encoder_score": round(r.get("cross_encoder_score", 0), 4) if r.get("cross_encoder_score") is not None else 0,
                                     "final_score": round(r.get("final_score", 0), 4),
-                                    "title": r.get("doc", {}).get("raw", {}).get("title", "N/A") if isinstance(r.get("doc"), dict) else r.get("doc", {}).get("title", "N/A"),
-                                    "rca_id": r.get("doc", {}).get("raw", {}).get("rca_id", "N/A") if isinstance(r.get("doc"), dict) else r.get("doc", {}).get("rca_id", "N/A"),
+                                    "title": r.get("doc", {}).get("raw", {}).get("title", "N/A") if isinstance(r.get("doc"), dict) else r.get("doc", {}).get("title", "N/A") if isinstance(r.get("doc"), dict) else "N/A",
+                                    "rca_id": r.get("doc", {}).get("raw", {}).get("rca_id", "N/A") if isinstance(r.get("doc"), dict) else r.get("doc", {}).get("rca_id", "N/A") if isinstance(r.get("doc"), dict) else "N/A",
                                 }
-                                for r in pipeline_output.get("rca_results", [])
+                                for r in rca_list if isinstance(r, dict)
                             ]
                         })
                     return ui_response
@@ -492,6 +533,23 @@ class RunRAGV6AnalysisView(APIView):
         except Exception as e:
             import traceback
             traceback.print_exc()
-            return Response({"error": f"Error running RAG v6 analysis: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            err_str = str(e)
+            # Surface DB unavailability as 503 Service Unavailable
+            if 'DATABASE_UNAVAILABLE' in err_str or 'recovery mode' in err_str.lower():
+                db_detail = err_str.replace('DATABASE_UNAVAILABLE: ', '')
+                return Response(
+                    {
+                        "error": "Database is currently unavailable.",
+                        "detail": db_detail,
+                        "hint": (
+                            "The PostgreSQL server is in recovery/standby mode. "
+                            "This typically means the primary DB has failed or the "
+                            "replica has not finished syncing. Please wait and retry, "
+                            "or contact your DB administrator."
+                        )
+                    },
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE
+                )
+            return Response({"error": f"Error running RAG v6 analysis: {err_str}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

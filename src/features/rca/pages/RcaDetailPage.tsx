@@ -20,14 +20,14 @@ function SectionItem({ section }: { section: any }) {
     return (
         <div style={{ marginBottom: 16 }}>
             <div style={{
-                fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
+                fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase',
                 letterSpacing: '0.08em', color: 'var(--rca-text-secondary)', marginBottom: 6
             }}>
                 {section.title}
             </div>
 
             {section.type === 'text' && (
-                <p style={{ fontSize: '0.92rem', color: 'var(--rca-text-primary)', lineHeight: 1.6, margin: 0 }}>
+                <p style={{ fontSize: '1.07rem', color: 'var(--rca-text-primary)', lineHeight: 1.6, margin: 0 }}>
                     {section.content}
                 </p>
             )}
@@ -44,7 +44,7 @@ function SectionItem({ section }: { section: any }) {
             )}
 
             {section.type === 'list' && (
-                <div style={{ fontSize: '0.88rem', color: 'var(--rca-text-primary)' }}>
+                <div style={{ fontSize: '1.03rem', color: 'var(--rca-text-primary)' }}>
                     {(section.content as string[]).map((item, i) => (
                         <div key={i} style={{ display: 'flex', gap: 6, padding: '3px 0' }}>
                             <span style={{ color: 'var(--rca-text-secondary)' }}>•</span>
@@ -59,9 +59,9 @@ function SectionItem({ section }: { section: any }) {
                     {(section.content as any[]).map((item, i) => (
                         <div key={i}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--rca-text-primary)' }}>{item.label}</span>
+                                <span style={{ fontWeight: 700, fontSize: '1.03rem', color: 'var(--rca-text-primary)' }}>{item.label}</span>
                                 <span style={{
-                                    fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 700,
+                                    fontSize: '0.9rem', fontFamily: 'monospace', fontWeight: 700,
                                     background: 'var(--rca-bg-tertiary)', color: 'var(--rca-primary)',
                                     border: '1px solid var(--rca-border-color)', borderRadius: 4, padding: '1px 7px'
                                 }}>{item.displayScore}</span>
@@ -81,12 +81,12 @@ function SectionItem({ section }: { section: any }) {
             )}
 
             {section.type === 'table' && section.columns && (
-                <div style={{ border: '1px solid var(--rca-border-color)', borderRadius: 6, overflow: 'hidden', fontSize: '0.85rem' }}>
+                <div style={{ border: '1px solid var(--rca-border-color)', borderRadius: 6, overflow: 'hidden', fontSize: '1.0rem' }}>
                     <Table>
                         <TableHeader>
                             <TableRow style={{ background: 'var(--rca-bg-tertiary)' }}>
                                 {section.columns.map((col: any) => (
-                                    <TableHead key={col.key} className={cn("text-[10px] font-bold h-7 py-1 px-3", col.align === 'right' ? "text-right" : "")}>
+                                    <TableHead key={col.key} className={cn("text-xs font-bold h-7 py-1 px-3", col.align === 'right' ? "text-right" : "")}>
                                         {col.label}
                                     </TableHead>
                                 ))}
@@ -96,10 +96,10 @@ function SectionItem({ section }: { section: any }) {
                             {(section.content as Record<string, any>[]).map((row, rIdx) => (
                                 <TableRow key={rIdx}>
                                     {section.columns.map((col: any) => (
-                                        <TableCell key={col.key} className={cn("text-[11px] py-1.5 px-3", col.align === 'right' ? "text-right font-mono" : "")}>
+                                        <TableCell key={col.key} className={cn("text-sm py-1.5 px-3", col.align === 'right' ? "text-right font-mono" : "")}>
                                             {col.key === 'match' || col.key === 'score' ? (
                                                 <span style={{
-                                                    fontSize: '0.75rem', fontWeight: 700, padding: '1px 7px', borderRadius: 4,
+                                                    fontSize: '0.9rem', fontWeight: 700, padding: '1px 7px', borderRadius: 4,
                                                     background: parseInt(row[col.key]) > 80 ? 'color-mix(in srgb, var(--rca-success), transparent 85%)' : 'color-mix(in srgb, var(--rca-warning), transparent 85%)',
                                                     color: parseInt(row[col.key]) > 80 ? 'var(--rca-success)' : 'var(--rca-warning)'
                                                 }}>{row[col.key]}</span>
@@ -127,8 +127,8 @@ function MetadataStepContent({ details }: { details: any }) {
             {/* Input */}
             {details.input && details.input.length > 0 && (
                 <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--rca-text-secondary)', marginBottom: 6 }}>Input</div>
-                    <div style={{ fontSize: '0.88rem', color: 'var(--rca-text-primary)' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--rca-text-secondary)', marginBottom: 6 }}>Input</div>
+                    <div style={{ fontSize: '1.03rem', color: 'var(--rca-text-primary)' }}>
                         {details.input.map((item: string, i: number) => (
                             <div key={i} style={{ display: 'flex', gap: 6, padding: '2px 0' }}>
                                 <span style={{ color: 'var(--rca-text-secondary)' }}>•</span>
@@ -142,16 +142,16 @@ function MetadataStepContent({ details }: { details: any }) {
             {/* Processing */}
             {details.processing && (
                 <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--rca-text-secondary)', marginBottom: 6 }}>Processing</div>
-                    <p style={{ fontSize: '0.92rem', color: 'var(--rca-text-primary)', lineHeight: 1.6, margin: 0 }}>{details.processing}</p>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--rca-text-secondary)', marginBottom: 6 }}>Processing</div>
+                    <p style={{ fontSize: '1.07rem', color: 'var(--rca-text-primary)', lineHeight: 1.6, margin: 0 }}>{details.processing}</p>
                 </div>
             )}
 
             {/* Bullet Points */}
             {details.bulletPoints && details.bulletPoints.length > 0 && (
                 <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--rca-text-secondary)', marginBottom: 6 }}>Steps</div>
-                    <div style={{ fontSize: '0.88rem', color: 'var(--rca-text-primary)' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--rca-text-secondary)', marginBottom: 6 }}>Steps</div>
+                    <div style={{ fontSize: '1.03rem', color: 'var(--rca-text-primary)' }}>
                         {details.bulletPoints.map((bp: string, i: number) => (
                             <div key={i} style={{ display: 'flex', gap: 6, padding: '2px 0' }}>
                                 <span style={{ color: 'var(--rca-primary)' }}>•</span>
@@ -165,7 +165,7 @@ function MetadataStepContent({ details }: { details: any }) {
             {/* Metadata KV */}
             {details.metadata && Object.keys(details.metadata).length > 0 && (
                 <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--rca-text-secondary)', marginBottom: 6 }}>Details</div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--rca-text-secondary)', marginBottom: 6 }}>Details</div>
                     <div className="rca-grid">
                         {Object.entries(details.metadata as Record<string, any>).map(([k, v]) => (
                             <>
@@ -180,17 +180,17 @@ function MetadataStepContent({ details }: { details: any }) {
             {/* Output */}
             {details.output && (
                 <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--rca-text-secondary)', marginBottom: 6 }}>Output</div>
-                    <p style={{ fontSize: '0.92rem', color: 'var(--rca-text-primary)', lineHeight: 1.6, margin: 0 }}>{details.output}</p>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--rca-text-secondary)', marginBottom: 6 }}>Output</div>
+                    <p style={{ fontSize: '1.07rem', color: 'var(--rca-text-primary)', lineHeight: 1.6, margin: 0 }}>{details.output}</p>
                 </div>
             )}
 
             {/* Duration */}
             {details.duration && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--rca-text-secondary)' }}>Duration:</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--rca-text-secondary)' }}>Duration:</span>
                     <span style={{
-                        fontSize: '0.78rem', fontFamily: 'monospace', fontWeight: 700,
+                        fontSize: '0.93rem', fontFamily: 'monospace', fontWeight: 700,
                         background: 'color-mix(in srgb, var(--rca-success), transparent 85%)', color: 'var(--rca-success)',
                         border: '1px solid var(--rca-border-color)', borderRadius: 4, padding: '1px 8px'
                     }}>{details.duration}</span>
@@ -200,11 +200,11 @@ function MetadataStepContent({ details }: { details: any }) {
             {/* Raw Output */}
             {details.rawOutput && (
                 <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--rca-text-secondary)', marginBottom: 6 }}>Raw Output</div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--rca-text-secondary)', marginBottom: 6 }}>Raw Output</div>
                     <pre style={{
                         margin: 0, padding: '10px 14px',
                         background: 'var(--rca-bg-tertiary)', color: 'var(--rca-text-primary)',
-                        borderRadius: 6, fontSize: '0.75rem', overflow: 'auto',
+                        borderRadius: 6, fontSize: '0.9rem', overflow: 'auto',
                         whiteSpace: 'pre-wrap', wordBreak: 'break-word',
                         border: '1px solid var(--rca-border-color)'
                     }}>{details.rawOutput}</pre>
@@ -324,14 +324,14 @@ export default function RCADetailPage({ isEmbedded = false, eventId = null }: { 
                                     </div>
                                     <div className="h-8 w-px bg-border/50 mx-1" />
                                     <div>
-                                        <h1 style={{ fontSize: '1rem', fontWeight: 700, lineHeight: 1.2, margin: 0 }}>RCA Analysis Flow</h1>
-                                        <p style={{ fontSize: '0.7rem', color: 'var(--rca-text-secondary)', margin: 0 }}>
+                                        <h1 style={{ fontSize: '1.15rem', fontWeight: 700, lineHeight: 1.2, margin: 0 }}>RCA Analysis Flow</h1>
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--rca-text-secondary)', margin: 0 }}>
                                             <span style={{ fontFamily: 'monospace' }}>{id}</span> • {clusterData.rootCause?.split(':')[0]}
                                         </p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-300 text-[10px] px-2 py-0.5 font-bold">
+                                    <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-300 text-xs px-2 py-0.5 font-bold">
                                         {((clusterData.confidence || 0) * 100).toFixed(0)}% Conf
                                     </Badge>
                                 </div>
@@ -352,7 +352,7 @@ export default function RCADetailPage({ isEmbedded = false, eventId = null }: { 
                                 sx={{
                                     minHeight: '44px',
                                     '& .MuiTab-root': {
-                                        textTransform: 'none', fontWeight: 600, fontSize: '0.85rem',
+                                        textTransform: 'none', fontWeight: 600, fontSize: '1.0rem',
                                         color: 'var(--rca-text-secondary)', minHeight: '44px',
                                     },
                                     '& .Mui-selected': { color: '#2563eb !important' },

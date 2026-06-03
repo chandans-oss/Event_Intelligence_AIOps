@@ -41,6 +41,7 @@ export interface RemedyKBEntry {
   description: string;
   vendor: string;
   os_flavor: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
   appliance_types: string[];
   symptom_patterns: string[];
   rca_keywords: string[];
@@ -83,6 +84,7 @@ const mapRawToEntry = (raw: any): RemedyKBEntry => ({
   description: raw.description || '',
   vendor: (raw.vendor || 'generic').toLowerCase(),
   os_flavor: raw.os_flavor || 'generic',
+  severity: raw.severity || 'medium',
   appliance_types: raw.appliance_types || [],
   symptom_patterns: raw.symptom_patterns || [],
   rca_keywords: raw.rca_keywords || [],
@@ -107,6 +109,7 @@ const createBlankEntry = (vendor = '', os_flavor = '', rca_id = ''): RemedyKBEnt
   description: '',
   vendor: vendor || 'cisco',
   os_flavor: os_flavor || 'ios',
+  severity: 'medium',
   appliance_types: [],
   symptom_patterns: [],
   rca_keywords: [],
@@ -132,69 +135,45 @@ const normalizeFallbackStep = (s: any): string => {
   return parts.join(' · ');
 };
 
-const loadAllRemedies = (): RemedyKBEntry[] => {
+const loadAllRemedies = async (): Promise<RemedyKBEntry[]> => {
   const entries: RemedyKBEntry[] = [];
 
-  // cisco_ios.json — has vendor + os_flavor fields
-  (ciscoIosRaw as any[]).forEach((raw, idx) => {
-    entries.push(mapRawToEntry({ ...raw, _idx: idx }));
-  });
+  // cisco_ios.json
+  (ciscoIosRaw as any[]).forEach((raw, idx) => entries.push(mapRawToEntry({ ...raw, _idx: idx })));
 
-  // cisco_iosxe.json — no vendor/os_flavor, infer from filename
+  // cisco_iosxe.json
   (ciscoIosxeRaw as any[]).forEach((raw, idx) => {
     entries.push(mapRawToEntry({
-      ...raw,
-      vendor: 'cisco',
-      os_flavor: 'ios-xe',
-      rca_id: raw.remedy_id?.split('.')[2] || 'general',
-      _idx: idx,
+      ...raw, vendor: 'cisco', os_flavor: 'ios-xe', rca_id: raw.remedy_id?.split('.')[2] || 'general', _idx: idx,
     }));
   });
 
-  // cisco_nxos.json
-  (ciscoNxosRaw as any[]).forEach((raw, idx) => {
-    entries.push(mapRawToEntry({ ...raw, _idx: idx }));
-  });
+  // cisco_nxos.json, arista_eos.json, paloalto_panos.json, juniper_junos.json
+  (ciscoNxosRaw as any[]).forEach((raw, idx) => entries.push(mapRawToEntry({ ...raw, _idx: idx })));
+  (aristaEosRaw as any[]).forEach((raw, idx) => entries.push(mapRawToEntry({ ...raw, _idx: idx })));
+  (paloaltoPanosRaw as any[]).forEach((raw, idx) => entries.push(mapRawToEntry({ ...raw, _idx: idx })));
+  (juniperJunosRaw as any[]).forEach((raw, idx) => entries.push(mapRawToEntry({ ...raw, _idx: idx })));
 
-  // arista_eos.json
-  (aristaEosRaw as any[]).forEach((raw, idx) => {
-    entries.push(mapRawToEntry({ ...raw, _idx: idx }));
-  });
-
-  // paloalto_panos.json
-  (paloaltoPanosRaw as any[]).forEach((raw, idx) => {
-    entries.push(mapRawToEntry({ ...raw, _idx: idx }));
-  });
-
-  // juniper_junos.json
-  (juniperJunosRaw as any[]).forEach((raw, idx) => {
-    entries.push(mapRawToEntry({ ...raw, _idx: idx }));
-  });
-
-  // fallback_sop.json — different schema (steps are objects)
-  (fallbackSopRaw as any[]).forEach((raw, idx) => {
-    entries.push(mapRawToEntry({
-      remedy_id: raw.sop_id || `fallback-${idx}`,
-      rca_id: raw.rca_id || raw.category || 'general',
-      title: raw.title || '',
-      description: raw.description || '',
-      vendor: 'generic',
-      os_flavor: 'fallback-sop',
-      severity: raw.severity || 'medium',
-      appliance_types: ['All Vendors'],
-      symptom_patterns: raw.keywords || [],
-      rca_keywords: raw.keywords || [],
-      steps: (raw.steps || []).map(normalizeFallbackStep),
-      keywords: raw.keywords || [],
-      reranker_text: '',
-      estimated_time_minutes: raw.estimated_time_minutes || 20,
-      risk_level: raw.risk_level || 'medium',
-      requires_maintenance_window: false,
-      escalation: raw.escalation || '',
-      doc_links: raw.doc_links || [],
-      status: 'active',
-    }));
-  });
+  // Fetch fallback SOPs from Backend API
+  try {
+    const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001') + '/api/rag/remedy-kb/';
+    const res = await fetch(API_BASE);
+    if (res.ok) {
+      const data = await res.json();
+      data.forEach((raw: any, idx: number) => {
+        entries.push(mapRawToEntry({
+          ...raw,
+          remedy_id: raw.remedy_id || raw.sop_id || `fallback-${idx}`,
+          rca_id: raw.rca_id || raw.category || 'general',
+          vendor: raw.vendor || 'generic',
+          os_flavor: raw.os_flavor || 'fallback-sop',
+          steps: (raw.steps || []).map(normalizeFallbackStep),
+        }));
+      });
+    }
+  } catch (err) {
+    console.error('Failed to load fallback remedies from API', err);
+  }
 
   return entries;
 };
@@ -213,35 +192,26 @@ export function RemedyKBSection({ highlightRemedyId }: { highlightRemedyId?: str
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<RemedyKBEntry | null>(null);
 
-  // ── Data Loading ────────────────────────────────────────────────────────────
-  const loadKB = () => {
-    try {
-      setEntries(loadAllRemedies());
-    } catch (e) {
-      toast.error('Failed to parse Remedy Knowledge Base');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => { loadKB(); }, []);
-
-  // Deep link
   useEffect(() => {
-    if (highlightRemedyId && entries.length > 0) {
-      const entry = entries.find(e => e.remedy_id === highlightRemedyId || e.rca_id === highlightRemedyId);
-      if (entry) {
-        setSelectedId(entry.remedy_id);
+    console.log("Starting to load remedies...");
+    loadAllRemedies().then(data => {
+      console.log("Successfully loaded remedies:", data.length);
+      setEntries(data);
+      if (highlightRemedyId) {
+        setSelectedId(highlightRemedyId);
         setViewMode('detail');
       }
-    }
-  }, [highlightRemedyId, entries]);
-
-  // ── Derived State ───────────────────────────────────────────────────────────
+      setIsLoading(false);
+    }).catch(err => {
+      console.error("Error loading remedies:", err);
+      setIsLoading(false);
+    });
+  }, [highlightRemedyId]);
+   // ── Derived State ───────────────────────────────────────────────────────────
   // Drill hierarchy: level0 = vendor, level1 = os_flavor, level2 = rca_id (category)
   const currentDrillItems = useMemo(() => {
     const level = drillPath.length;
-    const stats: Record<string, { count: number; samples: Set<string>; severities: string[] }> = {};
+    const stats: Record<string, { count: number; samples: Set<string>; risks: string[] }> = {};
 
     entries.forEach(entry => {
       const matches =
@@ -294,33 +264,76 @@ export function RemedyKBSection({ highlightRemedyId }: { highlightRemedyId?: str
   const selectedEntry = useMemo(() => entries.find(e => e.remedy_id === selectedId), [entries, selectedId]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
-  const handleDrill = (name: string) => {
-    const next = [...drillPath, name];
+  const goToDrillPath = (next: string[]) => {
+    setDrillPath(next);
     if (next.length >= 3) {
-      setDrillPath(next);
-      setViewMode('list');
+      const matching = entries.find(e => e.vendor === next[0] && e.os_flavor === next[1] && e.rca_id === next[2]);
+      if (matching) {
+        setSelectedId(matching.remedy_id);
+        setViewMode('detail');
+      } else {
+        setViewMode('list');
+      }
     } else {
-      setDrillPath(next);
+      setViewMode('drill');
     }
   };
 
-  const handleSave = (updatedEntry: RemedyKBEntry) => {
-    const isNew = !entries.some(e => e.remedy_id === updatedEntry.remedy_id);
-    if (isNew) {
-      setEntries(prev => [...prev, updatedEntry]);
-      toast.success('New remedy added (local only — connect API to persist)');
-    } else {
-      setEntries(prev => prev.map(e => e.remedy_id === updatedEntry.remedy_id ? updatedEntry : e));
-      toast.success('Remedy updated (local only — connect API to persist)');
-    }
-    setIsEditorOpen(false);
+  const handleDrill = (name: string) => {
+    goToDrillPath([...drillPath, name]);
   };
 
-  const handleDelete = (id: string) => {
+  const handleSave = async (updatedEntry: RemedyKBEntry) => {
+    setIsSaving(true);
+    try {
+      const isNew = !entries.some(e => e.remedy_id === updatedEntry.remedy_id);
+      const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001') + '/api/rag/remedy-kb/';
+      
+      const res = await fetch(API_BASE, {
+        method: isNew ? 'POST' : 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedEntry),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+
+      const savedEntry = await res.json();
+      
+      if (isNew) {
+        setEntries(prev => [...prev, mapRawToEntry(savedEntry)]);
+        toast.success('New remedy playbook added');
+      } else {
+        setEntries(prev => prev.map(e => e.remedy_id === updatedEntry.remedy_id ? mapRawToEntry(savedEntry) : e));
+        toast.success('Remedy playbook updated');
+      }
+      setIsEditorOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save Remedy KB');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
     if (!confirm('Delete this remedy entry?')) return;
-    setEntries(prev => prev.filter(e => e.remedy_id !== id));
-    toast.success('Entry removed (local session only)');
-    setViewMode('list');
+    try {
+      const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001') + '/api/rag/remedy-kb/';
+      const res = await fetch(`${API_BASE}?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      
+      setEntries(prev => prev.filter(e => e.remedy_id !== id));
+      toast.success('Entry removed');
+      setViewMode('list');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete Remedy KB');
+    }
   };
 
   // ── Loading State ────────────────────────────────────────────────────────────
@@ -356,7 +369,7 @@ export function RemedyKBSection({ highlightRemedyId }: { highlightRemedyId?: str
           </Button>
         ) : selectedEntry && (
           <div className="flex items-center gap-1.5">
-            <Button size="sm" variant="outline" className="rounded-md font-bold px-2.5 h-7 gap-1.5 text-[9px]" onClick={() => setViewMode('list')}>
+            <Button size="sm" variant="outline" className="rounded-md font-bold px-2.5 h-7 gap-1.5 text-[9px]" onClick={() => goToDrillPath(drillPath.length >= 3 ? drillPath.slice(0, 2) : drillPath)}>
               <ArrowLeft className="w-3 h-3" /> BACK
             </Button>
             <Button size="sm" className="rounded-md font-bold px-2.5 h-7 gap-1.5 text-[9px]" onClick={() => { setEditingEntry(selectedEntry); setIsEditorOpen(true); }}>
@@ -374,7 +387,7 @@ export function RemedyKBSection({ highlightRemedyId }: { highlightRemedyId?: str
         <div className="flex items-center justify-between px-4 py-1 border-b bg-muted/10 shrink-0">
           <div className="flex items-center gap-1.5 text-[8px]">
             <button
-              onClick={() => { setDrillPath([]); setViewMode('drill'); }}
+              onClick={() => goToDrillPath([])}
               className={cn('hover:text-primary transition-colors', drillPath.length === 0 ? 'text-primary font-bold' : 'text-muted-foreground')}
             >
               ROOT
@@ -383,10 +396,7 @@ export function RemedyKBSection({ highlightRemedyId }: { highlightRemedyId?: str
               <React.Fragment key={p}>
                 <ChevronRight className="w-2.5 h-2.5 text-muted-foreground opacity-50" />
                 <button
-                  onClick={() => {
-                    setDrillPath(drillPath.slice(0, i + 1));
-                    setViewMode(i + 1 >= 3 ? 'list' : 'drill');
-                  }}
+                  onClick={() => goToDrillPath(drillPath.slice(0, i + 1))}
                   className={cn('hover:text-primary transition-colors', i === drillPath.length - 1 ? 'text-primary font-bold' : 'text-muted-foreground')}
                 >
                   {p.toUpperCase()}
@@ -789,8 +799,60 @@ export function RemedyKBSection({ highlightRemedyId }: { highlightRemedyId?: str
                       <Label className="text-[10px] font-bold uppercase">Est. Time (minutes)</Label>
                       <Input type="number" value={editingEntry.estimated_time_minutes} onChange={e => setEditingEntry({ ...editingEntry, estimated_time_minutes: Number(e.target.value) })} />
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase">Keywords (comma separated)</Label>
+                      <Input
+                        value={editingEntry.keywords.join(', ')}
+                        onChange={e => setEditingEntry({ ...editingEntry, keywords: e.target.value.split(',').map(k => k.trim()).filter(Boolean) })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase">Appliance Types (comma separated)</Label>
+                      <Input
+                        value={editingEntry.appliance_types?.join(', ') || ''}
+                        onChange={e => setEditingEntry({ ...editingEntry, appliance_types: e.target.value.split(',').map(k => k.trim()).filter(Boolean) })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase">Symptom Patterns (one per line)</Label>
+                      <textarea
+                        className="w-full h-20 p-3 bg-background border rounded-lg text-sm resize-none"
+                        value={editingEntry.symptom_patterns?.join('\n') || ''}
+                        onChange={e => setEditingEntry({ ...editingEntry, symptom_patterns: e.target.value.split('\n').filter(Boolean) })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase">RCA Keywords (comma separated)</Label>
+                      <Input
+                        value={editingEntry.rca_keywords?.join(', ') || ''}
+                        onChange={e => setEditingEntry({ ...editingEntry, rca_keywords: e.target.value.split(',').map(k => k.trim()).filter(Boolean) })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase">Doc Links (comma separated)</Label>
+                      <Input
+                        value={editingEntry.doc_links?.join(', ') || ''}
+                        onChange={e => setEditingEntry({ ...editingEntry, doc_links: e.target.value.split(',').map(k => k.trim()).filter(Boolean) })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase">Reranker Text</Label>
+                      <textarea
+                        className="w-full h-20 p-3 bg-background border rounded-lg text-sm resize-none"
+                        value={editingEntry.reranker_text || ''}
+                        onChange={e => setEditingEntry({ ...editingEntry, reranker_text: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase">Severity</Label>
+                      <select
+                        className="w-full h-9 px-3 bg-background border rounded-lg text-sm"
+                        value={editingEntry.severity || 'medium'}
+                        onChange={e => setEditingEntry({ ...editingEntry, severity: e.target.value as any })}
+                      >
+                        {['low', 'medium', 'high', 'critical'].map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
                     <div className="space-y-1.5">
                       <Label className="text-[10px] font-bold uppercase">Status</Label>
                       <select

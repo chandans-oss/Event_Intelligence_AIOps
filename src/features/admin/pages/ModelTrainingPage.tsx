@@ -356,13 +356,8 @@ export default function ModelTrainingPage() {
                           <tr className="bg-muted/20 border-b border-border">
                             <th className="px-3 py-2 text-left font-bold text-muted-foreground w-24">Label</th>
                             <th className="px-3 py-2 text-left font-bold text-muted-foreground">
-                              Raw Text
+                              {showProcessed ? 'Processed Text' : 'Raw Text'}
                             </th>
-                            {showProcessed && (
-                              <th className="px-3 py-2 text-left font-bold text-muted-foreground border-l border-border/50">
-                                Processed Text
-                              </th>
-                            )}
                           </tr>
                         </thead>
                         <tbody>
@@ -374,13 +369,8 @@ export default function ModelTrainingPage() {
                                 </span>
                               </td>
                               <td className="px-3 py-2 font-mono text-[11px] text-foreground/80 align-top">
-                                {row.raw_text}
+                                {showProcessed ? row.processed_text : row.raw_text}
                               </td>
-                              {showProcessed && (
-                                <td className="px-3 py-2 font-mono text-[11px] text-foreground/60 align-top bg-muted/10 border-l border-border/50">
-                                  {row.processed_text}
-                                </td>
-                              )}
                             </tr>
                           ))}
                         </tbody>
@@ -700,7 +690,7 @@ export default function ModelTrainingPage() {
 
           {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ TAB: TEST */}
           {activeTab === 'test' && (
-            <div className="h-full flex flex-col overflow-hidden">
+            <ScrollArea className="h-full">
               <div className="shrink-0 p-6 border-b border-border space-y-4">
                 <div className="flex items-center gap-4">
                   <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Alarm Classifier Test</p>
@@ -744,59 +734,49 @@ export default function ModelTrainingPage() {
                 </div>
               </div>
 
-              <ScrollArea className="flex-1 p-6">
-                <div className="space-y-4 max-w-3xl mx-auto">
-                  {testResults.map((r, i) => (
-                    <div key={i} className={cn(
-                      'rounded-xl border p-4 transition-all',
-                      { LINK_DOWN: 'border-red-500/20 bg-red-500/5', LINK_UP: 'border-emerald-500/20 bg-emerald-500/5', UNKNOWN: 'border-amber-500/20 bg-amber-500/5' }[r.prediction] || 'border-border bg-card/50'
-                    )}>
-                      {/* Header */}
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', LABEL_DOT[r.prediction] || 'bg-muted-foreground')} />
-                        <span className={cn('px-2 py-0.5 rounded-full text-xs font-black border', LABEL_COLORS[r.prediction] || '')}>
-                          {r.prediction}
-                        </span>
-                        <div className="flex items-center gap-2 ml-auto">
-                          <span className="text-xs text-muted-foreground">Confidence</span>
-                          <div className="w-24 h-2 rounded-full bg-muted/30 overflow-hidden">
-                            <div className={cn('h-full rounded-full',
-                              r.confidence > 0.9 ? 'bg-emerald-500' :
-                              r.confidence > 0.7 ? 'bg-amber-500' : 'bg-red-500'
-                            )} style={{ width: `${r.confidence * 100}%` }} />
-                          </div>
-                          <span className="text-xs font-mono font-bold">{(r.confidence * 100).toFixed(1)}%</span>
-                        </div>
-                      </div>
-
-                      {/* Texts */}
-                      <div className="space-y-1.5 mb-3">
-                        <div>
-                          <span className="text-[9px] font-black uppercase text-muted-foreground">Raw</span>
-                          <p className="text-xs font-mono text-foreground/80 mt-0.5">{r.raw_text}</p>
-                        </div>
-                        <div>
-                          <span className="text-[9px] font-black uppercase text-muted-foreground">Preprocessed</span>
-                          <p className="text-xs font-mono text-foreground/60 mt-0.5">{r.processed_text}</p>
-                        </div>
-                      </div>
-
-                      {/* Score bars */}
-                      <div className="space-y-1">
-                        {r.all_scores.map(s => (
-                          <div key={s.label} className="flex items-center gap-3">
-                            <span className={cn('text-[10px] font-bold w-20 shrink-0', { LINK_DOWN: 'text-red-400', LINK_UP: 'text-emerald-400', UNKNOWN: 'text-amber-400' }[s.label] || '')}>{s.label}</span>
-                            <div className="flex-1 h-1.5 rounded-full bg-muted/20 overflow-hidden">
-                              <div className={cn('h-full rounded-full',
-                                { LINK_DOWN: 'bg-red-500', LINK_UP: 'bg-emerald-500', UNKNOWN: 'bg-amber-500' }[s.label] || 'bg-violet-500'
-                              )} style={{ width: `${s.score * 100}%` }} />
-                            </div>
-                            <span className="text-[10px] font-mono w-12 text-right text-muted-foreground">{(s.score * 100).toFixed(1)}%</span>
-                          </div>
-                        ))}
-                      </div>
+              <div className="p-6">
+                <div className="space-y-4 max-w-5xl mx-auto">
+                  {testResults.length > 0 && (
+                    <div className="rounded-xl border border-border bg-card/50 overflow-hidden">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-muted/30 border-b border-border">
+                          <tr>
+                            <th className="px-4 py-3 font-semibold text-[10px] text-muted-foreground uppercase tracking-wider">Raw Text</th>
+                            <th className="px-4 py-3 font-semibold text-[10px] text-muted-foreground uppercase tracking-wider">Processed Text</th>
+                            <th className="px-4 py-3 font-semibold text-[10px] text-muted-foreground uppercase tracking-wider">Label</th>
+                            <th className="px-4 py-3 font-semibold text-[10px] text-muted-foreground uppercase tracking-wider">Confidence</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {testResults.map((r, i) => (
+                            <tr key={i} className="hover:bg-muted/10 transition-colors">
+                              <td className="px-4 py-3 font-mono text-xs">{r.raw_text}</td>
+                              <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{r.processed_text}</td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <span className={cn('w-2 h-2 rounded-full shrink-0', LABEL_DOT[r.prediction] || 'bg-muted-foreground')} />
+                                  <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-black border', LABEL_COLORS[r.prediction] || '')}>
+                                    {r.prediction}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-16 h-1.5 rounded-full bg-muted/30 overflow-hidden shrink-0">
+                                    <div className={cn('h-full rounded-full',
+                                      r.confidence > 0.9 ? 'bg-emerald-500' :
+                                      r.confidence > 0.7 ? 'bg-amber-500' : 'bg-red-500'
+                                    )} style={{ width: `${r.confidence * 100}%` }} />
+                                  </div>
+                                  <span className="text-xs font-mono font-bold">{(r.confidence * 100).toFixed(1)}%</span>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                  ))}
+                  )}
 
                   {testResults.length === 0 && !testLoading && (
                     <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
@@ -806,8 +786,8 @@ export default function ModelTrainingPage() {
                     </div>
                   )}
                 </div>
-              </ScrollArea>
-            </div>
+              </div>
+            </ScrollArea>
           )}
         </div>
       </div>

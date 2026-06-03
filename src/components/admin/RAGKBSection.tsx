@@ -203,9 +203,30 @@ export function RAGKBSection({ highlightDocId }: { highlightDocId?: string }) {
     // Handlers
     const handleDrill = (name: string) => {
         const next = [...drillPath, name];
+
+        // Find all entries that match this drill path
+        const matchingEntries = entries.filter(e => {
+            if (next.length === 1) return e.category === next[0];
+            if (next.length === 2) return e.category === next[0] && e.sub_category === next[1];
+            if (next.length === 3) return e.category === next[0] && e.sub_category === next[1] && e.issue_group === next[2];
+            return false;
+        });
+
         if (next.length >= 3) {
+            if (matchingEntries.length === 1) {
+                // Skip the list — go straight to the single entry's detail view
+                setDrillPath(next);
+                setSelectedDocId(matchingEntries[0].doc_id);
+                setViewMode('detail');
+            } else {
+                setDrillPath(next);
+                setViewMode('list');
+            }
+        } else if (next.length === 2 && matchingEntries.length === 1) {
+            // Only 1 entry under this category — skip the sub-category drill level too
             setDrillPath(next);
-            setViewMode('list');
+            setSelectedDocId(matchingEntries[0].doc_id);
+            setViewMode('detail');
         } else {
             setDrillPath(next);
         }
@@ -294,7 +315,24 @@ export function RAGKBSection({ highlightDocId }: { highlightDocId?: string }) {
                     </Button>
                 ) : selectedEntry && (
                     <div className="flex items-center gap-1.5">
-                        <Button size="sm" variant="outline" className="rounded-md font-bold px-2.5 h-7 gap-1.5 text-[9px]" onClick={() => setViewMode('list')}>
+                        <Button size="sm" variant="outline" className="rounded-md font-bold px-2.5 h-7 gap-1.5 text-[9px]" onClick={() => {
+                            if (searchQuery) {
+                                setViewMode('list');
+                                return;
+                            }
+                            const matchingEntries = entries.filter(e => {
+                                if (drillPath.length === 1) return e.category === drillPath[0];
+                                if (drillPath.length === 2) return e.category === drillPath[0] && e.sub_category === drillPath[1];
+                                if (drillPath.length >= 3) return e.category === drillPath[0] && e.sub_category === drillPath[1] && e.issue_group === drillPath[2];
+                                return false;
+                            });
+                            if (matchingEntries.length === 1 && drillPath.length > 0) {
+                                setDrillPath(drillPath.slice(0, -1));
+                                setViewMode('drill');
+                            } else {
+                                setViewMode('list');
+                            }
+                        }}>
                             <ArrowLeft className="w-3 h-3" /> BACK
                         </Button>
                         <Button size="sm" variant="outline" className="rounded-md font-bold px-2.5 h-7 gap-1.5 text-[9px]" onClick={() => { setEditingEntry(selectedEntry); setIsEditorOpen(true); }}>
@@ -363,10 +401,15 @@ export function RAGKBSection({ highlightDocId }: { highlightDocId?: string }) {
                                                 <div className={cn("p-1.5 rounded-lg", config.bg, config.text)}>
                                                     <Database className="w-3.5 h-3.5" />
                                                 </div>
-                                                <Badge variant="secondary" className="font-bold text-[8px] h-3.5 px-1">{item.count} Items</Badge>
+                                                {item.count === 1
+                                                    ? <Badge variant="outline" className="font-bold text-[8px] h-3.5 px-1 border-primary/40 text-primary bg-primary/5">Direct</Badge>
+                                                    : <Badge variant="secondary" className="font-bold text-[8px] h-3.5 px-1">{item.count} Items</Badge>
+                                                }
                                             </div>
                                             <h3 className="text-xs font-extrabold tracking-tight mb-0.5 truncate uppercase">{item.name}</h3>
-                                            <p className="text-[9px] text-muted-foreground mb-3 line-clamp-1">Explore {item.count} root causes</p>
+                                            <p className="text-[9px] text-muted-foreground mb-3 line-clamp-1">
+                                                {item.count === 1 ? 'Open entry directly →' : `Explore ${item.count} root causes`}
+                                            </p>
                                             <div className="flex flex-wrap gap-1">
                                                 {item.intents.slice(0, 3).map(int => (
                                                     <Badge key={int} variant="outline" className="text-[7px] font-mono opacity-60 h-3 px-1">
@@ -714,6 +757,10 @@ export function RAGKBSection({ highlightDocId }: { highlightDocId?: string }) {
                                         <Label className="text-[10px] font-bold uppercase">Sub-Category</Label>
                                         <Input value={editingEntry?.issue_group} onChange={(e) => setEditingEntry({...editingEntry, issue_group: e.target.value})} />
                                     </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-bold uppercase">Render Template</Label>
+                                    <Input value={editingEntry?.render_template} onChange={(e) => setEditingEntry({...editingEntry, render_template: e.target.value})} placeholder="e.g. default, table, list" />
                                 </div>
                             </div>
                         </ScrollArea>

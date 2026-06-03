@@ -60,7 +60,15 @@
     "variable_map": {
       "{iface}": "interface"
     },
-    "keywords": ["interface", "link down", "port down", "physical", "SFP", "cable", "CRC"],
+    "keywords": [
+      "interface",
+      "link down",
+      "port down",
+      "physical",
+      "SFP",
+      "cable",
+      "CRC"
+    ],
     "escalation": "Escalate to network hardware team if physical layer issues persist after SFP/cable replacement.",
     "doc_links": [
       "https://internal.wiki/runbooks/interface-down",
@@ -122,7 +130,14 @@
       "{bgp_neighbor}": "bgp_neighbor",
       "{iface}": "interface"
     },
-    "keywords": ["BGP", "routing", "neighbour down", "session reset", "hold-timer", "AS mismatch"],
+    "keywords": [
+      "BGP",
+      "routing",
+      "neighbour down",
+      "session reset",
+      "hold-timer",
+      "AS mismatch"
+    ],
     "escalation": "Escalate to senior network engineer if BGP session does not re-establish after soft reset and underlay is confirmed healthy.",
     "doc_links": [
       "https://internal.wiki/runbooks/bgp-session-down",
@@ -188,7 +203,15 @@
       "show snmp | include packets"
     ],
     "variable_map": {},
-    "keywords": ["device unreachable", "high CPU", "OOB", "crash", "memory", "process", "reload"],
+    "keywords": [
+      "device unreachable",
+      "high CPU",
+      "OOB",
+      "crash",
+      "memory",
+      "process",
+      "reload"
+    ],
     "escalation": "Escalate to vendor TAC if device remains unreachable after OOB access attempt and reload.",
     "doc_links": [
       "https://internal.wiki/runbooks/device-unreachable",
@@ -238,7 +261,14 @@
       "show environment fan"
     ],
     "variable_map": {},
-    "keywords": ["temperature", "thermal", "fan", "hardware fault", "overheat", "environment"],
+    "keywords": [
+      "temperature",
+      "thermal",
+      "fan",
+      "hardware fault",
+      "overheat",
+      "environment"
+    ],
     "escalation": "Escalate to data-centre facilities team and vendor hardware support immediately for critical thermal alarms.",
     "doc_links": [
       "https://internal.wiki/runbooks/thermal-alarm",
@@ -291,7 +321,15 @@
       "{acl_name}": "acl_name",
       "{username}": "username"
     },
-    "keywords": ["authentication", "ACL", "security", "RADIUS", "TACACS", "brute-force", "deny"],
+    "keywords": [
+      "authentication",
+      "ACL",
+      "security",
+      "RADIUS",
+      "TACACS",
+      "brute-force",
+      "deny"
+    ],
     "escalation": "Escalate to security operations team immediately if attack pattern is confirmed.",
     "doc_links": [
       "https://internal.wiki/runbooks/auth-failure",
@@ -360,7 +398,14 @@
       "{mgmt_ip}": "mgmt_ip",
       "{mgmt_iface}": "mgmt_interface"
     },
-    "keywords": ["general", "unclassified", "unknown", "fault", "alarm", "network event"],
+    "keywords": [
+      "general",
+      "unclassified",
+      "unknown",
+      "fault",
+      "alarm",
+      "network event"
+    ],
     "escalation": "Escalate to senior NOC engineer with collected show-tech and syslog data if fault is not resolved within SLA window.",
     "doc_links": [
       "https://internal.wiki/runbooks/generic-network-fault",
@@ -421,11 +466,200 @@
       "mongosh --eval 'rs.status()'"
     ],
     "variable_map": {},
-    "keywords": ["vm stun", "storage latency", "datastore latency", "mongodb", "heartbeat missed", "mongod"],
+    "keywords": [
+      "vm stun",
+      "storage latency",
+      "datastore latency",
+      "mongodb",
+      "heartbeat missed",
+      "mongod"
+    ],
     "escalation": "Escalate to storage engineering and DBA teams if datastore latency remains above 30ms or replica sync fails.",
     "doc_links": [
       "https://internal.wiki/runbooks/vm-stun-recovery",
       "https://internal.wiki/runbooks/mongodb-replica-repair"
+    ]
+  },
+  {
+    "sop_id": "fallback.link.fibre_cut",
+    "category": "link",
+    "rca_id": "link.down.fibre_cut",
+    "title": "Fibre Cable Cut — Outside Plant Recovery SOP",
+    "description": "Standard operating procedure for handling a confirmed physical fibre cut in the outside plant or long-haul network.",
+    "severity": "critical",
+    "risk_level": "low",
+    "estimated_time_minutes": 240,
+    "steps": [
+      {
+        "order": 1,
+        "action": "Run OTDR (Optical Time-Domain Reflectometer) diagnostics from the nearest optical distribution frame.",
+        "cli": "show controllers optics {iface}",
+        "expected_output": "Distance to fault in meters.",
+        "notes": "Compare the fault distance against the outside plant GIS mapping to isolate the break location."
+      },
+      {
+        "order": 2,
+        "action": "Verify if multiple circuits on the same physical conduit are down simultaneously.",
+        "cli": "show interfaces description | include down",
+        "expected_output": "Multiple links down sharing the same route.",
+        "notes": "Correlates the fault to a shared conduit breach."
+      },
+      {
+        "order": 3,
+        "action": "Dispatch Outside Plant (OSP) civil works / splicing crew to the fault location.",
+        "cli": "",
+        "expected_output": "Crew dispatched.",
+        "notes": "Provide the crew with OTDR distance and GPS coordinates from GIS."
+      },
+      {
+        "order": 4,
+        "action": "Verify light levels post-splice.",
+        "cli": "show interfaces {iface} transceiver detail",
+        "expected_output": "Rx power within acceptable dBm limits.",
+        "notes": "Do not clear the ticket until Rx power is stable for 30 minutes."
+      }
+    ],
+    "cli_commands": [
+      "show controllers optics {iface}",
+      "show interfaces {iface} transceiver detail"
+    ],
+    "variable_map": {
+      "{iface}": "interface"
+    },
+    "keywords": [
+      "fibre cut",
+      "outside plant",
+      "OTDR",
+      "splice",
+      "conduit",
+      "cable break",
+      "dig"
+    ],
+    "escalation": "Escalate to the Regional Fiber Manager and Carrier Relations if third-party leased fibre.",
+    "doc_links": [
+      "https://internal.wiki/runbooks/osp-fibre-cut"
+    ]
+  },
+  {
+    "sop_id": "fallback.link.copper_cut",
+    "category": "link",
+    "rca_id": "link.down.physical_cut.copper",
+    "title": "Copper Cable Replacement SOP",
+    "description": "Procedure for handling physical breaks, open circuits, or impedance faults in copper (Cat5/6/RJ45) cabling.",
+    "severity": "high",
+    "risk_level": "low",
+    "estimated_time_minutes": 45,
+    "steps": [
+      {
+        "order": 1,
+        "action": "Run TDR (Time Domain Reflectometer) test on the interface.",
+        "cli": "test cable-diagnostics tdr interface {iface}\nshow cable-diagnostics tdr interface {iface}",
+        "expected_output": "Open or Short circuit at X meters.",
+        "notes": "Confirms physical cable damage rather than auto-negotiation failure."
+      },
+      {
+        "order": 2,
+        "action": "Dispatch local site-support technician to the rack/floor location.",
+        "cli": "",
+        "expected_output": "",
+        "notes": "Provide exact port mapping and fault distance."
+      },
+      {
+        "order": 3,
+        "action": "Replace the damaged copper patch cable or re-terminate the horizontal run.",
+        "cli": "",
+        "expected_output": "Cable replaced.",
+        "notes": "Ensure Cat6/6A is used for replacement to maintain 10G+ speeds if applicable."
+      },
+      {
+        "order": 4,
+        "action": "Verify interface link status and speed negotiation.",
+        "cli": "show interfaces {iface} status",
+        "expected_output": "connected, a-full, a-1000",
+        "notes": "Clear interface counters after replacement."
+      }
+    ],
+    "cli_commands": [
+      "test cable-diagnostics tdr interface {iface}",
+      "show interfaces {iface} status"
+    ],
+    "variable_map": {
+      "{iface}": "interface"
+    },
+    "keywords": [
+      "copper cut",
+      "tdr",
+      "rj45",
+      "open circuit",
+      "patch cable",
+      "cat6"
+    ],
+    "escalation": "Escalate to Site Facilities if the horizontal cable run in the wall/ceiling requires replacement.",
+    "doc_links": [
+      "https://internal.wiki/runbooks/copper-cable-replacement"
+    ]
+  },
+  {
+    "sop_id": "fallback.device.cpu_overload.attack",
+    "category": "device",
+    "rca_id": "device.cpu_overload.attack",
+    "title": "Control Plane DDoS / Attack Mitigation SOP",
+    "description": "Procedure for mitigating an active Denial of Service attack overwhelming the network device control plane CPU.",
+    "severity": "critical",
+    "risk_level": "high",
+    "estimated_time_minutes": 15,
+    "steps": [
+      {
+        "order": 1,
+        "action": "Identify the top talker or attack vector hitting the CPU.",
+        "cli": "show processes cpu sorted | exclude 0.00",
+        "expected_output": "IP input, ARP input, or SSH processes spiking CPU.",
+        "notes": "Determine if the attack is ARP flood, SSH brute force, or generic IP flood."
+      },
+      {
+        "order": 2,
+        "action": "Check Control Plane Policing (CoPP) drop counters.",
+        "cli": "show policy-map control-plane",
+        "expected_output": "High drop rate on default or management classes.",
+        "notes": "If CoPP is not dropping the traffic, the policy needs adjustment."
+      },
+      {
+        "order": 3,
+        "action": "Apply an ACL to drop the malicious source IP or rate-limit the specific protocol.",
+        "cli": "configure terminal\n ip access-list extended BLOCK-ATTACK\n deny ip host {attacker_ip} any\n permit ip any any\n interface {ingress_iface}\n ip access-group BLOCK-ATTACK in",
+        "expected_output": "Traffic dropped, CPU drops back to baseline.",
+        "notes": "Use caution not to lock out management access."
+      },
+      {
+        "order": 4,
+        "action": "If attack is distributed, activate BGP RTBH (Remotely Triggered Black Hole).",
+        "cli": "ip route {target_ip} 255.255.255.255 Null0 tag 666",
+        "expected_output": "Traffic to target dropped at network edge.",
+        "notes": "Only use RTBH if the target IP can afford to be taken offline."
+      }
+    ],
+    "cli_commands": [
+      "show processes cpu sorted",
+      "show policy-map control-plane"
+    ],
+    "variable_map": {
+      "{attacker_ip}": "Source IP of attacker",
+      "{ingress_iface}": "Interface where attack is entering",
+      "{target_ip}": "IP being targeted by DDoS"
+    },
+    "keywords": [
+      "ddos",
+      "copp",
+      "cpu attack",
+      "arp flood",
+      "ssh brute force",
+      "rtbh",
+      "control plane policing"
+    ],
+    "escalation": "Immediately engage the Security Operations Center (SOC) and Tier 3 Network Security.",
+    "doc_links": [
+      "https://internal.wiki/runbooks/copp-mitigation",
+      "https://internal.wiki/runbooks/ddos-rtbh"
     ]
   }
 ]

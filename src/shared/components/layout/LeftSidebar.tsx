@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Sparkles,
   BrainCircuit,
+  Database,
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/components/ui/button";

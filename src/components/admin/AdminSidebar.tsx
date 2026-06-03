@@ -15,7 +15,7 @@ const menuItems = [
   { id: 'CorrelationTypes' as AdminSection, label: 'Correlation Types', icon: GitBranch },
   { id: 'Intents' as AdminSection, label: 'Intents Hypothesis', icon: Lightbulb },
   { id: 'KB' as AdminSection, label: 'Knowledge Base', icon: BookOpen },
-  { id: 'RAGKB' as AdminSection, label: 'KB Explorer', icon: BrainCircuit },
+  { id: 'RAGKB' as AdminSection, label: 'RAG RCA KB', icon: BrainCircuit },
   { id: 'RemedyKB' as AdminSection, label: 'Remedy KB', icon: Shield },
   { id: 'AutoRemediation' as AdminSection, label: 'Auto Remediation', icon: Zap },
 ];

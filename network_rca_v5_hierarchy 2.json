@@ -81,7 +81,7 @@
       {
         "id": "H_TRANSCEIVER_FAILURE",
         "description": "SFP/transceiver removed, faulty, incompatible or not seated properly",
-        "weight": 0.40,
+        "weight": 0.4,
         "log_patterns": [
           "%TRANSCEIVER-6-REMOVED",
           "Transceiver removed",
@@ -111,7 +111,7 @@
       {
         "id": "H_DIRTY_CONNECTOR",
         "description": "Dirty or contaminated optical connector",
-        "weight": 0.10,
+        "weight": 0.1,
         "log_patterns": [
           "optical alarm"
         ]
@@ -245,7 +245,7 @@
       {
         "id": "H_OPERATOR_SHUTDOWN",
         "description": "Manual operator shutdown via CLI or console",
-        "weight": 0.50,
+        "weight": 0.5,
         "log_patterns": [
           "shutdown"
         ]
@@ -253,7 +253,7 @@
       {
         "id": "H_AUTOMATION_TRIGGERED",
         "description": "Automation script (Ansible, Terraform, NETCONF, RESTCONF) issued a shutdown command",
-        "weight": 0.30,
+        "weight": 0.3,
         "log_patterns": [
           "config change"
         ]
@@ -261,7 +261,7 @@
       {
         "id": "H_POLICY_ENFORCEMENT",
         "description": "Security or network policy applied an administrative shutdown (AAA policy, provisioning workflow, or ZTP state)",
-        "weight": 0.20,
+        "weight": 0.2,
         "log_patterns": [
           "policy applied"
         ]
@@ -1040,7 +1040,7 @@
       {
         "id": "H_DUPLEX_MISMATCH_ERRORS",
         "description": "Half/Full duplex mismatch producing late collisions that register as input errors — one side forced, the other auto-negotiating",
-        "weight": 0.30,
+        "weight": 0.3,
         "log_patterns": [
           "duplex mismatch: late collision detected",
           "crc error",
@@ -1143,7 +1143,7 @@
           "metric": "interface_utilization_pct",
           "op": "gt",
           "value": 80,
-          "weight": 0.30
+          "weight": 0.3
         },
         {
           "metric": "crc_errors",
@@ -1182,7 +1182,7 @@
       {
         "id": "H_SUSTAINED_OVERSUBSCRIPTION",
         "description": "Traffic demand chronically exceeds physical link capacity — average utilisation near 100% causing persistent tail-drop. Link upgrade or traffic re-engineering required",
-        "weight": 0.40,
+        "weight": 0.4,
         "log_patterns": [
           "output drops",
           "queue full",
@@ -1193,7 +1193,7 @@
       {
         "id": "H_MICROBURST",
         "description": "Short-duration traffic bursts (sub-second) overwhelm the output queue depth even when average utilisation appears acceptable — common with storage replication, backup jobs, or bursty application traffic",
-        "weight": 0.30,
+        "weight": 0.3,
         "log_patterns": [
           "output queue depth .* exceeded",
           "no buffer",
@@ -1203,7 +1203,7 @@
       {
         "id": "H_QOS_MISCONFIGURATION",
         "description": "QoS policy misconfigured — high-priority traffic placed in a wrong queue or policed below required rate, causing selective drops for specific traffic classes",
-        "weight": 0.20,
+        "weight": 0.2,
         "log_patterns": [
           "policing drop",
           "QoS: class .* on interface",
@@ -1213,7 +1213,7 @@
       {
         "id": "H_LAG_MEMBER_LOSS_CONGESTION",
         "description": "A LAG member link failed, concentrating traffic from all members onto fewer links — surviving members are now oversubscribed",
-        "weight": 0.10,
+        "weight": 0.1,
         "log_patterns": [
           "output drops",
           "queue full"
@@ -1346,7 +1346,7 @@
       {
         "id": "H_UPSTREAM_CONNECTIVITY",
         "description": "Loss of routing or firewall policy to management IP — device is up but unreachable from NMS",
-        "weight": 0.40,
+        "weight": 0.4,
         "log_patterns": [
           "unreachable",
           "management plane"
@@ -1365,7 +1365,7 @@
       {
         "id": "H_POWER_FAILURE",
         "description": "Power supply failure or device fully powered off",
-        "weight": 0.20,
+        "weight": 0.2,
         "log_patterns": [
           "power failure"
         ]
@@ -3342,7 +3342,7 @@
       {
         "id": "H_UDLD_ERRDISABLE",
         "description": "UDLD aggressive mode detected a unidirectional link and placed the port in errdisable to prevent traffic black-holing",
-        "weight": 0.10,
+        "weight": 0.1,
         "log_patterns": [
           "udld",
           "%UDLD-4-UDLD_PORT_DISABLED"
@@ -3495,7 +3495,7 @@
       {
         "id": "H_AUTH_KEY_MISMATCH",
         "description": "Routing protocol authentication key or keychain mismatch — config change on one side rotated the key without updating the peer, causing all hellos and updates to be dropped",
-        "weight": 0.20,
+        "weight": 0.2,
         "log_patterns": [
           "authentication",
           "BGP NOTIFICATION",
@@ -3658,7 +3658,7 @@
       {
         "id": "H_ACL_TABLE_OVERFLOW",
         "description": "The number of ACL ACEs across all applied access-lists has exceeded the hardware TCAM capacity for the ACL bank — entries beyond the limit are silently not enforced",
-        "weight": 0.30,
+        "weight": 0.3,
         "log_patterns": [
           "ACL table full",
           "%ACL-3-MSGFAIL",
@@ -3668,7 +3668,7 @@
       {
         "id": "H_ARP_MAC_TABLE_OVERFLOW",
         "description": "ARP or MAC address table has reached hardware capacity — common on L2/L3 boundary devices in large flat networks or data centres with high VM or container churn",
-        "weight": 0.20,
+        "weight": 0.2,
         "log_patterns": [
           "arp: hardware table full",
           "mac-address-table: hardware capacity reached"
@@ -3772,7 +3772,7 @@
           "metric": "data_plane_active",
           "op": "eq",
           "value": true,
-          "weight": 0.30
+          "weight": 0.3
         }
       ],
       "log_patterns": [
@@ -3807,7 +3807,7 @@
       {
         "id": "H_TACACS_RADIUS_UNREACHABLE",
         "description": "TACACS+ or RADIUS authentication server is unreachable — all SSH and SNMP auth attempts time out. If no local fallback is configured the device is completely locked out",
-        "weight": 0.40,
+        "weight": 0.4,
         "log_patterns": [
           "AAA server unreachable",
           "TACACS server timeout",
@@ -3818,7 +3818,7 @@
       {
         "id": "H_MANAGEMENT_ACL_MISCONFIGURATION",
         "description": "A management ACL on the management interface or vty lines was changed and inadvertently blocks the NMS source IP — device is accessible from other IPs but not from the NMS",
-        "weight": 0.30,
+        "weight": 0.3,
         "log_patterns": [
           "access-list denied",
           "management access denied",
@@ -3828,7 +3828,7 @@
       {
         "id": "H_MANAGEMENT_VRF_ROUTE_LOSS",
         "description": "The route to the NMS or the default gateway in the management VRF has been removed by a config change or routing event — management traffic has no path to the NMS",
-        "weight": 0.20,
+        "weight": 0.2,
         "log_patterns": [
           "management VRF route missing",
           "mgmt-vrf: no route to host"
@@ -3837,7 +3837,7 @@
       {
         "id": "H_SNMP_COMMUNITY_MISMATCH",
         "description": "SNMP community string or SNMPv3 credentials were changed on the device without updating the NMS — SNMP polling fails with authentication errors while SSH may still work",
-        "weight": 0.10,
+        "weight": 0.1,
         "log_patterns": [
           "SNMP authentication failure",
           "snmp: authentication failure"
@@ -3920,7 +3920,7 @@
           "metric": "bgp_session_state",
           "op": "eq",
           "value": "idle",
-          "weight": 0.40
+          "weight": 0.4
         },
         {
           "metric": "bgp_session_availability_pct",
@@ -3967,7 +3967,7 @@
       {
         "id": "H_BGP_HOLD_TIMER_EXPIRED",
         "description": "BGP hold timer expired — the remote peer stopped sending keepalives. Most commonly caused by CPU overload on the remote device, transit network congestion dropping BGP keepalives, or QoS misconfiguration deprioritising BGP traffic",
-        "weight": 0.30,
+        "weight": 0.3,
         "log_patterns": [
           "Hold Timer Expired",
           "%BGP-5-ADJCHANGE.*Hold Timer Expired",
@@ -3988,7 +3988,7 @@
       {
         "id": "H_BGP_AUTHENTICATION_FAILURE",
         "description": "BGP MD5 or TCP-AO authentication key mismatch — a configuration change rotated the password on one side without updating the peer, causing all BGP OPEN messages to be rejected",
-        "weight": 0.20,
+        "weight": 0.2,
         "log_patterns": [
           "BGP NOTIFICATION",
           "%BGP-3-NOTIFICATION.*authentication",
@@ -4008,7 +4008,7 @@
       {
         "id": "H_BGP_PROCESS_RESTART",
         "description": "The BGP process restarted due to OOM kill, software bug, or watchdog — all sessions reset simultaneously and are reconverging",
-        "weight": 0.10,
+        "weight": 0.1,
         "log_patterns": [
           "bgpd restart",
           "BGP: memory allocation failure",
@@ -4094,7 +4094,7 @@
           "metric": "in_errors",
           "op": "gt",
           "value": 100,
-          "weight": 0.30
+          "weight": 0.3
         },
         {
           "metric": "late_collisions",
@@ -4139,7 +4139,7 @@
       {
         "id": "H_AUTO_NEG_MISMATCH",
         "description": "One side has auto-negotiation disabled (forced speed/duplex) while the other side uses auto-neg — the auto-neg side falls back to half-duplex",
-        "weight": 0.40,
+        "weight": 0.4,
         "log_patterns": [
           "duplex mismatch",
           "half duplex",
@@ -4159,7 +4159,7 @@
       {
         "id": "H_FAULTY_COPPER_CABLE",
         "description": "Cable category too low (e.g. Cat3 on GigE), excessive length, damaged pairs, or PoE pair interference preventing reliable negotiation",
-        "weight": 0.20,
+        "weight": 0.2,
         "log_patterns": [
           "late collision",
           "auto-negotiation failed"
@@ -4267,7 +4267,7 @@
           "metric": "ldp_session_state",
           "op": "ne",
           "value": "operational",
-          "weight": 0.20
+          "weight": 0.2
         }
       ],
       "log_patterns": [
@@ -4314,7 +4314,7 @@
       {
         "id": "H_RSVP_PATH_FAILURE",
         "description": "RSVP-TE path signalling failure — PathError received, no alternative path found within retry window, or RESV timeout on an established tunnel",
-        "weight": 0.30,
+        "weight": 0.3,
         "log_patterns": [
           "RSVP path error",
           "RESV timeout",
@@ -4325,7 +4325,7 @@
       {
         "id": "H_MPLS_CONFIG_CHANGE",
         "description": "MPLS disabled on an interface in the path, label range reconfigured, or MPLS removed from a VRF interface — breaks label forwarding silently",
-        "weight": 0.20,
+        "weight": 0.2,
         "log_patterns": [
           "tunnel state change",
           "LSP down",
@@ -4427,7 +4427,7 @@
           "metric": "vlan_allowed_mismatch",
           "op": "eq",
           "value": true,
-          "weight": 0.40
+          "weight": 0.4
         },
         {
           "metric": "oper_status",
@@ -4478,7 +4478,7 @@
       {
         "id": "H_NATIVE_VLAN_MISMATCH",
         "description": "Native VLAN (untagged frames) differs between trunk peers — untagged traffic lands in wrong VLAN, CDP reports mismatch",
-        "weight": 0.30,
+        "weight": 0.3,
         "log_patterns": [
           "native VLAN mismatch",
           "%CDP-4-NATIVE_VLAN_MISMATCH",
@@ -4488,7 +4488,7 @@
       {
         "id": "H_VLAN_PRUNED_OR_INACTIVE",
         "description": "VLAN has been pruned by VTP, manually removed, or is not present in the VLAN database on one device — frames are dropped before they reach the trunk",
-        "weight": 0.20,
+        "weight": 0.2,
         "log_patterns": [
           "VLAN pruned",
           "%VTP-6-PRUNED",
@@ -4583,7 +4583,7 @@
           "metric": "routing_process_state",
           "op": "ne",
           "value": "running",
-          "weight": 0.40
+          "weight": 0.4
         },
         {
           "metric": "fib_entries_count",
@@ -4642,7 +4642,7 @@
       {
         "id": "H_FIB_PROGRAMMING_FAILURE",
         "description": "ASIC or kernel FIB programming failure — routes exist in the RIB but could not be installed into the hardware forwarding table, causing silent drops",
-        "weight": 0.30,
+        "weight": 0.3,
         "log_patterns": [
           "FIB programming failure",
           "FIB: hardware programming failed",
@@ -4652,7 +4652,7 @@
       {
         "id": "H_ROUTE_TABLE_MEMORY_EXHAUSTION",
         "description": "Routing table exceeded available memory — process killed by OOM, partial routes installed, or prefix acceptance disabled to protect the system",
-        "weight": 0.20,
+        "weight": 0.2,
         "log_patterns": [
           "RIB update failure",
           "route table cleared",
@@ -4745,7 +4745,7 @@
           "metric": "temperature_celsius",
           "op": "gt",
           "value": 75,
-          "weight": 0.50
+          "weight": 0.5
         },
         {
           "metric": "fan_status",
@@ -4793,7 +4793,7 @@
       {
         "id": "H_FAN_FAILURE",
         "description": "One or more cooling fans have failed or are running below required RPM — hot air is recirculating inside the chassis causing temperature to rise",
-        "weight": 0.40,
+        "weight": 0.4,
         "log_patterns": [
           "fan failure",
           "%PLATFORM_ENV-2-FAN_FAILURE",
@@ -4803,7 +4803,7 @@
       {
         "id": "H_DATACENTER_COOLING_FAILURE",
         "description": "Facility-level cooling failure — CRAC/CRAH unit offline, chilled water loss, or hot aisle containment breach raising ambient temperature across multiple devices",
-        "weight": 0.30,
+        "weight": 0.3,
         "log_patterns": [
           "ambient temperature high",
           "cooling failure",
@@ -4813,7 +4813,7 @@
       {
         "id": "H_AIRFLOW_OBSTRUCTION",
         "description": "Blanking panels missing, cable management blocking air intakes/exhausts, or device installed in wrong orientation — hot exhaust recirculating to cold inlet",
-        "weight": 0.20,
+        "weight": 0.2,
         "log_patterns": [
           "cooling: airflow obstruction detected",
           "temperature warning",
@@ -4823,7 +4823,7 @@
       {
         "id": "H_COMPONENT_SELF_HEATING",
         "description": "A specific internal component (ASIC under high load, PSU running at capacity, or linecard) is generating excessive heat beyond normal operating range",
-        "weight": 0.10,
+        "weight": 0.1,
         "log_patterns": [
           "ASIC: junction temperature",
           "PSU: internal temperature",
@@ -4947,7 +4947,7 @@
       {
         "id": "H_LOG_FILE_ACCUMULATION",
         "description": "Syslog, debug, or audit log files have grown without rotation — verbose logging or a long-running debug session filled the flash",
-        "weight": 0.40,
+        "weight": 0.4,
         "log_patterns": [
           "log file full",
           "syslog: cannot open log file",
@@ -4957,7 +4957,7 @@
       {
         "id": "H_CORE_DUMP_ACCUMULATION",
         "description": "Multiple crashinfo or core dump files from repeated process crashes have consumed most of the available storage without being cleaned up",
-        "weight": 0.30,
+        "weight": 0.3,
         "log_patterns": [
           "core dump failed no space",
           "crashinfo: could not write core",
@@ -5072,7 +5072,7 @@
           "metric": "ntp_sync_status",
           "op": "ne",
           "value": "synced",
-          "weight": 0.20
+          "weight": 0.2
         }
       ],
       "log_patterns": [
@@ -5109,7 +5109,7 @@
       {
         "id": "H_NTP_SERVER_UNREACHABLE",
         "description": "All configured NTP servers are unreachable — the device is running on its internal clock which drifts over time. Common causes: NTP server IP changed without updating the device, ACL blocking UDP port 123, or upstream routing loss to NTP infrastructure",
-        "weight": 0.40,
+        "weight": 0.4,
         "log_patterns": [
           "NTP server unreachable",
           "NTP: all configured servers are unreachable",
@@ -5129,7 +5129,7 @@
       {
         "id": "H_LARGE_CLOCK_JUMP",
         "description": "System clock jumped by more than NTP's step threshold (typically 128ms for slew mode) — NTP refuses to step-correct this large offset and the clock remains wrong until manually corrected or NTP is restarted",
-        "weight": 0.20,
+        "weight": 0.2,
         "log_patterns": [
           "clock drift",
           "time offset exceeded",
@@ -5193,6 +5193,1378 @@
       "domain": "Network",
       "category": "Device",
       "subcategory": "NTP Desync"
+    }
+  },
+  {
+    "_id": "net-link-down-optical-001",
+    "rca_id": "link.down.optical",
+    "title": "Physical Link Down — Optical / Fibre Path Failure",
+    "description": "Link down caused by a fibre-layer fault: SFP/transceiver, fibre cut, dirty connector, or Rx power loss",
+    "root_cause_analysis": "The interface is down due to an optical-path failure. Optical Rx power is absent or below the minimum receiver sensitivity, indicating the fibre or transceiver is the root cause. Unlike a copper negotiation failure, there is no carrier signal at the physical layer at all. Common causes: transceiver removal/failure, fibre cut, dirty or contaminated optical connector, excessive insertion loss, or remote peer laser shutdown.",
+    "situation": {
+      "symptoms": [
+        "oper_status is down",
+        "admin_status is up",
+        "optical_rx_power_dbm < -30 dBm or absent",
+        "LOS (Loss of Signal) alarm present",
+        "No optical carrier detected"
+      ],
+      "negative_indicators": [
+        "Interface is a copper/RJ45 port — see link.down.copper",
+        "Interface is admin-down — see link.admin_down",
+        "Interface is flapping — see link.flap or link.flap_with_errors",
+        "Optical power marginal but link is still up — see link.degraded",
+        "BFD/UDLD down but link is operationally up — see link.one_way",
+        "LAG member lost but bundle still carrying traffic — see link.lag_degraded"
+      ],
+      "metrics": [
+        {
+          "metric": "oper_status",
+          "op": "eq",
+          "value": "down",
+          "weight": 0.6
+        },
+        {
+          "metric": "admin_status",
+          "op": "eq",
+          "value": "up",
+          "weight": 0.1
+        },
+        {
+          "metric": "optical_rx_power_dbm",
+          "op": "lt",
+          "value": -30,
+          "weight": 0.3
+        }
+      ],
+      "log_patterns": [
+        "loss of signal",
+        "LOS",
+        "transceiver",
+        "SFP removed",
+        "module failure",
+        "link down",
+        "carrier lost",
+        "Transceiver removed",
+        "%LINK-3-UPDOWN: Interface .*, changed state to down",
+        "%LINEPROTO-5-UPDOWN: Line protocol on Interface .*, changed state to down",
+        "%OPTICAL-3-ALARM: .* LOS",
+        "%OPTICAL-5-THRESHOLD_VIOLATION: Rx power below threshold",
+        "phy-3-sfp_removed",
+        "PHY-1-SIGNAL_LOST",
+        "optics-3-transceiver_removed",
+        "transceiver not present",
+        "sfp not detected",
+        "optics not present"
+      ],
+      "affected_components": [
+        "optical_transceiver",
+        "physical_cable",
+        "network_interface"
+      ]
+    },
+    "hypotheses": [
+      {
+        "id": "H_TRANSCEIVER_REMOVED_OR_FAILED",
+        "description": "SFP/XFP/QSFP transceiver removed, physically failed, or incompatible",
+        "weight": 0.4,
+        "log_patterns": [
+          "transceiver",
+          "SFP removed",
+          "optics not present",
+          "sfp not detected"
+        ]
+      },
+      {
+        "id": "H_FIBRE_CUT",
+        "description": "Physical fibre strand cut or broken in the cable plant",
+        "weight": 0.25,
+        "log_patterns": [
+          "loss of signal",
+          "LOS",
+          "PHY-1-SIGNAL_LOST"
+        ]
+      },
+      {
+        "id": "H_DIRTY_CONNECTOR",
+        "description": "Contaminated or dirty optical connector causing excessive insertion loss",
+        "weight": 0.15,
+        "log_patterns": [
+          "optical alarm",
+          "Rx power below threshold"
+        ]
+      },
+      {
+        "id": "H_REMOTE_PEER_LASER_OFF",
+        "description": "Remote peer interface shutdown or laser disabled",
+        "weight": 0.12,
+        "log_patterns": [
+          "link down",
+          "carrier lost"
+        ]
+      },
+      {
+        "id": "H_PATCH_PANEL_ISSUE",
+        "description": "Incorrect patch panel termination or cross-connect break",
+        "weight": 0.08,
+        "log_patterns": [
+          "loss of signal",
+          "LOS"
+        ]
+      }
+    ],
+    "keywords": [
+      "optical link down",
+      "fibre failure",
+      "sfp failure",
+      "transceiver down",
+      "los alarm",
+      "loss of signal",
+      "rx power low",
+      "dark fibre",
+      "sfp removed",
+      "optics failure",
+      "transceiver absent",
+      "fibre cut",
+      "no carrier optical",
+      "signal lost",
+      "optical port down",
+      "fiber optic failure",
+      "cable unplugged fibre",
+      "interface optical down",
+      "%OPTICAL-3-ALARM",
+      "%LINK-3-UPDOWN",
+      "phy signal lost",
+      "sfp not detected"
+    ],
+    "render_template": "Optical interface {interface} on device {device} is down — LOS detected. Rx power: {optical_rx_power_dbm} dBm. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "metadata": {
+      "domain": "network",
+      "severity": "critical",
+      "created_by": "netops",
+      "created_at": "2026-06-02T07:10:54.804613+00:00",
+      "updated_at": "2026-06-02T07:10:54.804613+00:00",
+      "version": 1,
+      "is_latest": true,
+      "status": "active"
+    },
+    "category_hierarchy": {
+      "domain": "Network",
+      "category": "Link",
+      "subcategory": "Link Down — Optical"
+    }
+  },
+  {
+    "_id": "net-link-down-copper-001",
+    "rca_id": "link.down.copper",
+    "title": "Physical Link Down — Copper / Electrical Layer Failure",
+    "description": "Link down on a copper (RJ45/SFP-T) interface due to cable break, negotiation failure, or electrical fault",
+    "root_cause_analysis": "The copper interface has lost its electrical carrier. Unlike optical failures, copper link-down faults often involve auto-negotiation issues (speed/duplex mismatch), damaged RJ45 cable, faulty patch cable, PoE overload, or a physical layer reset. The absence of a carrier on the copper medium is the distinguishing symptom versus optical Rx power loss.",
+    "situation": {
+      "symptoms": [
+        "oper_status is down",
+        "admin_status is up",
+        "Copper/RJ45 port or SFP-T transceiver",
+        "No electrical carrier detected",
+        "No optical_rx_power metric — port is copper",
+        "Possible auto-negotiation failure or duplex mismatch"
+      ],
+      "negative_indicators": [
+        "Port is optical/SFP — see link.down.optical",
+        "Port is admin-down — see link.admin_down",
+        "Port is flapping — see link.flap",
+        "CRC errors present but link is up — see link.high_errors",
+        "Speed/duplex errors with link up — see link.copper_negotiation_failure"
+      ],
+      "metrics": [
+        {
+          "metric": "oper_status",
+          "op": "eq",
+          "value": "down",
+          "weight": 0.7
+        },
+        {
+          "metric": "admin_status",
+          "op": "eq",
+          "value": "up",
+          "weight": 0.2
+        },
+        {
+          "metric": "in_errors",
+          "op": "eq",
+          "value": 0,
+          "weight": 0.1
+        }
+      ],
+      "log_patterns": [
+        "link down",
+        "carrier lost",
+        "no carrier",
+        "%LINK-3-UPDOWN: Interface .*, changed state to down",
+        "%LINEPROTO-5-UPDOWN: Line protocol on Interface .*, changed state to down",
+        "kernel: e1000e: .* Link is Down",
+        "copper: link failure detected",
+        "PHY: auto-negotiation failed",
+        "speed negotiation failed",
+        "poe: port .* powered down",
+        "ifdown: carrier lost",
+        "autoneg: no partner detected",
+        "RJ45: cable disconnected",
+        "interface: electrical carrier lost"
+      ],
+      "affected_components": [
+        "network_interface",
+        "copper_cable",
+        "rj45_connector"
+      ]
+    },
+    "hypotheses": [
+      {
+        "id": "H_CABLE_UNPLUGGED_OR_BROKEN",
+        "description": "RJ45 cable physically unplugged, broken, or exceeded maximum length",
+        "weight": 0.4,
+        "log_patterns": [
+          "link down",
+          "carrier lost",
+          "cable disconnected"
+        ]
+      },
+      {
+        "id": "H_AUTO_NEGOTIATION_FAILURE",
+        "description": "Speed/duplex auto-negotiation failed — no link partner response",
+        "weight": 0.3,
+        "log_patterns": [
+          "autoneg",
+          "speed negotiation failed",
+          "PHY: auto-negotiation failed"
+        ]
+      },
+      {
+        "id": "H_POE_OVERLOAD",
+        "description": "PoE budget exceeded, causing port to be powered down",
+        "weight": 0.15,
+        "log_patterns": [
+          "poe: port .* powered down"
+        ]
+      },
+      {
+        "id": "H_NIC_OR_PORT_FAILURE",
+        "description": "Physical NIC or switch port hardware failure",
+        "weight": 0.15,
+        "log_patterns": [
+          "link down",
+          "carrier lost"
+        ]
+      }
+    ],
+    "keywords": [
+      "copper link down",
+      "rj45 failure",
+      "ethernet down",
+      "cat6 failure",
+      "no carrier",
+      "cable disconnected",
+      "autoneg failure",
+      "gigabit down",
+      "10/100 failure",
+      "poe failure",
+      "sfp-t down",
+      "copper port down",
+      "electrical failure",
+      "twisted pair down",
+      "patch cable failure",
+      "%LINK-3-UPDOWN copper",
+      "interface copper down",
+      "carrier lost copper",
+      "phy failure",
+      "no link partner"
+    ],
+    "render_template": "Copper interface {interface} on device {device} is down — no electrical carrier. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "metadata": {
+      "domain": "network",
+      "severity": "critical",
+      "created_by": "netops",
+      "created_at": "2026-06-02T07:10:54.804613+00:00",
+      "updated_at": "2026-06-02T07:10:54.804613+00:00",
+      "version": 1,
+      "is_latest": true,
+      "status": "active"
+    },
+    "category_hierarchy": {
+      "domain": "Network",
+      "category": "Link",
+      "subcategory": "Link Down — Copper"
+    }
+  },
+  {
+    "_id": "net-link-down-remote-001",
+    "rca_id": "link.down.remote_peer",
+    "title": "Physical Link Down — Remote Peer Shutdown or Failure",
+    "description": "Link down because the far-end device has shut its interface or experienced a failure, not a local fault",
+    "root_cause_analysis": "The local interface has gone down because the remote peer has shut its corresponding interface or the remote device has rebooted/failed. This is a cross-cutting scenario — it appears as a Link fault locally, but the root cause is a Device-level event at the far end. Key distinguishers: no local optical alarm (LOS is generated by remote Tx going dark), no prior error count increase, and correlated alarms from the remote device in the same time window.",
+    "situation": {
+      "symptoms": [
+        "oper_status is down",
+        "admin_status is up",
+        "LOS alarm may be present (remote Tx went dark)",
+        "No local CRC or input errors before failure",
+        "Correlated alarm from remote device in same time window",
+        "BGP/OSPF neighbour lost at same time as link failure"
+      ],
+      "negative_indicators": [
+        "Local optical power was already degrading — see link.degraded or link.flap_with_errors",
+        "Multiple interfaces on same local card down — local hardware fault, see device.linecard_failure",
+        "Local device was rebooting — see device.unexpected_reboot",
+        "CRC errors rose before link went down — see link.high_errors or link.flap_with_errors",
+        "admin_status is also down — local admin action, see link.admin_down"
+      ],
+      "metrics": [
+        {
+          "metric": "oper_status",
+          "op": "eq",
+          "value": "down",
+          "weight": 0.5
+        },
+        {
+          "metric": "admin_status",
+          "op": "eq",
+          "value": "up",
+          "weight": 0.2
+        },
+        {
+          "metric": "crc_errors_before_failure",
+          "op": "eq",
+          "value": 0,
+          "weight": 0.3
+        }
+      ],
+      "log_patterns": [
+        "link down",
+        "carrier lost",
+        "loss of signal",
+        "neighbour lost",
+        "peer unreachable",
+        "BGP: neighbor .* Down",
+        "OSPF: .* neighbor .* down",
+        "%LINK-3-UPDOWN: Interface .*, changed state to down",
+        "remote end disconnected",
+        "far-end failure",
+        "peer interface shutdown",
+        "remote device rebooted",
+        "CDP/LLDP: neighbour .* timeout"
+      ],
+      "affected_components": [
+        "remote_device",
+        "network_interface",
+        "routing_protocol"
+      ]
+    },
+    "hypotheses": [
+      {
+        "id": "H_REMOTE_INTERFACE_SHUTDOWN",
+        "description": "Remote peer operator or automation shut the far-end interface",
+        "weight": 0.4,
+        "log_patterns": [
+          "peer interface shutdown",
+          "remote end disconnected"
+        ]
+      },
+      {
+        "id": "H_REMOTE_DEVICE_REBOOT",
+        "description": "Remote device rebooted (unexpected or planned), taking down all interfaces",
+        "weight": 0.3,
+        "log_patterns": [
+          "remote device rebooted",
+          "neighbour lost",
+          "peer unreachable"
+        ]
+      },
+      {
+        "id": "H_REMOTE_POWER_FAILURE",
+        "description": "Remote device lost power, causing all connected links to go dark simultaneously",
+        "weight": 0.2,
+        "log_patterns": [
+          "link down",
+          "carrier lost",
+          "loss of signal"
+        ]
+      },
+      {
+        "id": "H_REMOTE_LINECARD_FAILURE",
+        "description": "Linecard on remote device failed, taking down its hosted interfaces",
+        "weight": 0.1,
+        "log_patterns": [
+          "link down",
+          "carrier lost"
+        ]
+      }
+    ],
+    "keywords": [
+      "remote peer shutdown",
+      "far end failure",
+      "remote device failure",
+      "peer down",
+      "neighbour failure",
+      "remote interface shutdown",
+      "bgp down link down",
+      "ospf down link down",
+      "far-end link down",
+      "remote reboot link",
+      "upstream device failure",
+      "downstream device down",
+      "peer rebooted",
+      "remote power failure link",
+      "correlated link failure",
+      "cross-cutting link device failure",
+      "remote linecard down",
+      "peer unreachable link",
+      "lldp neighbour lost link",
+      "cdp neighbour down link"
+    ],
+    "render_template": "Interface {interface} on device {device} is down — suspected remote peer fault. No local alarms. Remote: {remote_peer}. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "metadata": {
+      "domain": "network",
+      "severity": "critical",
+      "created_by": "netops",
+      "created_at": "2026-06-02T07:10:54.804613+00:00",
+      "updated_at": "2026-06-02T07:10:54.804613+00:00",
+      "version": 1,
+      "is_latest": true,
+      "status": "active"
+    },
+    "category_hierarchy": {
+      "domain": "Network",
+      "category": "Link",
+      "subcategory": "Link Down — Remote Peer"
+    }
+  },
+  {
+    "_id": "net-device-cpu-overload-routing-001",
+    "rca_id": "device.cpu_overload.routing",
+    "title": "Device CPU Overload — Routing Protocol Churn / Control Plane Flood",
+    "description": "High CPU caused by excessive routing protocol updates, reconvergence events, or control-plane flooding — a cross-cutting Link+Device fault",
+    "root_cause_analysis": "This is a cross-cutting scenario: a Link-layer event (interface flapping, LAG member loss, MPLS LSP churn) has triggered a cascade of routing protocol reconvergence (BGP route refresh, OSPF SPF recalculation, ISIS flooding), which in turn overloads the device CPU. The root cause starts in the Link domain but manifests as a Device-domain CPU fault. Without identifying the triggering link event, simply restarting the routing process will cause the CPU spike to recur.",
+    "situation": {
+      "symptoms": [
+        "cpu_utilization > 80% sustained for > 2 minutes",
+        "High CPU in routing process (BGP, OSPF, ISIS, LDP)",
+        "Concurrent interface flap or BGP session reset events",
+        "Routing table instability — high route churn",
+        "Management plane degraded (SSH/SNMP timeouts)",
+        "BGP update queue depth rising rapidly"
+      ],
+      "negative_indicators": [
+        "CPU high in forwarding plane process — see device.tcam_exhaustion",
+        "CPU high caused by ACL/security process — possible DoS, see device.cpu_overload.attack",
+        "No routing events — check hardware interrupt rate, see device.cpu_overload",
+        "TCAM full condition present — see device.tcam_exhaustion",
+        "Memory also exhausted — see device.memory_exhaustion"
+      ],
+      "metrics": [
+        {
+          "metric": "cpu_utilization",
+          "op": "gt",
+          "value": 80,
+          "weight": 0.35
+        },
+        {
+          "metric": "bgp_route_churn_rate",
+          "op": "gt",
+          "value": 100,
+          "weight": 0.25
+        },
+        {
+          "metric": "ospf_spf_frequency",
+          "op": "gt",
+          "value": 5,
+          "weight": 0.2
+        },
+        {
+          "metric": "flap_count",
+          "op": "gt",
+          "value": 3,
+          "weight": 0.2
+        }
+      ],
+      "log_patterns": [
+        "CPU utilization",
+        "high CPU",
+        "routing process",
+        "BGP: table version",
+        "BGP route refresh",
+        "OSPF: SPF calculation",
+        "ISIS: flooding storm",
+        "LDP: session down",
+        "MPLS: reconverging",
+        "CPU-3-UTILIZATION: CPU util high",
+        "%BGP-5-ADJCHANGE: neighbor .* Up",
+        "%OSPF-5-ADJCHG: .* neighbor .* changed state",
+        "route churn detected",
+        "control plane overload",
+        "routing table instability",
+        "FIB update storm",
+        "rib: update queue overrun",
+        "bgp: advertisement storm",
+        "ospf: max-lsa limit reached"
+      ],
+      "affected_components": [
+        "cpu",
+        "routing_process",
+        "bgp_session",
+        "ospf_process",
+        "network_interface"
+      ]
+    },
+    "hypotheses": [
+      {
+        "id": "H_BGP_ROUTE_REFRESH_STORM",
+        "description": "BGP route-refresh storm caused by peer reset or policy change, flooding the RIB",
+        "weight": 0.35,
+        "log_patterns": [
+          "BGP route refresh",
+          "%BGP-5-ADJCHANGE",
+          "bgp: advertisement storm"
+        ]
+      },
+      {
+        "id": "H_OSPF_SPF_THRASHING",
+        "description": "OSPF SPF calculation looping due to interface flap or LSA storm",
+        "weight": 0.3,
+        "log_patterns": [
+          "OSPF: SPF calculation",
+          "%OSPF-5-ADJCHG",
+          "ospf: max-lsa limit reached"
+        ]
+      },
+      {
+        "id": "H_MPLS_LDP_RECONVERGENCE",
+        "description": "MPLS LDP session teardown causing LSP reconvergence CPU spike",
+        "weight": 0.2,
+        "log_patterns": [
+          "LDP: session down",
+          "MPLS: reconverging"
+        ]
+      },
+      {
+        "id": "H_LINK_TRIGGERED_RECONVERGENCE",
+        "description": "Upstream link flap triggering routing reconvergence cascade across protocols",
+        "weight": 0.15,
+        "log_patterns": [
+          "route churn detected",
+          "FIB update storm",
+          "routing table instability"
+        ]
+      }
+    ],
+    "keywords": [
+      "cpu high routing",
+      "bgp cpu spike",
+      "ospf cpu overload",
+      "routing reconvergence cpu",
+      "control plane cpu",
+      "bgp route refresh cpu",
+      "spf storm",
+      "lsa flood cpu",
+      "fib churn cpu",
+      "rib overload",
+      "routing process high cpu",
+      "ldp cpu",
+      "mpls reconvergence cpu",
+      "bgp update storm cpu",
+      "isis flood cpu",
+      "cross-cutting cpu link routing",
+      "link flap cpu",
+      "reconvergence storm",
+      "cpu routing process 100",
+      "management unreachable ospf",
+      "bgp session reset cpu"
+    ],
+    "render_template": "Device {device} CPU at {cpu_utilization}% — routing protocol storm. BGP churn: {bgp_route_churn_rate}/min, OSPF SPF: {ospf_spf_frequency}/min. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "metadata": {
+      "domain": "network",
+      "severity": "critical",
+      "created_by": "netops",
+      "created_at": "2026-06-02T07:10:54.804613+00:00",
+      "updated_at": "2026-06-02T07:10:54.804613+00:00",
+      "version": 1,
+      "is_latest": true,
+      "status": "active"
+    },
+    "category_hierarchy": {
+      "domain": "Network",
+      "category": "Device",
+      "subcategory": "CPU Overload — Routing"
+    }
+  },
+  {
+    "_id": "net-device-cpu-overload-attack-001",
+    "rca_id": "device.cpu_overload.attack",
+    "title": "Device CPU Overload — DoS / Security Attack on Control Plane",
+    "description": "High CPU caused by a denial-of-service attack, ACL/CoPP violation flood, or malicious traffic directed at the device management plane",
+    "root_cause_analysis": "The device CPU is being overwhelmed not by legitimate routing activity, but by crafted or volumetric traffic targeted at the device itself (ARP flood, ICMP flood directed to device IP, malformed BGP packets, SSH brute force, or SNMP amplification). This is a cross-domain scenario: Security + Device. CoPP (Control Plane Policing) or ACL log entries are the key distinguishing signal. Without CoPP protection, such attacks can render management and routing planes completely unresponsive.",
+    "situation": {
+      "symptoms": [
+        "cpu_utilization > 85% sustained",
+        "CoPP drop counters rising (ACL/COPP policy hits)",
+        "ARP table exhaustion or high ARP request rate",
+        "SSH/Telnet/SNMP management access failing",
+        "No concurrent routing protocol churn (differentiates from device.cpu_overload.routing)",
+        "High interrupt CPU in forwarding ASIC"
+      ],
+      "negative_indicators": [
+        "Routing protocol reconvergence present — see device.cpu_overload.routing",
+        "BGP/OSPF session active and stable — not a routing cause",
+        "CPU spike only in routing process — see device.cpu_overload.routing",
+        "Temperature alarm also present — fan/thermal throttle may be causing CPU slowdown, see device.high_temperature"
+      ],
+      "metrics": [
+        {
+          "metric": "cpu_utilization",
+          "op": "gt",
+          "value": 85,
+          "weight": 0.3
+        },
+        {
+          "metric": "copp_drop_rate",
+          "op": "gt",
+          "value": 1000,
+          "weight": 0.35
+        },
+        {
+          "metric": "arp_request_rate",
+          "op": "gt",
+          "value": 500,
+          "weight": 0.2
+        },
+        {
+          "metric": "ssh_failed_attempts",
+          "op": "gt",
+          "value": 50,
+          "weight": 0.15
+        }
+      ],
+      "log_patterns": [
+        "CoPP",
+        "COPP drop",
+        "ACL deny",
+        "rate limit",
+        "%SEC-6-IPACCESSLOGP: list .* denied",
+        "arp: request rate exceeded",
+        "CPU-3-UTILIZATION: CPU util high",
+        "ssh: too many failed attempts",
+        "SNMP: request rate exceeded",
+        "icmp: flood detected",
+        "DOS: attack detected",
+        "IPLOC: source guard violation",
+        "copp-policy: class .* dropped",
+        "traffic exceeds CIR",
+        "punt: queue full",
+        "CPU punt overrun"
+      ],
+      "affected_components": [
+        "cpu",
+        "control_plane_policing",
+        "management_plane",
+        "security_policy"
+      ]
+    },
+    "hypotheses": [
+      {
+        "id": "H_COPP_FLOOD",
+        "description": "Volumetric control-plane flood triggering CoPP drops and punting excessive packets to CPU",
+        "weight": 0.4,
+        "log_patterns": [
+          "COPP drop",
+          "copp-policy: class .* dropped",
+          "punt: queue full"
+        ]
+      },
+      {
+        "id": "H_ARP_STORM",
+        "description": "ARP request flood (gratuitous ARP storm or ARP DoS) overwhelming CPU",
+        "weight": 0.25,
+        "log_patterns": [
+          "arp: request rate exceeded",
+          "ACL deny"
+        ]
+      },
+      {
+        "id": "H_SSH_BRUTE_FORCE",
+        "description": "SSH or Telnet brute-force authentication storm directed at management plane",
+        "weight": 0.2,
+        "log_patterns": [
+          "ssh: too many failed attempts",
+          "%SEC-6-IPACCESSLOGP"
+        ]
+      },
+      {
+        "id": "H_MALFORMED_BGP_UPDATE",
+        "description": "Crafted malformed BGP UPDATE packets causing CPU-intensive parsing loop",
+        "weight": 0.15,
+        "log_patterns": [
+          "ACL deny",
+          "traffic exceeds CIR",
+          "CPU punt overrun"
+        ]
+      }
+    ],
+    "keywords": [
+      "cpu attack",
+      "dos attack cpu",
+      "copp violation",
+      "control plane flood",
+      "arp storm cpu",
+      "ssh brute force cpu",
+      "snmp amplification",
+      "icmp flood device",
+      "copp drop",
+      "punt overrun",
+      "management plane attack",
+      "cpu security",
+      "acl cpu violation",
+      "rate limit cpu",
+      "network attack cpu",
+      "dos device",
+      "cpu denial of service",
+      "control plane policing",
+      "cpu punt queue full",
+      "security cpu overload",
+      "ddos network device"
+    ],
+    "render_template": "Device {device} CPU at {cpu_utilization}% — suspected control-plane attack. CoPP drops: {copp_drop_rate}/sec. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "metadata": {
+      "domain": "network",
+      "severity": "critical",
+      "created_by": "netops",
+      "created_at": "2026-06-02T07:10:54.804613+00:00",
+      "updated_at": "2026-06-02T07:10:54.804613+00:00",
+      "version": 1,
+      "is_latest": true,
+      "status": "active"
+    },
+    "category_hierarchy": {
+      "domain": "Network",
+      "category": "Device",
+      "subcategory": "CPU Overload — Security Attack"
+    }
+  },
+  {
+    "_id": "net-link-down-linecard-001",
+    "rca_id": "link.down.linecard",
+    "title": "Multiple Link Down — Linecard or Port ASIC Hardware Fault",
+    "description": "Simultaneous loss of multiple interfaces on the same linecard slot — a Link symptom with a Device hardware root cause",
+    "root_cause_analysis": "When multiple interfaces on the same physical linecard slot go down simultaneously, the root cause is almost always a hardware fault at the Device layer: linecard crash/reset, port ASIC failure, fabric link loss, or power rail failure on the slot. This cross-cutting scenario presents as multiple link.down alarms but must be treated as a Device fault. Treating individual links without addressing the linecard will result in all ports remaining down even after interface-level remediation.",
+    "situation": {
+      "symptoms": [
+        "Multiple oper_status=down simultaneously on same slot/linecard",
+        "All affected interfaces share the same linecard slot number",
+        "Linecard OIR (Online Insertion and Removal) event in logs",
+        "Fabric link alarm for the affected linecard",
+        "Possible linecard reload or crash event in logs"
+      ],
+      "negative_indicators": [
+        "Interfaces are on different linecards — individual link faults, see link.down",
+        "Only one interface is down — see link.down or link.down.optical",
+        "Linecard is showing as up in 'show platform' — check per-port optical, see link.down.optical",
+        "All chassis linecards down — likely power failure, see device.power_failure"
+      ],
+      "metrics": [
+        {
+          "metric": "oper_status",
+          "op": "eq",
+          "value": "down",
+          "weight": 0.3
+        },
+        {
+          "metric": "affected_port_count_same_slot",
+          "op": "gt",
+          "value": 2,
+          "weight": 0.5
+        },
+        {
+          "metric": "linecard_status",
+          "op": "eq",
+          "value": "failed",
+          "weight": 0.2
+        }
+      ],
+      "log_patterns": [
+        "linecard",
+        "LC down",
+        "OIR",
+        "slot failure",
+        "ASIC failure",
+        "%PLATFORM-3-LC_FAILURE: Linecard .* failed",
+        "%OIR-6-INSCARD: Card .* removed",
+        "%PLATFORM-2-SLOT_POWER_FAIL: Slot .* power failure",
+        "fabric: link .* down",
+        "ASIC: port group .* failure",
+        "Linecard .* has been reset",
+        "slot .* hardware error",
+        "LC-3-FAILED",
+        "switch: linecard .* offline",
+        "port ASIC .* not responding",
+        "hw-module slot .* error"
+      ],
+      "affected_components": [
+        "linecard",
+        "port_asic",
+        "network_interface",
+        "chassis_fabric"
+      ]
+    },
+    "hypotheses": [
+      {
+        "id": "H_LINECARD_CRASH_OR_RESET",
+        "description": "Linecard software crash or hardware-triggered reset taking all hosted ports offline",
+        "weight": 0.4,
+        "log_patterns": [
+          "linecard",
+          "Linecard .* has been reset",
+          "LC-3-FAILED"
+        ]
+      },
+      {
+        "id": "H_PORT_ASIC_FAILURE",
+        "description": "Port ASIC on the linecard has failed, disabling a group of physical ports",
+        "weight": 0.3,
+        "log_patterns": [
+          "ASIC failure",
+          "ASIC: port group .* failure",
+          "port ASIC .* not responding"
+        ]
+      },
+      {
+        "id": "H_FABRIC_LINK_LOSS",
+        "description": "Fabric interconnect link from linecard to switch fabric broken — card isolated",
+        "weight": 0.2,
+        "log_patterns": [
+          "fabric: link .* down",
+          "OIR"
+        ]
+      },
+      {
+        "id": "H_LINECARD_POWER_FAILURE",
+        "description": "Power rail failure on the slot causing the linecard to lose power",
+        "weight": 0.1,
+        "log_patterns": [
+          "%PLATFORM-2-SLOT_POWER_FAIL",
+          "slot .* hardware error"
+        ]
+      }
+    ],
+    "keywords": [
+      "linecard down links",
+      "multiple ports down same slot",
+      "lc failure link",
+      "port asic failure",
+      "chassis fabric link down",
+      "slot power failure link",
+      "linecard reset link down",
+      "oir link loss",
+      "slot failure interfaces",
+      "hardware fault link down",
+      "asic failure interface",
+      "linecard crash link",
+      "cross-cutting link device",
+      "device linecard link failure",
+      "slot hardware error",
+      "%PLATFORM-3-LC_FAILURE",
+      "hw-module link down",
+      "fabric isolation link",
+      "line card offline",
+      "lc slot failure"
+    ],
+    "render_template": "Linecard slot {slot} on device {device} has failed — {affected_port_count_same_slot} ports are down simultaneously. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "metadata": {
+      "domain": "network",
+      "severity": "critical",
+      "created_by": "netops",
+      "created_at": "2026-06-02T07:10:54.804613+00:00",
+      "updated_at": "2026-06-02T07:10:54.804613+00:00",
+      "version": 1,
+      "is_latest": true,
+      "status": "active"
+    },
+    "category_hierarchy": {
+      "domain": "Network",
+      "category": "Link",
+      "subcategory": "Link Down — Linecard Fault"
+    }
+  },
+  {
+    "_id": "net-link-routing-adj-split-001",
+    "rca_id": "link.routing_adjacency_down.link_fault",
+    "title": "Routing Adjacency Down — Physical Link Layer Fault Triggered",
+    "description": "BGP/OSPF/ISIS adjacency loss where the root cause is a physical link event, not a routing config issue",
+    "root_cause_analysis": "Routing adjacency loss can be caused by either a physical link failure or a software/configuration issue. This entry covers the Link-triggered variant: an interface going down, severe packet loss on the link, or BFD timeout directly causes the routing neighbour to be declared unreachable. The cross-cutting nature is important: the alarm appears as a routing event, but the fix is physical — replace the cable/SFP or resolve the flapping interface rather than adjusting routing timers.",
+    "situation": {
+      "symptoms": [
+        "BGP/OSPF/ISIS/LDP adjacency lost",
+        "Concurrent oper_status change on the peer-facing interface",
+        "BFD session down immediately before adjacency loss",
+        "Hold timer expired immediately after interface event",
+        "No routing config change in audit log",
+        "Adjacency re-establishes when interface comes back up"
+      ],
+      "negative_indicators": [
+        "Interface is stable and up — routing software fault, see link.routing_adjacency_down",
+        "MTU mismatch causing OSPF stuck in Exstart — config issue",
+        "Authentication mismatch — config issue",
+        "CPU overload on device causing protocol timeout — see device.cpu_overload.routing"
+      ],
+      "metrics": [
+        {
+          "metric": "oper_status",
+          "op": "eq",
+          "value": "down",
+          "weight": 0.4
+        },
+        {
+          "metric": "bfd_session_state",
+          "op": "eq",
+          "value": "down",
+          "weight": 0.4
+        },
+        {
+          "metric": "crc_errors",
+          "op": "gt",
+          "value": 100,
+          "weight": 0.2
+        }
+      ],
+      "log_patterns": [
+        "BGP: neighbor .* Down",
+        "OSPF: .* neighbor .* down",
+        "ISIS: adjacency down",
+        "LDP: session down",
+        "%BGP-5-ADJCHANGE: neighbor .* Down - Hold Timer Expired",
+        "%OSPF-5-ADJCHG: .* neighbor .* changed state to Down",
+        "BFD: session down",
+        "%BFD-5-SESSION_DOWN",
+        "interface .* changed state to down",
+        "%LINK-3-UPDOWN: Interface .*, changed state to down",
+        "routing: adjacency lost due to link failure",
+        "hold timer expired"
+      ],
+      "affected_components": [
+        "routing_protocol",
+        "network_interface",
+        "bfd_session"
+      ]
+    },
+    "hypotheses": [
+      {
+        "id": "H_INTERFACE_DOWN_CAUSED_ADJACENCY_LOSS",
+        "description": "Physical interface going down directly caused the routing peer to become unreachable",
+        "weight": 0.5,
+        "log_patterns": [
+          "%LINK-3-UPDOWN",
+          "interface .* changed state to down"
+        ]
+      },
+      {
+        "id": "H_BFD_TIMEOUT_PHYSICAL_LOSS",
+        "description": "BFD detected physical path failure faster than routing timers, triggering adjacency teardown",
+        "weight": 0.3,
+        "log_patterns": [
+          "%BFD-5-SESSION_DOWN",
+          "BFD: session down"
+        ]
+      },
+      {
+        "id": "H_HIGH_PACKET_LOSS_ON_LINK",
+        "description": "Excessive packet loss on the physical link causing hold timers to expire",
+        "weight": 0.2,
+        "log_patterns": [
+          "hold timer expired",
+          "%BGP-5-ADJCHANGE"
+        ]
+      }
+    ],
+    "keywords": [
+      "bgp down link failure",
+      "ospf down interface down",
+      "adjacency link fault",
+      "routing session link loss",
+      "bfd down physical",
+      "hold timer link",
+      "isis adjacency link failure",
+      "ldp session link down",
+      "routing down physical",
+      "cross-cutting routing link",
+      "bgp neighbour physical failure",
+      "ospf link fault",
+      "interface down bgp",
+      "interface down ospf",
+      "link fault routing adjacency",
+      "physical link routing session",
+      "bfd physical timeout",
+      "%BGP-5-ADJCHANGE link"
+    ],
+    "render_template": "Routing adjacency to {peer_ip} on {device} lost — triggered by physical link event on {interface}. BFD: {bfd_session_state}. Top hypothesis: {top_hypothesis} (score={prior}).",
+    "metadata": {
+      "domain": "network",
+      "severity": "critical",
+      "created_by": "netops",
+      "created_at": "2026-06-02T07:10:54.804613+00:00",
+      "updated_at": "2026-06-02T07:10:54.804613+00:00",
+      "version": 1,
+      "is_latest": true,
+      "status": "active"
+    },
+    "category_hierarchy": {
+      "domain": "Network",
+      "category": "Link",
+      "subcategory": "Routing Adjacency — Link Triggered"
+    }
+  },
+  {
+    "_id": "net-link-down-fibre-cut-001",
+    "rca_id": "link.down.fibre_cut",
+    "title": "Physical Link Down — Fibre Cable Cut (Outside Plant Failure)",
+    "description": "Link down caused by a physical break in the fibre cable outside the building — typically due to civil/construction dig-ups, rodent damage, aerial cable storm damage, or submarine cable faults. May simultaneously impact many circuits sharing the same conduit.",
+    "root_cause_analysis": "A physical break in the fibre cable plant (underground duct, aerial strand, or conduit) has caused complete loss of optical signal on all circuits routed through the affected segment. Unlike a transceiver or SFP failure (which impacts a single port on a single device), a fibre cut is an outside-plant fault that can simultaneously take down dozens of circuits, LAGs, and services sharing the same physical cable or duct. Key distinguishing signals: (1) multiple simultaneous LOS alarms on circuits sharing a physical route, (2) OTDR measurements pinpoint the fault distance from the optical distribution frame, and (3) local SFP/transceiver diagnostics show the SFP is healthy — only the Rx signal is absent. Remediation requires dispatching an outside-plant crew with splicing equipment, potentially obtaining dig permits, and coordinating with building/civil works teams. Repair SLA is fundamentally different from a hardware swap — it may be hours to days.",
+    "situation": {
+      "symptoms": [
+        "Complete loss of optical Rx power (LOS) on affected interfaces",
+        "Multiple circuits failing simultaneously on a shared fibre route",
+        "OTDR test shows fault at a specific distance from the ODF",
+        "Local SFP/transceiver self-diagnostic reports healthy (Tx power normal)",
+        "No optical Tx power loss on local side — SFP is working correctly",
+        "Civil works / construction activity reported near cable route",
+        "Aerial cable storm or environmental event affecting outside plant",
+        "Underground duct breach or rodent damage reported"
+      ],
+      "negative_indicators": [
+        "Only a single interface is affected — likely SFP/transceiver issue, see link.down.optical",
+        "Local SFP reports Tx laser failure — transceiver fault, see link.down.optical",
+        "Remote peer interface is also in admin-down — peer shutdown, see link.down.remote_peer",
+        "Interface is flapping — physical instability not a clean cut, see link.flap_with_errors",
+        "Patch panel miswire suspected — check cross-connect records first",
+        "Building internal cable — not an outside-plant issue"
+      ],
+      "metrics": [
+        {
+          "metric": "oper_status",
+          "op": "eq",
+          "value": "down",
+          "weight": 0.3
+        },
+        {
+          "metric": "optical_rx_power_dbm",
+          "op": "lt",
+          "value": -40,
+          "weight": 0.4
+        },
+        {
+          "metric": "optical_tx_power_dbm",
+          "op": "gt",
+          "value": -10,
+          "weight": 0.2
+        },
+        {
+          "metric": "concurrent_los_count",
+          "op": "gt",
+          "value": 1,
+          "weight": 0.1
+        }
+      ],
+      "log_patterns": [
+        "loss of signal",
+        "LOS",
+        "fibre cut",
+        "cable cut",
+        "outside plant",
+        "OTDR",
+        "optical time domain",
+        "splice",
+        "conduit",
+        "%OPTICAL-3-ALARM: .* LOS",
+        "%OPTICAL-5-THRESHOLD_VIOLATION: Rx power below threshold",
+        "PHY-1-SIGNAL_LOST",
+        "external fiber cut reported",
+        "civil work: cable damage reported",
+        "underground duct: breach detected",
+        "aerial cable: storm damage",
+        "rodent damage: cable report",
+        "dig: accidental cable strike",
+        "DWDM: channel power absent — fibre break suspected",
+        "OSC: supervision channel lost — physical plant failure",
+        "all circuits on route .* down simultaneously",
+        "span: loss of continuity on segment"
+      ],
+      "affected_components": [
+        "outside_plant_cable",
+        "optical_fibre",
+        "underground_conduit",
+        "aerial_cable",
+        "optical_distribution_frame",
+        "network_interface"
+      ]
+    },
+    "hypotheses": [
+      {
+        "id": "H_CONSTRUCTION_DIG_CUT",
+        "description": "Accidental cable strike by civil/construction excavation equipment (backhoe, drill)",
+        "weight": 0.4,
+        "log_patterns": [
+          "dig: accidental cable strike",
+          "civil work: cable damage",
+          "outside plant",
+          "fibre cut"
+        ]
+      },
+      {
+        "id": "H_RODENT_DAMAGE",
+        "description": "Rodent (rat, squirrel) gnawed through the fibre cable sheath and fibres",
+        "weight": 0.2,
+        "log_patterns": [
+          "rodent damage",
+          "cable report",
+          "loss of signal"
+        ]
+      },
+      {
+        "id": "H_AERIAL_STORM_DAMAGE",
+        "description": "High winds, ice loading, or fallen tree brought down an aerial fibre cable",
+        "weight": 0.2,
+        "log_patterns": [
+          "aerial cable: storm damage",
+          "LOS",
+          "loss of signal"
+        ]
+      },
+      {
+        "id": "H_UNDERGROUND_DUCT_BREACH",
+        "description": "Collapsed duct, water ingress, or ground movement crushing the underground cable",
+        "weight": 0.12,
+        "log_patterns": [
+          "underground duct: breach",
+          "conduit",
+          "span: loss of continuity"
+        ]
+      },
+      {
+        "id": "H_SUBMARINE_CABLE_FAULT",
+        "description": "Submarine / long-haul cable cut caused by anchor drag, trawling, or seabed movement",
+        "weight": 0.08,
+        "log_patterns": [
+          "OSC: supervision channel lost",
+          "DWDM: channel power absent",
+          "loss of signal"
+        ]
+      }
+    ],
+    "keywords": [
+      "fibre cut",
+      "cable cut",
+      "outside plant failure",
+      "physical cable break",
+      "otdr fault",
+      "otdr measurement",
+      "cable splice required",
+      "conduit breach",
+      "dig up fibre",
+      "accidental dig cable",
+      "backhoe cut",
+      "construction cable damage",
+      "rodent cable damage",
+      "aerial cable cut",
+      "storm cable damage",
+      "underground fibre break",
+      "multiple circuits down",
+      "shared route failure",
+      "outside plant los",
+      "plant failure optical",
+      "civil works cable",
+      "multiple los alarms same route",
+      "span failure fibre",
+      "osp failure",
+      "duct breach cable",
+      "physical plant optical",
+      "fibre break location",
+      "cable plant failure",
+      "outside plant repair",
+      "splice repair team",
+      "submarine cable failure",
+      "dwdm fibre cut",
+      "osc channel lost fibre",
+      "long haul fibre break",
+      "metro fibre cut",
+      "last mile cable break",
+      "service outage fibre",
+      "carrier fibre cut",
+      "dark fibre break"
+    ],
+    "render_template": "Fibre cut detected — {concurrent_los_count} circuit(s) down on shared route. Interface {interface} on {device}: Rx power absent, Tx healthy. OTDR fault at {otdr_fault_distance_m}m from ODF. Top hypothesis: {top_hypothesis} (score={prior}). Dispatch outside-plant crew.",
+    "metadata": {
+      "domain": "network",
+      "severity": "critical",
+      "created_by": "netops",
+      "created_at": "2026-06-02T07:19:21.170264+00:00",
+      "updated_at": "2026-06-02T07:19:21.170264+00:00",
+      "version": 1,
+      "is_latest": true,
+      "status": "active"
+    },
+    "category_hierarchy": {
+      "domain": "Network",
+      "category": "Link",
+      "subcategory": "Link Down — Fibre Cut (Outside Plant)"
+    }
+  },
+  {
+    "_id": "net-link-down-physical-cut-copper-001",
+    "rca_id": "link.down.physical_cut.copper",
+    "title": "Physical Link Down — Copper Cable Cut or Mechanical Break",
+    "description": "Link down on a copper (Cat5e/Cat6/Cat6A/coax) cable caused by physical severance, excessive bend radius, pinching, or connector pull-out — primarily in campus, data centre, or last-mile copper environments.",
+    "root_cause_analysis": "A copper cable has been physically severed, crushed, or damaged beyond usability. Unlike a transceiver or auto-negotiation failure, the cable itself has lost electrical continuity. TDR (Time Domain Reflectometer) testing can identify the fault distance along the copper run. Common causes in data centres: patch cable yanked out of a bundle, cable over-bent at tray corners, or cut by cable ties or sharp edges. In campus/outside plant: underground copper cable cut by excavation, or aerial copper twisted pair broken by storm or physical impact. Unlike fibre cuts, a copper cut also produces a measurable impedance discontinuity that shows as an open or short circuit on TDR, and the affected cable is typically a single circuit.",
+    "situation": {
+      "symptoms": [
+        "oper_status is down",
+        "No electrical carrier detected on copper interface",
+        "TDR test shows open circuit or impedance discontinuity at measured distance",
+        "Cable continuity test fails",
+        "Physical inspection reveals cut, kink, or crushed cable jacket",
+        "Single circuit affected (not a shared-route failure)",
+        "Patch cable replacement resolves the issue"
+      ],
+      "negative_indicators": [
+        "Optical/SFP port — not copper, see link.down.optical or link.down.fibre_cut",
+        "Auto-negotiation failure — link is up briefly then goes down, see link.copper_negotiation_failure",
+        "Multiple ports on same switch affected — likely hardware, see link.down.linecard",
+        "PoE-related failure — check power budget, see link.down.copper"
+      ],
+      "metrics": [
+        {
+          "metric": "oper_status",
+          "op": "eq",
+          "value": "down",
+          "weight": 0.5
+        },
+        {
+          "metric": "tdr_fault_distance_m",
+          "op": "gt",
+          "value": 0,
+          "weight": 0.4
+        },
+        {
+          "metric": "cable_continuity",
+          "op": "eq",
+          "value": "fail",
+          "weight": 0.1
+        }
+      ],
+      "log_patterns": [
+        "link down",
+        "carrier lost",
+        "no carrier",
+        "copper cable failure",
+        "cable open circuit",
+        "%LINK-3-UPDOWN: Interface .*, changed state to down",
+        "%LINEPROTO-5-UPDOWN: Line protocol on Interface .*, changed state to down",
+        "kernel: e1000e: .* Link is Down",
+        "TDR: open circuit at .* meters",
+        "cable continuity test: failed",
+        "patch cable: broken",
+        "cable: mechanical damage detected",
+        "ifdown: carrier lost",
+        "copper: no partner detected",
+        "ethernet: physical layer error"
+      ],
+      "affected_components": [
+        "copper_cable",
+        "rj45_connector",
+        "network_interface",
+        "patch_panel"
+      ]
+    },
+    "hypotheses": [
+      {
+        "id": "H_PATCH_CABLE_PULLED_OR_BROKEN",
+        "description": "Patch cable physically pulled out of port or broken internally at bend point",
+        "weight": 0.45,
+        "log_patterns": [
+          "link down",
+          "carrier lost",
+          "patch cable: broken"
+        ]
+      },
+      {
+        "id": "H_CABLE_OVER_BENT_OR_CRUSHED",
+        "description": "Horizontal run cable over-bent at tray edge, pinched under floor tile, or crushed by cable ties",
+        "weight": 0.25,
+        "log_patterns": [
+          "cable: mechanical damage",
+          "TDR: open circuit",
+          "no carrier"
+        ]
+      },
+      {
+        "id": "H_UNDERGROUND_COPPER_CUT",
+        "description": "Underground copper (xDSL, campus copper backbone) severed by excavation or ground movement",
+        "weight": 0.2,
+        "log_patterns": [
+          "copper cable failure",
+          "TDR: open circuit",
+          "carrier lost"
+        ]
+      },
+      {
+        "id": "H_CONNECTOR_PULL_OUT",
+        "description": "RJ45 connector pulled out of socket or crimp failed on field-terminated cable",
+        "weight": 0.1,
+        "log_patterns": [
+          "link down",
+          "no partner detected",
+          "carrier lost"
+        ]
+      }
+    ],
+    "keywords": [
+      "copper cable cut",
+      "cat6 cut",
+      "cat5 broken",
+      "patch cable broken",
+      "rj45 pulled out",
+      "cable pinched",
+      "cable over bent",
+      "tdr fault",
+      "cable continuity fail",
+      "open circuit copper",
+      "copper mechanical damage",
+      "underground copper cut",
+      "copper cable break",
+      "ethernet cable cut",
+      "no carrier copper",
+      "link down cable",
+      "patch cable pulled",
+      "physical link break copper",
+      "twisted pair cut",
+      "cable tray damage",
+      "cable tie damage",
+      "floor tile cable crushed",
+      "copper plant failure",
+      "xdsl cable cut",
+      "last mile copper break",
+      "campus copper failure"
+    ],
+    "render_template": "Copper interface {interface} on device {device} is down — TDR fault at {tdr_fault_distance_m}m. Physical cable break suspected. Top hypothesis: {top_hypothesis} (score={prior}). Replace cable.",
+    "metadata": {
+      "domain": "network",
+      "severity": "critical",
+      "created_by": "netops",
+      "created_at": "2026-06-02T07:19:21.170264+00:00",
+      "updated_at": "2026-06-02T07:19:21.170264+00:00",
+      "version": 1,
+      "is_latest": true,
+      "status": "active"
+    },
+    "category_hierarchy": {
+      "domain": "Network",
+      "category": "Link",
+      "subcategory": "Link Down — Copper Cable Cut"
     }
   }
 ]

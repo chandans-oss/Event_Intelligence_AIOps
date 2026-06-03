@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/shared/components/layout/MainLayout';
 import { AdminSidebar, AdminSection } from '@/components/admin/AdminSidebar';
@@ -8,13 +8,18 @@ import { KBSection } from '@/components/admin/KBSection';
 import { RAGKBSection } from '@/components/admin/RAGKBSection';
 import { RemedyKBSection } from '@/components/admin/RemedyKBSection';
 import { AutoRemediationSection } from '@/components/admin/AutoRemediationSection';
-import { PatternPredictionContent } from '@/pages/PatternPage';
+
 
 export default function Admin() {
   const [searchParams] = useSearchParams();
   const initialSection = (searchParams.get('section') as AdminSection) || 'CorrelationTypes';
   const highlightIntent = searchParams.get('highlight') || undefined;
   const [activeSection, setActiveSection] = useState<AdminSection>(initialSection);
+
+  useEffect(() => {
+    const section = searchParams.get('section') as AdminSection;
+    if (section) setActiveSection(section);
+  }, [searchParams]);
 
   const renderSection = () => {
     switch (activeSection) {

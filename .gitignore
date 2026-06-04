@@ -2,8 +2,11 @@
 .env
 .env.local
 .env.*.local
-.env.*
+# Note: .env.* is NOT blocked globally so deploy/.env.production template is tracked
 .env.example
+
+# Allow deploy env template (contains only CHANGE_ME placeholders — no real secrets)
+!deploy/.env.production
 
 # Logs
 logs
@@ -35,7 +38,13 @@ __pycache__/
 *.pyc
 backend/rag/models/
 
-
 # Machine Learning Models
 model/
 backend/model/
+
+# Dev-only directories (not deployed)
+test-results/
+scratch/
+.agent/
+.gemini/
+streamlit_rca_code/

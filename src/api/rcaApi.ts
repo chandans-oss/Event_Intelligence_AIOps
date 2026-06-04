@@ -47,7 +47,12 @@ export const runRagAnalysis = async (payload: any) => {
 
 export const runRagV6Analysis = async (payload: any, runConfig?: any) => {
     // Use the Vite dev-server proxy (/rag-api → http://10.0.4.161:8000)
-    const response = await axios.post(`/rag-api/rca`, payload, {
+    const requestBody = {
+        ...payload,
+        run_config: runConfig || {}
+    };
+
+    const response = await axios.post(`/rag-api/rca`, requestBody, {
         headers: { 'Content-Type': 'application/json' },
     });
 

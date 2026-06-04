@@ -309,7 +309,8 @@ Query:`;
                 USE_LLM_QUERY_BUILDER: config.useLlmQueryBuilder,
                 RERANK_K: config.rerankK,
                 RUN_RERANK_SEARCH: config.runRerankSearch,
-                USE_LLM_RERANKER: config.useLlmReranker
+                USE_LLM_RERANKER: config.useLlmReranker,
+                RUN_NORMAL_HYBRID_SEARCH: !config.runRerankSearch
             });
             toast.success("Configuration saved to backend successfully.");
         } catch (error: any) {
@@ -347,20 +348,20 @@ Query:`;
     // ── Build payload ─────────────────────────────────────────────────────────
     const buildPayload = (): StepPayload | null => {
         const rootEvent = tryParse(rootEventJson, 'root_event');
-        const rawLogs = tryParse(rawLogsJson, 'raw_logs');
+        const rawLogs = rawLogsJson.trim() ? tryParse(rawLogsJson, 'raw_logs') : [];
         const metricsPayload = tryParse(metricsJson, 'metrics_payload');
         const topology = topologyJson.trim() ? tryParse(topologyJson, 'topology') : {};
 
-        if (!rootEvent || !rawLogs || !metricsPayload) {
+        if (!rootEvent || !metricsPayload) {
             toast.error('Fix JSON errors before running');
             return null;
         }
-        if (!Array.isArray(rawLogs)) {
+        if (rawLogsJson.trim() && !Array.isArray(rawLogs)) {
             setError('raw_logs', 'Must be a JSON array of strings');
             toast.error('raw_logs must be a JSON array');
             return null;
         }
-        return { root_event: rootEvent, raw_logs: rawLogs, metrics_payload: metricsPayload, topology: topology || {} };
+        return { root_event: rootEvent, raw_logs: rawLogs || [], metrics_payload: metricsPayload, topology: topology || {} };
     };
 
     // ── Run pipeline ──────────────────────────────────────────────────────────
@@ -376,7 +377,16 @@ Query:`;
 
         const startTs = performance.now();
         let isApiDone = false;
-        const apiPromise = runRagV6Analysis(payload).then(r => {
+        
+        const runConfig = {
+            run_rerank_search: config.runRerankSearch,
+            run_normal_hybrid_search: !config.runRerankSearch,
+            use_enhanced: config.useEnhancedQueryBuilder,
+            use_llm_rca: config.useLlmQueryBuilder,
+            rerank_k: config.rerankK,
+        };
+
+        const apiPromise = runRagV6Analysis(payload, runConfig).then(r => {
             isApiDone = true;
             return r;
         }).catch(e => {
@@ -450,8 +460,8 @@ Query:`;
             },
             {
                 id: 'raw_logs', label: 'Raw Logs', icon: <Terminal className="w-5 h-5" />, color: 'text-purple-500 bg-purple-500/10',
-                value: rawLogsJson, onChange: (v: string) => { setRawLogsJson(v); tryParse(v, 'raw_logs'); },
-                placeholder: '["Log line 1", "Log line 2"]', req: true
+                value: rawLogsJson, onChange: (v: string) => { setRawLogsJson(v); if(v.trim()) tryParse(v, 'raw_logs'); else clearError('raw_logs'); },
+                placeholder: '["Log line 1", "Log line 2"]', req: false
             },
             {
                 id: 'metrics_payload', label: 'Metrics', icon: <Activity className="w-5 h-5" />, color: 'text-amber-500 bg-amber-500/10',

@@ -9,6 +9,7 @@ from .training_views import (
 )
 
 from .remedy_views import RemedyKBView
+from .semantic_views import SemanticCheckView
 
 urlpatterns = [
     path('rca/run-flow', RunRCAFlowView.as_view(), name='run-rca-flow'),
@@ -23,5 +24,6 @@ urlpatterns = [
     path('training/status',           TrainingStatusView.as_view(),   name='training-status'),
     path('training/predict',          PredictView.as_view(),          name='training-predict'),
     path('training/model-info',       ModelInfoView.as_view(),        name='training-model-info'),
+    path('training/semantic-check',   SemanticCheckView.as_view(),    name='training-semantic-check'),
 ]
 

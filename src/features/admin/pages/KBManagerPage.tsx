@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MainLayout } from '@/shared/components/layout/MainLayout';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { Input } from '@/shared/components/ui/input';
@@ -8,8 +9,11 @@ import { cn } from '@/shared/lib/utils';
 import {
     Plus, Search, Edit3, Trash2, BookOpen, AlertTriangle, Cpu, Network,
     RefreshCw, X, Save, ChevronDown, ChevronRight, Filter, Database,
-    Tag, Layers, CheckCircle2, Info, Zap, ArrowUpDown,
+    Tag, Layers, CheckCircle2, Info, Zap, ArrowUpDown, AlertCircle, Shield, Wrench, Server, Code
 } from 'lucide-react';
+import { Card, CardContent } from '@/shared/components/ui/card';
+import { RcaKBSection } from '@/components/admin/RcaKBSection';
+import { AdminSidebar } from '@/components/admin/AdminSidebar';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001') + '/api/rag/kb/';
 
@@ -50,6 +54,22 @@ const SEVERITY_CONFIG = {
     high:     { label: 'High',     dot: 'bg-orange-500', badge: 'border-orange-500/30 bg-orange-500/10 text-orange-400' },
     medium:   { label: 'Medium',   dot: 'bg-amber-500', badge: 'border-amber-500/30 bg-amber-500/10 text-amber-400' },
     low:      { label: 'Low',      dot: 'bg-green-500', badge: 'border-green-500/30 bg-green-500/10 text-green-400' },
+};
+
+const DOMAIN_COLORS: Record<string, any> = {
+    Network: { bg: 'bg-blue-500/10', text: 'text-blue-500', accent: 'bg-blue-500', border: 'border-blue-500/30', icon: <Network className="w-4 h-4" /> },
+    Compute: { bg: 'bg-purple-500/10', text: 'text-purple-500', accent: 'bg-purple-500', border: 'border-purple-500/30', icon: <Cpu className="w-4 h-4" /> },
+    Storage: { bg: 'bg-emerald-500/10', text: 'text-emerald-500', accent: 'bg-emerald-500', border: 'border-emerald-500/30', icon: <Database className="w-4 h-4" /> },
+    Application: { bg: 'bg-orange-500/10', text: 'text-orange-500', accent: 'bg-orange-500', border: 'border-orange-500/30', icon: <Layers className="w-4 h-4" /> },
+    Security: { bg: 'bg-red-500/10', text: 'text-red-500', accent: 'bg-red-500', border: 'border-red-500/30', icon: <Shield className="w-4 h-4" /> },
+    default: { bg: 'bg-slate-500/10', text: 'text-slate-500', accent: 'bg-slate-500', border: 'border-slate-500/30', icon: <BookOpen className="w-4 h-4" /> }
+};
+
+const RISK_ICON: Record<string, JSX.Element> = {
+    critical: <AlertCircle className="w-3.5 h-3.5 text-red-500" />,
+    high: <AlertTriangle className="w-3.5 h-3.5 text-orange-500" />,
+    medium: <AlertTriangle className="w-3.5 h-3.5 text-yellow-500" />,
+    low: <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />,
 };
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
@@ -504,11 +524,11 @@ function EntryCard({ entry, onEdit, onDelete }: { entry: KBEntry; onEdit: () => 
         </div>
     );
 }
-
 import { RemedyKBSection } from '@/components/admin/RemedyKBSection';
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function KBManagerPage() {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'rca'|'remedy'>('rca');
     const [entries, setEntries] = useState<KBEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -586,6 +606,79 @@ export default function KBManagerPage() {
             return a.rca_id.localeCompare(b.rca_id);
         });
 
+    // ── Drill-down Logic ──────────────────────────────────────────────────────
+    const domains = [...new Set(entries.map(e => e.category_hierarchy?.domain || 'Network'))];
+    const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
+
+    const isDrilldownView = !search && !filterCat && !filterSev && !selectedDomain;
+
+    const renderDrilldownCards = () => (
+        <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                {domains.map(domain => {
+                    const domainEntries = entries.filter(e => (e.category_hierarchy?.domain || 'Network') === domain);
+                    const subcats = [...new Set(domainEntries.map(e => e.category_hierarchy?.category).filter(Boolean))];
+                    
+                    const topSeverity = domainEntries.some(e => e.metadata?.severity === 'critical') ? 'critical' 
+                        : domainEntries.some(e => e.metadata?.severity === 'high') ? 'high' 
+                        : domainEntries.some(e => e.metadata?.severity === 'medium') ? 'medium' : 'low';
+                    
+                    const config = DOMAIN_COLORS[domain] || DOMAIN_COLORS.default;
+
+                    return (
+                        <Card
+                            key={domain}
+                            onClick={() => setSelectedDomain(domain)}
+                            className="group cursor-pointer hover:border-primary/50 transition-all border-border/50 shadow-none rounded-xl overflow-hidden bg-card/50"
+                        >
+                            <div className={cn('h-1', config.accent)} />
+                            <CardContent className="p-3">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className={cn('p-1.5 rounded-lg', config.bg, config.text)}>
+                                        {config.icon}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        {RISK_ICON[topSeverity]}
+                                        <Badge variant="secondary" className="font-bold text-[8px] h-3.5 px-1">{domainEntries.length} Entries</Badge>
+                                    </div>
+                                </div>
+                                <h3 className="text-xs font-extrabold tracking-tight mb-0.5 truncate uppercase">{domain}</h3>
+                                <p className="text-[9px] text-muted-foreground mb-3 line-clamp-1">Explore RCA entries</p>
+                                
+                                <div className="flex flex-wrap gap-1">
+                                    {subcats.slice(0, 2).map(s => (
+                                        <Badge key={s} variant="outline" className={cn('text-[7px] font-medium opacity-60 h-3 px-1 truncate max-w-[100px]', config.border)}>
+                                            {s}
+                                        </Badge>
+                                    ))}
+                                    {subcats.length > 2 && <span className="text-[7px] text-muted-foreground font-bold">+{subcats.length - 2} more</span>}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
+
+                {/* Quick Add Card */}
+                <Card
+                    className="group cursor-pointer border-dashed hover:border-primary/50 hover:bg-primary/5 transition-all shadow-none rounded-xl flex flex-col items-center justify-center p-4 min-h-[100px]"
+                    onClick={() => { setEditEntry({ ...EMPTY_ENTRY, metadata: { ...EMPTY_ENTRY.metadata!, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } }); setDrawerOpen(true); }}
+                >
+                    <div className="p-1.5 rounded-full bg-muted group-hover:bg-primary/20 group-hover:text-primary transition-all mb-1.5">
+                        <Plus className="w-3.5 h-3.5" />
+                    </div>
+                    <p className="text-[8px] font-bold text-muted-foreground group-hover:text-primary uppercase tracking-wider">
+                        ADD RCA ENTRY
+                    </p>
+                </Card>
+            </div>
+        </div>
+    );
+
+    // Apply domain filter to the existing filtered list
+    const finalFiltered = selectedDomain 
+        ? filtered.filter(e => (e.category_hierarchy?.domain || 'Network') === selectedDomain)
+        : filtered;
+
     const categories = [...new Set(entries.map(e => e.category_hierarchy?.category).filter(Boolean))];
     const severities = ['critical', 'high', 'medium', 'low'];
 
@@ -595,227 +688,61 @@ export default function KBManagerPage() {
 
     return (
         <MainLayout>
-            <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-background text-foreground">
-                {/* Header */}
-                <div className="h-14 border-b flex items-center justify-between px-6 bg-card/50 backdrop-blur-sm z-20 shrink-0">
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-1.5 rounded-lg bg-primary/10"><Database className="w-4 h-4 text-primary" /></div>
-                            <div>
-                                <h1 className="font-bold text-base tracking-tight">KB Manager</h1>
-                                <p className="text-[10px] text-muted-foreground">{activeTab === 'rca' ? `RCA Knowledge Base — ${entries.length} entries` : 'Remedy Playbooks'}</p>
+            <div className="flex h-[calc(100vh-4rem)]">
+                <AdminSidebar activeSection="KBManager" onSectionChange={(section) => {
+                    navigate(`/admin?section=${section}`);
+                }} />
+                <div className="flex flex-col flex-1 overflow-hidden bg-background text-foreground">
+                    {/* Header */}
+                    <div className="h-14 border-b flex items-center justify-between px-6 bg-card/50 backdrop-blur-sm z-20 shrink-0">
+                        <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-3">
+                                <div className="p-1.5 rounded-lg bg-primary/10"><Database className="w-4 h-4 text-primary" /></div>
+                                <div>
+                                    <h1 className="font-bold text-base tracking-tight">KB Manager</h1>
+                                    <p className="text-[10px] text-muted-foreground">{activeTab === 'rca' ? `RCA Knowledge Base — ${entries.length} entries` : 'Remedy Playbooks'}</p>
+                                </div>
+                            </div>
+                            <div className="flex bg-muted/30 p-1 rounded-lg">
+                                <button onClick={() => setActiveTab('rca')} className={cn("px-4 py-1.5 text-xs font-bold rounded-md transition-all", activeTab === 'rca' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}>RCA KB</button>
+                                <button onClick={() => setActiveTab('remedy')} className={cn("px-4 py-1.5 text-xs font-bold rounded-md transition-all", activeTab === 'remedy' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}>Remedy KB</button>
                             </div>
                         </div>
-                        <div className="flex bg-muted/30 p-1 rounded-lg">
-                            <button onClick={() => setActiveTab('rca')} className={cn("px-4 py-1.5 text-xs font-bold rounded-md transition-all", activeTab === 'rca' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}>RCA KB</button>
-                            <button onClick={() => setActiveTab('remedy')} className={cn("px-4 py-1.5 text-xs font-bold rounded-md transition-all", activeTab === 'remedy' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}>Remedy KB</button>
+                        {activeTab === 'rca' && (
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={fetchEntries} disabled={loading}>
+                                <RefreshCw className={cn('w-3 h-3', loading && 'animate-spin')} /> Refresh
+                            </Button>
+                            <Button size="sm" className="h-7 gap-1.5 text-xs" onClick={() => { setEditEntry({ ...EMPTY_ENTRY, metadata: { ...EMPTY_ENTRY.metadata!, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } }); setDrawerOpen(true); }}>
+                                <Plus className="w-3.5 h-3.5" /> New Entry
+                            </Button>
                         </div>
+                        )}
                     </div>
-                    {activeTab === 'rca' && (
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={fetchEntries} disabled={loading}>
-                            <RefreshCw className={cn('w-3 h-3', loading && 'animate-spin')} /> Refresh
-                        </Button>
-                        <Button size="sm" className="h-7 gap-1.5 text-xs" onClick={() => { setEditEntry({ ...EMPTY_ENTRY, metadata: { ...EMPTY_ENTRY.metadata!, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } }); setDrawerOpen(true); }}>
-                            <Plus className="w-3.5 h-3.5" /> New Entry
-                        </Button>
+
+                    {activeTab === 'rca' ? (
+                        <RcaKBSection
+                            entries={entries}
+                            isLoading={loading}
+                            onEdit={(entry) => { setEditEntry(entry); setDrawerOpen(true); }}
+                            onNew={() => {
+                                setEditEntry({
+                                    ...EMPTY_ENTRY,
+                                    metadata: { ...EMPTY_ENTRY.metadata!, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+                                });
+                                setDrawerOpen(true);
+                            }}
+                            onDelete={(id) => {
+                                const entry = entries.find(e => e._id === id);
+                                if (entry) setDeleteEntry(entry);
+                            }}
+                        />
+                    ) : (
+                    <div className="flex flex-1 overflow-hidden">
+                        <RemedyKBSection />
                     </div>
                     )}
                 </div>
-
-                {activeTab === 'rca' ? (
-                <div className="flex flex-1 overflow-hidden">
-                    {/* Left Filter Sidebar */}
-                    <div className="w-56 shrink-0 border-r border-border bg-card/30 flex flex-col overflow-hidden">
-                        <div className="px-4 py-3 border-b border-border">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                                <Filter className="w-3 h-3" /> Filters
-                            </p>
-                        </div>
-                        <ScrollArea className="flex-1 px-3 py-3">
-                            {/* Category */}
-                            <div className="mb-4">
-                                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2">Category</p>
-                                <button onClick={() => setFilterCat('')}
-                                    className={cn('w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors mb-1',
-                                        filterCat === '' ? 'bg-primary/10 text-primary border border-primary/20' : 'hover:bg-muted/30 text-muted-foreground')}>
-                                    <span className="flex items-center gap-1.5"><BookOpen className="w-3 h-3" /> All</span>
-                                    <span className="font-mono text-[10px]">{entries.length}</span>
-                                </button>
-                                {categories.map(cat => {
-                                    const Icon = CATEGORY_ICONS[cat] ?? BookOpen;
-                                    return (
-                                        <button key={cat} onClick={() => setFilterCat(cat === filterCat ? '' : cat)}
-                                            className={cn('w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors mb-1',
-                                                filterCat === cat ? 'bg-primary/10 text-primary border border-primary/20' : 'hover:bg-muted/30 text-muted-foreground')}>
-                                            <span className="flex items-center gap-1.5"><Icon className="w-3 h-3" /> {cat}</span>
-                                            <span className="font-mono text-[10px]">{catCounts[cat] ?? 0}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Severity */}
-                            <div>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2">Severity</p>
-                                {severities.map(sev => {
-                                    const cfg = SEVERITY_CONFIG[sev as keyof typeof SEVERITY_CONFIG];
-                                    return (
-                                        <button key={sev} onClick={() => setFilterSev(sev === filterSev ? '' : sev)}
-                                            className={cn('w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors mb-1',
-                                                filterSev === sev ? 'bg-primary/10 text-primary border border-primary/20' : 'hover:bg-muted/30 text-muted-foreground')}>
-                                            <span className="flex items-center gap-1.5">
-                                                <span className={cn('w-2 h-2 rounded-full', cfg.dot)} /> {cfg.label}
-                                            </span>
-                                            <span className="font-mono text-[10px]">{sevCounts[sev] ?? 0}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Active filter summary */}
-                            {(filterCat || filterSev) && (
-                                <div className="mt-4 pt-3 border-t border-border">
-                                    <button onClick={() => { setFilterCat(''); setFilterSev(''); }}
-                                        className="w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] text-red-400 hover:bg-red-500/10 transition-colors">
-                                        <X className="w-3 h-3" /> Clear all filters
-                                    </button>
-                                </div>
-                            )}
-                        </ScrollArea>
-                    </div>
-
-                    {/* Main Content */}
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                        {/* Search + Sort bar */}
-                        <div className="px-5 py-3 border-b border-border bg-card/20 flex items-center gap-3 shrink-0">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                                <Input value={search} onChange={e => setSearch(e.target.value)}
-                                    placeholder="Search by RCA ID, title, keyword..."
-                                    className="pl-8 h-8 text-xs bg-background" />
-                                {search && (
-                                    <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                                        <X className="w-3 h-3" />
-                                    </button>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <ArrowUpDown className="w-3 h-3 text-muted-foreground" />
-                                <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
-                                    className="h-8 px-2 text-[11px] bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground">
-                                    <option value="rca_id">Sort: RCA ID</option>
-                                    <option value="severity">Sort: Severity</option>
-                                    <option value="updated">Sort: Last Updated</option>
-                                </select>
-                            </div>
-                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                                {filtered.length} of {entries.length}
-                            </span>
-                        </div>
-
-                        {/* Entry List */}
-                        <ScrollArea className="flex-1">
-                            <div className="p-5 space-y-3">
-                                {loading ? (
-                                    <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
-                                        <RefreshCw className="w-8 h-8 animate-spin opacity-30" />
-                                        <p className="text-sm">Loading knowledge base...</p>
-                                    </div>
-                                ) : error ? (
-                                    <div className="flex flex-col items-center justify-center py-16 gap-4">
-                                        <AlertTriangle className="w-10 h-10 text-red-400 opacity-60" />
-                                        <div className="text-center">
-                                            <p className="text-sm font-bold text-red-400 mb-1">Failed to load KB</p>
-                                            <p className="text-xs text-muted-foreground">{error}</p>
-                                        </div>
-                                        <Button variant="outline" size="sm" onClick={fetchEntries} className="gap-1.5">
-                                            <RefreshCw className="w-3.5 h-3.5" /> Retry
-                                        </Button>
-                                    </div>
-                                ) : filtered.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
-                                        <Database className="w-10 h-10 opacity-20" />
-                                        <div className="text-center">
-                                            <p className="text-sm font-bold mb-1">No entries found</p>
-                                            <p className="text-xs">{search || filterCat || filterSev ? 'Try adjusting your filters' : 'Create your first KB entry'}</p>
-                                        </div>
-                                        <Button size="sm" className="gap-1.5" onClick={() => { setEditEntry({ ...EMPTY_ENTRY, metadata: { ...EMPTY_ENTRY.metadata!, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } }); setDrawerOpen(true); }}>
-                                            <Plus className="w-3.5 h-3.5" /> New Entry
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <>
-                                        {/* Group by category */}
-                                        {(filterCat ? [filterCat] : categories).map(cat => {
-                                            const catEntries = filtered.filter(e => e.category_hierarchy?.category === cat);
-                                            if (catEntries.length === 0) return null;
-                                            const Icon = CATEGORY_ICONS[cat] ?? BookOpen;
-                                            return (
-                                                <div key={cat}>
-                                                    <div className="flex items-center gap-2 mb-2 mt-1">
-                                                        <Icon className="w-3.5 h-3.5 text-muted-foreground" />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{cat}</span>
-                                                        <div className="flex-1 h-px bg-border" />
-                                                        <span className="text-[10px] text-muted-foreground font-mono">{catEntries.length}</span>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        {catEntries.map(entry => (
-                                                            <EntryCard
-                                                                key={entry._id}
-                                                                entry={entry}
-                                                                onEdit={() => { setEditEntry(entry); setDrawerOpen(true); }}
-                                                                onDelete={() => setDeleteEntry(entry)}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                        {/* L2-Domain and others not in category list */}
-                                        {filtered.filter(e => !categories.includes(e.category_hierarchy?.category)).length > 0 && (
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-2 mt-1">
-                                                    <Layers className="w-3.5 h-3.5 text-muted-foreground" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Other</span>
-                                                    <div className="flex-1 h-px bg-border" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    {filtered.filter(e => !categories.includes(e.category_hierarchy?.category)).map(entry => (
-                                                        <EntryCard key={entry._id} entry={entry}
-                                                            onEdit={() => { setEditEntry(entry); setDrawerOpen(true); }}
-                                                            onDelete={() => setDeleteEntry(entry)}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        </ScrollArea>
-
-                        {/* Stats footer */}
-                        {!loading && !error && (
-                            <div className="px-5 py-2.5 border-t border-border bg-card/30 flex items-center gap-4 shrink-0">
-                                {severities.map(sev => (
-                                    <div key={sev} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                                        <span className={cn('w-2 h-2 rounded-full', SEVERITY_CONFIG[sev as keyof typeof SEVERITY_CONFIG]?.dot)} />
-                                        {sevCounts[sev] ?? 0} {SEVERITY_CONFIG[sev as keyof typeof SEVERITY_CONFIG]?.label}
-                                    </div>
-                                ))}
-                                <div className="ml-auto flex items-center gap-1.5 text-[10px] text-emerald-400">
-                                    <CheckCircle2 className="w-3 h-3" /> KB Active
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-                ) : (
-                <div className="flex flex-1 overflow-hidden">
-                    <RemedyKBSection />
-                </div>
-                )}
             </div>
 
             {/* Edit/Create Drawer */}

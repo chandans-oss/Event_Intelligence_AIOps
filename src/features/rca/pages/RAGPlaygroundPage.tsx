@@ -230,7 +230,7 @@ const RAGPlaygroundPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [results, setResults] = useState<any>(null);
     const [timings, setTimings] = useState<Record<string, number>>({});
-    const [sidebarOpen, setSidebarOpen] = useState(activeStageId === 'input');
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     // Reusable window ref for RAW JSON output — overwritten on every run
     const rawJsonWindowRef = useRef<Window | null>(null);
 
@@ -247,9 +247,7 @@ const RAGPlaygroundPage = () => {
         }
     };
 
-    useEffect(() => {
-        setSidebarOpen(activeStageId === 'input');
-    }, [activeStageId]);
+
 
     const DEFAULT_PROMPT = `You are a senior Network Operations expert specializing in Root Cause Analysis.
 
@@ -301,7 +299,7 @@ Query:`;
         runRerankSearch: true,
         useLlmReranker: false,
     });
-    
+
     const handleSaveConfig = async () => {
         try {
             await updateRcaConfig({
@@ -377,7 +375,7 @@ Query:`;
 
         const startTs = performance.now();
         let isApiDone = false;
-        
+
         const runConfig = {
             run_rerank_search: config.runRerankSearch,
             run_normal_hybrid_search: !config.runRerankSearch,
@@ -460,7 +458,7 @@ Query:`;
             },
             {
                 id: 'raw_logs', label: 'Raw Logs', icon: <Terminal className="w-5 h-5" />, color: 'text-purple-500 bg-purple-500/10',
-                value: rawLogsJson, onChange: (v: string) => { setRawLogsJson(v); if(v.trim()) tryParse(v, 'raw_logs'); else clearError('raw_logs'); },
+                value: rawLogsJson, onChange: (v: string) => { setRawLogsJson(v); if (v.trim()) tryParse(v, 'raw_logs'); else clearError('raw_logs'); },
                 placeholder: '["Log line 1", "Log line 2"]', req: false
             },
             {
@@ -477,54 +475,7 @@ Query:`;
 
         return (
             <div className="h-full flex flex-col gap-1 animate-in fade-in duration-300">
-                <div className="flex items-center justify-between shrink-0">
-                    <div>
-                        <h2 className="text-xl font-bold flex items-center gap-1">
-                            <FileJson className="w-2 h-2 text-primary" /> INCIDENT PAYLOAD
-                        </h2>
-                    </div>
-                    <Button variant="outline" size="sm" className="h-8 rounded-full gap-2" onClick={() => {
-                        setRootEventJson(JSON.stringify(DEFAULT_ROOT_EVENT, null, 2));
-                        setRawLogsJson(JSON.stringify(DEFAULT_LOGS, null, 2));
-                        setMetricsJson(JSON.stringify(DEFAULT_METRICS_PAYLOAD, null, 2));
-                        setTopologyJson('{}');
-                        setJsonErrors({});
-                        setActiveInputPanel('root_event');
-                        toast.success('Reset to default example');
-                    }}>
-                        <RefreshCw className="w-3 h-3" /> Reset Example
-                    </Button>
-                </div>
 
-                {(() => {
-                    let parsedRootEvent: any = null;
-                    try {
-                        parsedRootEvent = JSON.parse(rootEventJson);
-                    } catch (e) { }
-
-                    if (!parsedRootEvent) return null;
-
-                    return (
-                        <div className="flex flex-wrap items-center justify-between gap-y-4 px-8 py-3 bg-card border rounded-xl shadow-sm shrink-0">
-                            <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1.5"><Server className="w-3.5 h-3.5" /> DEVICE</span>
-                                <span className="font-bold text-sm truncate">{parsedRootEvent.managed_object_name || parsedRootEvent.device_name || "N/A"}</span>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1.5"><Wifi className="w-3.5 h-3.5" /> IP</span>
-                                <span className="font-bold text-sm truncate">{parsedRootEvent.ip_address || "N/A"}</span>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> PROBABLE CAUSE</span>
-                                <span className="font-bold text-sm truncate">{parsedRootEvent.probable_cause || "N/A"}</span>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1.5"><Activity className="w-3.5 h-3.5" /> SEVERITY</span>
-                                <span className="font-bold text-sm truncate">{parsedRootEvent.severity || "N/A"}</span>
-                            </div>
-                        </div>
-                    );
-                })()}
 
                 <div className="flex-1 flex flex-row gap-2 pb-2 min-h-0">
                     {panels.map(p => {
@@ -817,7 +768,7 @@ Query:`;
                 <div className="h-full flex flex-col gap-4 animate-in fade-in duration-300">
                     <div className="flex items-center justify-between shrink-0">
                         <h2 className="text-xl font-bold flex items-center gap-2">
-                            <Shield className="w-5 h-5 text-primary" /> RCA &amp; REMEDIATION
+                            <Shield className="w-5 h-5 text-primary" /> PROBABLE RCA &amp; REMEDIATION
                         </h2>
                     </div>
                     <div className="flex-1 flex flex-col items-center justify-center border border-dashed rounded-xl bg-muted/5 gap-4">
@@ -839,7 +790,7 @@ Query:`;
             <div className="h-full flex flex-col gap-4 animate-in fade-in duration-300">
                 <div className="flex items-center justify-between shrink-0">
                     <h2 className="text-xl font-bold flex items-center gap-2">
-                        <Shield className="w-5 h-5 text-primary" /> RCA &amp; REMEDIATION
+                        <Shield className="w-5 h-5 text-primary" /> PROBABLE RCA &amp; REMEDIATION
                     </h2>
                     <div className="flex items-center gap-2">
                         <Badge variant="outline" className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20">
@@ -878,13 +829,13 @@ Query:`;
                                                 <div className="p-3">
                                                     <div className="flex justify-between items-start mb-2">
                                                         <Badge variant={i === 0 ? "default" : "secondary"} className="text-[9px]">
-                                                            {i === 0 ? "TOP MATCH" : "ALT"}
+                                                            {i === 0 ? "1 · TOP MATCH" : `${i + 1} · ALT`}
                                                         </Badge>
                                                         <span className={cn("text-xs font-black", i === 0 ? "text-primary" : "text-muted-foreground")}>
                                                             {((diag.confidence || 0) * 100).toFixed(1)}%
                                                         </span>
                                                     </div>
-                                                    <h3 className="text-xs font-bold leading-tight mb-2 line-clamp-2">{diag.title}</h3>
+                                                    <h3 className="text-xs font-bold leading-tight mb-2 line-clamp-2">{i + 1}. {diag.title}</h3>
                                                     <p className="text-[10px] text-muted-foreground font-mono mt-2 pt-2 border-t">
                                                         {diag.remedies?.length || 0} Remedies
                                                     </p>
@@ -906,7 +857,7 @@ Query:`;
                                                 <Badge variant="outline" className="border-primary/30 text-primary text-[10px] font-mono tracking-widest uppercase">
                                                     Diagnosis Details
                                                 </Badge>
-                                        <span className="font-bold text-primary font-mono bg-primary/10 px-2 py-1 rounded text-xs">
+                                                <span className="font-bold text-primary font-mono bg-primary/10 px-2 py-1 rounded text-xs">
                                                     CONFIDENCE: {((activeDiagnosis.confidence || 0) * 100).toFixed(1)}%
                                                 </span>
                                             </div>
@@ -949,22 +900,38 @@ Query:`;
                                                 {/* Anomalies */}
                                                 {results.anomalies?.length > 0 && (
                                                     <div className="space-y-2">
-                                                        <h4 className="text-[10px] uppercase font-black text-muted-foreground tracking-widest mt-4">Correlated Anomalies</h4>
+                                                        <h4 className="text-[10px] uppercase font-black text-muted-foreground tracking-widest mt-4">Metrics Anomalies</h4>
                                                         <div className="grid grid-cols-2 gap-3">
-                                                            {results.anomalies.map((anomaly: any, idx: number) => (
-                                                                <Card key={idx} className="bg-muted/10 border-dashed p-3">
-                                                                    <div className="flex justify-between items-start mb-2">
-                                                                        <span className="text-xs font-bold text-foreground line-clamp-1" title={anomaly.metric}>{anomaly.metric}</span>
-                                                                        <Badge variant="outline" className={cn("text-[9px] font-mono", anomaly.direction === 'spike' ? "text-rose-500 border-rose-500/30 bg-rose-500/10" : "text-amber-500 border-amber-500/30 bg-amber-500/10")}>
-                                                                            {anomaly.direction === 'spike' ? 'SPIKE' : 'DROP'}
-                                                                        </Badge>
-                                                                    </div>
-                                                                    <div className="flex justify-between text-[11px]">
-                                                                        <span className="text-muted-foreground">Change: <span className="text-foreground font-mono">{anomaly.change_pct > 0 ? '+' : ''}{anomaly.change_pct.toFixed(1)}%</span></span>
-                                                                        <span className="text-muted-foreground">Z-Score: <span className="text-foreground font-mono">{anomaly.z_score.toFixed(1)}</span></span>
-                                                                    </div>
-                                                                </Card>
-                                                            ))}
+                                                            {results.anomalies.map((anomaly: any, idx: number) => {
+                                                                const isSpike = ['spike', 'up', 'high'].includes((anomaly.direction || '').toLowerCase());
+                                                                const badgeText = (anomaly.direction || 'anomaly').toUpperCase();
+                                                                return (
+                                                                    <Card key={idx} className="bg-muted/10 border-dashed p-3">
+                                                                        <div className="flex justify-between items-start mb-2 gap-2">
+                                                                            <span className="text-xs font-bold text-foreground line-clamp-1" title={anomaly.metric}>
+                                                                                {anomaly.metric}{anomaly.entity ? ` (${anomaly.entity})` : ''}
+                                                                            </span>
+                                                                            <Badge variant="outline" className={cn("text-[9px] font-mono shrink-0", isSpike ? "text-rose-500 border-rose-500/30 bg-rose-500/10" : "text-amber-500 border-amber-500/30 bg-amber-500/10")}>
+                                                                                {badgeText}
+                                                                            </Badge>
+                                                                        </div>
+                                                                        <div className="flex justify-between text-[11px] gap-2">
+                                                                            <span className="text-muted-foreground">
+                                                                                Change: <span className="text-foreground font-mono">
+                                                                                    {typeof anomaly.change_pct === 'number'
+                                                                                        ? `${anomaly.change_pct > 0 ? '+' : ''}${anomaly.change_pct.toFixed(1)}%`
+                                                                                        : String(anomaly.change_pct || '0%')}
+                                                                                </span>
+                                                                            </span>
+                                                                            {typeof anomaly.z_score === 'number' && anomaly.z_score !== 0 ? (
+                                                                                <span className="text-muted-foreground">
+                                                                                    Z-Score: <span className="text-foreground font-mono">{anomaly.z_score.toFixed(1)}</span>
+                                                                                </span>
+                                                                            ) : null}
+                                                                        </div>
+                                                                    </Card>
+                                                                );
+                                                            })}
                                                         </div>
                                                     </div>
                                                 )}
@@ -1047,6 +1014,17 @@ Query:`;
                             onClick={() => setSidebarOpen(!sidebarOpen)}>
                             <Sliders className="w-3.5 h-3.5" />
                         </Button>
+                        <Button variant="outline" size="sm" className="h-7 rounded-md gap-1.5 text-xs" onClick={() => {
+                            setRootEventJson(JSON.stringify(DEFAULT_ROOT_EVENT, null, 2));
+                            setRawLogsJson(JSON.stringify(DEFAULT_LOGS, null, 2));
+                            setMetricsJson(JSON.stringify(DEFAULT_METRICS_PAYLOAD, null, 2));
+                            setTopologyJson('{}');
+                            setJsonErrors({});
+                            setActiveInputPanel('root_event');
+                            toast.success('Reset to default example');
+                        }}>
+                            <RefreshCw className="w-3 h-3" />
+                        </Button>
                     </div>
                 </div>
 
@@ -1101,31 +1079,7 @@ Query:`;
                                             </div>
                                         </div>
 
-                                        {/* ── Search Parameters ── */}
-                                        <div>
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1.5">Search Params</p>
-                                            <div className="space-y-2.5">
-                                                <div className="space-y-1">
-                                                    <div className="flex justify-between text-[9px] font-black uppercase">
-                                                        <span className="text-muted-foreground">Rerank K</span>
-                                                    </div>
-                                                    <input
-                                                        type="number"
-                                                        min="1"
-                                                        value={config.rerankK || ''}
-                                                        onChange={(e) => {
-                                                            const val = parseInt(e.target.value);
-                                                            if (!isNaN(val) && val > 0) {
-                                                                setConfig(p => ({ ...p, rerankK: val }));
-                                                            } else if (e.target.value === '') {
-                                                                setConfig(p => ({ ...p, rerankK: '' as any }));
-                                                            }
-                                                        }}
-                                                        className="w-full text-xs font-mono p-1 rounded border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
+
 
                                         {/* ── Advanced Flags ── */}
                                         <div>

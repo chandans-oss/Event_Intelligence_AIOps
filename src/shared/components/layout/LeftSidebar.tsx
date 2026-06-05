@@ -14,6 +14,7 @@ import {
   Sparkles,
   BrainCircuit,
   Database,
+  Brain,
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/components/ui/button";
@@ -52,6 +53,7 @@ const navItems: NavItem[] = [
     children: [
       { path: "/admin", label: "Configuration", icon: Settings },
       { path: "/admin/model-training", label: "Model Training", icon: BrainCircuit },
+      { path: "/admin/semantic-check", label: "Semantic Check", icon: Brain },
     ]
   },
 

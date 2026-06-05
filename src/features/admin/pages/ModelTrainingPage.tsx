@@ -141,13 +141,8 @@ export default function ModelTrainingPage() {
     const cfg = { ...trainingConfig };
     const body = JSON.stringify(cfg);
 
-    const es = new EventSource(
-      `${API}/api/training/start?` + new URLSearchParams()
-    );
-    esRef.current?.close();
-
-    // Use fetch + ReadableStream since EventSource doesn't support POST body
-    // We'll use a polling status + POST approach
+    // Use fetch + ReadableStream to support POST body for SSE
+    // We'll parse the data stream manually
     try {
       const resp = await fetch(`${API}/api/training/start`, {
         method: 'POST',

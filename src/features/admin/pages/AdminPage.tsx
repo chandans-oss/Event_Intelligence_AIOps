@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/shared/components/layout/MainLayout';
 import { AdminSidebar, AdminSection } from '@/components/admin/AdminSidebar';
 import { RulesSection } from '@/components/admin/RulesSection';
 import { IntentsSection } from '@/components/admin/IntentsSection';
 import { KBSection } from '@/components/admin/KBSection';
-import { RAGKBSection } from '@/components/admin/RAGKBSection';
-import { RemedyKBSection } from '@/components/admin/RemedyKBSection';
 import { AutoRemediationSection } from '@/components/admin/AutoRemediationSection';
+
 
 
 export default function Admin() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const initialSection = (searchParams.get('section') as AdminSection) || 'CorrelationTypes';
   const highlightIntent = searchParams.get('highlight') || undefined;
   const [activeSection, setActiveSection] = useState<AdminSection>(initialSection);
@@ -34,9 +34,10 @@ export default function Admin() {
       case 'KB':
         return <KBSection />;
       case 'RAGKB':
-        return <RAGKBSection highlightDocId={highlightIntent} />;
       case 'RemedyKB':
-        return <RemedyKBSection />;
+      case 'KBManager':
+        navigate('/admin/kb-manager');
+        return null;
       case 'AutoRemediation':
         return <AutoRemediationSection />;
       default:

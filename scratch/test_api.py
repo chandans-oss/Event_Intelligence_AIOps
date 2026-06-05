@@ -1,22 +1,28 @@
-import requests
+import urllib.request
 import json
 
-url = 'http://localhost:8000/api/rag/analyze'
+url = "http://localhost:8001/api/training/semantic-check"
 payload = {
-    "payload": {
-        "raw_logs": ["test log"],
-        "root_event": {"managed_object_name": "test"},
-        "metrics_payload": {}
-    }
+    "sentence_a": "Network latency is high",
+    "sentence_b": "High delay in network",
+    "model_name": "BAAI/bge-base-en-v1.5",
+    "pooling_strategy": "Mean Pooling"
 }
 
+headers = {
+    "Content-Type": "application/json"
+}
+
+req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method='POST')
+
 try:
-    print(f"Connecting to {url}...")
-    r = requests.post(url, json=payload, timeout=10)
-    print(f"Status: {r.status_code}")
-    try:
-        print(f"Response: {json.dumps(r.json(), indent=2)}")
-    except:
-        print(f"Response Body: {r.text[:500]}")
+    with urllib.request.urlopen(req) as response:
+        result = json.loads(response.read().decode('utf-8'))
+        print("Success! Keys in response:")
+        print(list(result.keys()))
+        print("\nselected_similarity:", result["selected_similarity"])
+        print("\nvector_shape:", result["vector_shape"])
+        print("\ncalculation_details:", result["calculation_details"])
+        print("\npca_points count:", len(result["pca_points"]))
 except Exception as e:
-    print(f"Error: {e}")
+    print("Error calling API:", e)

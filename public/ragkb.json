@@ -1,0 +1,2914 @@
+[
+    {
+        "_id": "net-link-down-001",
+        "category_path": [
+            "Network",
+            "Link",
+            "Link Down"
+        ],
+        "intent_id": "link.down",
+        "title": "Physical Link Down – Optical Signal Lost",
+        "description": "Interface operational status is down while administrative status is up. Loss of Signal (LOS) alarm present.",
+        "situation": {
+            "symptoms": [
+                "Interface oper_status = down",
+                "Interface admin_status = up",
+                "LOS / Loss of Signal alarm on transceiver",
+                "No recent configuration changes"
+            ],
+            "metrics": [
+                {
+                    "metric": "oper_status",
+                    "op": "eq",
+                    "value": "down",
+                    "weight": 0.7
+                },
+                {
+                    "metric": "admin_status",
+                    "op": "eq",
+                    "value": "up",
+                    "weight": 0.2
+                }
+            ],
+            "log_patterns": [
+                "%LINK-3-UPDOWN: Interface GigabitEthernet0/1, changed state to down",
+                "LOS detected on interface eth0"
+            ],
+            "affected_components": [
+                "network_interface",
+                "optical_transceiver"
+            ]
+        },
+        "root_cause_analysis": "Complete loss of optical signal between the local SFP and remote peer. Commonly caused by physical cable disconnect, fibre cut, faulty SFP/transceiver, or dirty connectors.",
+        "remedy": {
+            "generic_steps": [
+                "1. Verify physical cable connection at both ends.",
+                "2. Inspect fibre patch cable for visible damage.",
+                "3. Clean optical connectors.",
+                "4. Check optical Tx/Rx power levels.",
+                "5. Swap SFP/transceiver with a known-good spare.",
+                "6. Engage physical infrastructure team for fibre testing if issue persists."
+            ],
+            "vendors": {
+                "cisco": {
+                    "platforms": [
+                        "IOS",
+                        "IOS-XE",
+                        "NX-OS"
+                    ],
+                    "diagnostic_commands": [
+                        "show interface <interface>",
+                        "show interface <interface> transceiver",
+                        "show logging | include <interface>"
+                    ],
+                    "remediation_commands": [
+                        "conf t",
+                        "interface <interface>",
+                        "shutdown",
+                        "no shutdown",
+                        "end"
+                    ],
+                    "notes": "On Catalyst 9000 check 'show platform software fed switch active ifm interfaces <interface>' for internal state."
+                },
+                "fortinet": {
+                    "platforms": [
+                        "FortiOS"
+                    ],
+                    "diagnostic_commands": [
+                        "get system interface physical <interface>",
+                        "diagnose hardware deviceinfo nic <interface>",
+                        "diagnose sys link-monitor history"
+                    ],
+                    "remediation_commands": [
+                        "config system interface",
+                        "edit <interface>",
+                        "set status down",
+                        "set status up",
+                        "next",
+                        "end"
+                    ]
+                },
+                "huawei": {
+                    "platforms": [
+                        "VRP"
+                    ],
+                    "diagnostic_commands": [
+                        "display interface <interface>",
+                        "display transceiver interface <interface> verbose",
+                        "display logbuffer | include <interface>"
+                    ],
+                    "remediation_commands": [
+                        "system-view",
+                        "interface <interface>",
+                        "shutdown",
+                        "undo shutdown",
+                        "return"
+                    ]
+                }
+            }
+        },
+        "artifacts": [
+            {
+                "type": "log",
+                "description": "Cisco syslog",
+                "sample": "%LINK-3-UPDOWN: Interface GigabitEthernet0/1, changed state to down"
+            }
+        ],
+        "keywords": [
+            "interface down",
+            "link down",
+            "port down",
+            "LOS",
+            "loss of signal"
+        ],
+        "retrieval_text": "Network Link Down. Interface oper_down admin_up, LOS alarm. Optical signal loss due to cable disconnect, fibre cut, or SFP failure. Check physical connectivity, transceiver power, swap SFP. Cisco/Fortinet/Huawei commands available.",
+        "reranker_text": "Link down. Oper down, admin up, LOS. Optical signal loss: cable, SFP, fibre cut.",
+        "metadata": {
+            "domain": "network",
+            "severity": "critical",
+            "created_by": "netops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "net-link-flap-001",
+        "category_path": [
+            "Network",
+            "Link",
+            "Link Flap"
+        ],
+        "intent_id": "link.flap",
+        "title": "Interface Flapping – Intermittent Link State Changes",
+        "description": "Interface repeatedly transitions between up and down causing network instability.",
+        "situation": {
+            "symptoms": [
+                "Frequent link state up/down transitions in logs",
+                "Interface operational state oscillates",
+                "High interface flaps counter",
+                "Possible CRC or input errors"
+            ],
+            "metrics": [
+                {
+                    "metric": "link_flap_count",
+                    "op": "gt",
+                    "value": 5,
+                    "weight": 0.6
+                },
+                {
+                    "metric": "oper_status",
+                    "op": "changes",
+                    "value": "down",
+                    "weight": 0.5
+                }
+            ],
+            "log_patterns": [
+                "%LINK-5-CHANGED: Interface GigabitEthernet0/2, changed state to down",
+                "%LINK-5-CHANGED: Interface GigabitEthernet0/2, changed state to up"
+            ]
+        },
+        "root_cause_analysis": "Marginal physical layer: dirty/damaged fibre, failing SFP that loses optical lock intermittently, loose connector, or auto-negotiation mismatch.",
+        "remedy": {
+            "generic_steps": [
+                "1. Check system log for flapping interval and pattern.",
+                "2. Inspect and reseat fibre connectors and SFP.",
+                "3. Replace fibre patch cable.",
+                "4. Monitor optical Rx power for fluctuations.",
+                "5. Hard-code speed/duplex to rule out auto-negotiation.",
+                "6. Move connection to a different port to isolate hardware."
+            ],
+            "vendors": {
+                "cisco": {
+                    "platforms": [
+                        "IOS",
+                        "IOS-XE"
+                    ],
+                    "diagnostic_commands": [
+                        "show interface <interface> | include flap|errors",
+                        "show interface <interface> transceiver",
+                        "show logging | include <interface>"
+                    ],
+                    "remediation_commands": [
+                        "conf t",
+                        "interface <interface>",
+                        "speed 1000",
+                        "duplex full",
+                        "end"
+                    ],
+                    "notes": "Check errdisable recovery for link-flap with 'show errdisable detect'."
+                },
+                "fortinet": {
+                    "platforms": [
+                        "FortiOS"
+                    ],
+                    "diagnostic_commands": [
+                        "get system interface physical <interface>",
+                        "diagnose hardware deviceinfo nic <interface>",
+                        "diagnose sys link-monitor history"
+                    ],
+                    "remediation_commands": [
+                        "config system interface",
+                        "edit <interface>",
+                        "set speed 1000full",
+                        "next",
+                        "end"
+                    ]
+                },
+                "huawei": {
+                    "platforms": [
+                        "VRP"
+                    ],
+                    "diagnostic_commands": [
+                        "display interface <interface> | include flap|error",
+                        "display transceiver interface <interface> verbose"
+                    ],
+                    "remediation_commands": [
+                        "system-view",
+                        "interface <interface>",
+                        "speed 1000",
+                        "duplex full",
+                        "commit",
+                        "return"
+                    ]
+                }
+            }
+        },
+        "artifacts": [
+            {
+                "type": "log",
+                "description": "Cisco flap log",
+                "sample": "%LINK-5-CHANGED: Interface Gi0/2, changed state to down\n%LINK-5-CHANGED: Interface Gi0/2, changed state to up"
+            }
+        ],
+        "keywords": [
+            "link flap",
+            "interface flap",
+            "flapping",
+            "unstable link"
+        ],
+        "retrieval_text": "Network Link Flap. Intermittent up/down state changes. Rx power fluctuations, bad SFP/cable, auto-negotiation. Hard-code speed/duplex, replace cable or SFP. Vendor commands for Cisco/Fortinet/Huawei.",
+        "reranker_text": "Link flap: repeated up/down, Rx power fluctuates, bad SFP or cable. Fix: hard-code speed/duplex, replace components.",
+        "metadata": {
+            "domain": "network",
+            "severity": "high",
+            "created_by": "netops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "net-link-higherror-001",
+        "category_path": [
+            "Network",
+            "Link",
+            "Link High Error Rate"
+        ],
+        "intent_id": "link.higherror",
+        "title": "High Interface Error Rate – Degraded Link Quality",
+        "description": "Interface remains up/up but shows a rapidly increasing number of input/output errors or packet drops.",
+        "situation": {
+            "symptoms": [
+                "Interface up/up, but high error counters (CRC, frame, runts, giants)",
+                "Application performance degradation",
+                "Retransmissions or voice/video quality issues"
+            ],
+            "metrics": [
+                {
+                    "metric": "input_errors",
+                    "op": "gt",
+                    "value": 100,
+                    "weight": 0.6
+                },
+                {
+                    "metric": "crc_errors",
+                    "op": "gt",
+                    "value": 10,
+                    "weight": 0.6
+                }
+            ],
+            "log_patterns": []
+        },
+        "root_cause_analysis": "Physical layer issues: faulty cable, failing transceiver, dirty connectors, EMI, or duplex mismatch. Can also be caused by a DDoS or excessive microbursts.",
+        "remedy": {
+            "generic_steps": [
+                "1. Check interface error counters (CRC, frame, runts, giants).",
+                "2. Verify duplex/speed matches on both ends.",
+                "3. Replace patch cable and connectors.",
+                "4. Monitor optical power levels for fluctuations.",
+                "5. Inspect for electromagnetic interference (EMI).",
+                "6. Enable error correction features if available."
+            ],
+            "vendors": {
+                "cisco": {
+                    "platforms": [
+                        "IOS",
+                        "IOS-XE"
+                    ],
+                    "diagnostic_commands": [
+                        "show interface <interface> | include error|CRC|frame",
+                        "show interface <interface> counters"
+                    ],
+                    "remediation_commands": [
+                        "conf t",
+                        "interface <interface>",
+                        "duplex full",
+                        "speed 1000",
+                        "end"
+                    ]
+                },
+                "fortinet": {
+                    "platforms": [
+                        "FortiOS"
+                    ],
+                    "diagnostic_commands": [
+                        "get system interface physical <interface> | grep error",
+                        "diagnose hardware deviceinfo nic <interface> | grep -E 'rx_errors|tx_errors'"
+                    ],
+                    "remediation_commands": [
+                        "config system interface",
+                        "edit <interface>",
+                        "set speed 1000full",
+                        "next",
+                        "end"
+                    ]
+                },
+                "huawei": {
+                    "platforms": [
+                        "VRP"
+                    ],
+                    "diagnostic_commands": [
+                        "display interface <interface> | include error|CRC",
+                        "display interface <interface> counters"
+                    ],
+                    "remediation_commands": [
+                        "system-view",
+                        "interface <interface>",
+                        "duplex full",
+                        "speed 1000",
+                        "commit",
+                        "return"
+                    ]
+                }
+            }
+        },
+        "artifacts": [
+            {
+                "type": "cli_output",
+                "description": "High CRC errors on Cisco",
+                "sample": "261 input errors, 261 CRC, 0 frame"
+            }
+        ],
+        "keywords": [
+            "high error rate",
+            "CRC errors",
+            "interface errors",
+            "packet loss"
+        ],
+        "retrieval_text": "Network Link High Error Rate. Interface up but rising CRC/input errors. Likely physical fault: cable, SFP, duplex mismatch, EMI. Replace cable, check duplex, clean optics.",
+        "reranker_text": "High error rate: CRC/input errors. Caused by cable, SFP, duplex mismatch, EMI.",
+        "metadata": {
+            "domain": "network",
+            "severity": "medium",
+            "created_by": "netops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "net-link-crc-001",
+        "category_path": [
+            "Network",
+            "Link",
+            "Link CRC Errors"
+        ],
+        "intent_id": "link.crc",
+        "title": "CRC Errors on Interface – Frame Corruption",
+        "description": "Interface showing CRC errors only, while other errors remain low. Indicates frame corruption on the wire.",
+        "situation": {
+            "symptoms": [
+                "CRC error count increasing",
+                "No significant runts or giants",
+                "Interface operational state up"
+            ],
+            "metrics": [
+                {
+                    "metric": "crc_errors",
+                    "op": "gt",
+                    "value": 5,
+                    "weight": 0.7
+                }
+            ],
+            "log_patterns": []
+        },
+        "root_cause_analysis": "CRC errors are typically caused by physical layer problems: bad cable, faulty transceiver, dirty fibre connectors, or electrical interference. It can also be a mismatched FEC setting on optical interfaces.",
+        "remedy": {
+            "generic_steps": [
+                "1. Check CRC counter on the interface.",
+                "2. Clean optical connectors and inspect patch cable.",
+                "3. Swap SFP/transceiver.",
+                "4. Check if FEC (Forward Error Correction) is enabled and matches peer.",
+                "5. Test with a known-good cable directly between devices."
+            ],
+            "vendors": {
+                "cisco": {
+                    "platforms": [
+                        "IOS-XE"
+                    ],
+                    "diagnostic_commands": [
+                        "show interface <interface> | include CRC",
+                        "show platform software interface <interface>"
+                    ],
+                    "remediation_commands": [
+                        "conf t",
+                        "interface <interface>",
+                        "shutdown",
+                        "no shutdown"
+                    ]
+                },
+                "fortinet": {
+                    "platforms": [
+                        "FortiOS"
+                    ],
+                    "diagnostic_commands": [
+                        "get system interface physical <interface> | grep crc",
+                        "diagnose hardware deviceinfo nic <interface> | grep rx_crc_errors"
+                    ],
+                    "remediation_commands": [
+                        "config system interface",
+                        "edit <interface>",
+                        "set speed 1000full",
+                        "next",
+                        "end"
+                    ]
+                },
+                "huawei": {
+                    "platforms": [
+                        "VRP"
+                    ],
+                    "diagnostic_commands": [
+                        "display interface <interface> | include CRC"
+                    ],
+                    "remediation_commands": [
+                        "system-view",
+                        "interface <interface>",
+                        "shutdown",
+                        "undo shutdown",
+                        "return"
+                    ]
+                }
+            }
+        },
+        "artifacts": [
+            {
+                "type": "cli_output",
+                "description": "Cisco CRC errors",
+                "sample": "5 CRC, 0 frame, 0 overrun"
+            }
+        ],
+        "keywords": [
+            "CRC errors",
+            "frame corruption",
+            "FEC mismatch"
+        ],
+        "retrieval_text": "Network Link CRC Errors. Only CRC errors seen, frame corruption. Caused by bad cable, optics, or FEC mismatch. Clean connectors, swap optics, verify FEC.",
+        "reranker_text": "CRC errors: frame corruption, bad cable/optics, FEC mismatch.",
+        "metadata": {
+            "domain": "network",
+            "severity": "medium",
+            "created_by": "netops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "net-interface-flap-001",
+        "category_path": [
+            "Network",
+            "Interface",
+            "Interface Flapping"
+        ],
+        "intent_id": "interface.flap",
+        "title": "Interface Flapping – Beyond Link Flap, Possibly Higher Layer",
+        "description": "Interface state (line protocol) flapping even though physical link may stay up; often caused by keepalive or control plane issues.",
+        "situation": {
+            "symptoms": [
+                "Line protocol up/down flapping",
+                "Physical link (L1) stable",
+                "Possible keepalive failure, IP address conflict"
+            ],
+            "metrics": [
+                {
+                    "metric": "line_protocol_changes",
+                    "op": "gt",
+                    "value": 5,
+                    "weight": 0.6
+                }
+            ],
+            "log_patterns": [
+                "%LINK-5-CHANGED: Interface Eth0/0, line protocol changed state to down",
+                "%LINEPROTO-5-UPDOWN: Line protocol on Interface Eth0/0, changed state to up"
+            ]
+        },
+        "root_cause_analysis": "Line protocol flapping with stable physical link suggests a Layer 2 issue: misconfigured VLAN, spanning-tree topology changes, duplicate IP, or police/rate limit drops causing keepalive failure.",
+        "remedy": {
+            "generic_steps": [
+                "1. Check interface statistics for any dropped packets.",
+                "2. Verify VLAN membership and spanning-tree state.",
+                "3. Look for IP address conflicts on the subnet.",
+                "4. Disable keepalives temporarily to test.",
+                "5. Review logs for STP topology change notifications."
+            ],
+            "vendors": {
+                "cisco": {
+                    "diagnostic_commands": [
+                        "show interface <interface> | include keepalive|protocol",
+                        "show spanning-tree interface <interface>"
+                    ],
+                    "remediation_commands": [
+                        "conf t",
+                        "interface <interface>",
+                        "no keepalive"
+                    ]
+                },
+                "fortinet": {
+                    "diagnostic_commands": [
+                        "get system interface physical <interface> | grep state",
+                        "diagnose netlink interface list | grep <interface>"
+                    ],
+                    "remediation_commands": [
+                        "config system interface",
+                        "edit <interface>",
+                        "set status down",
+                        "set status up",
+                        "next",
+                        "end"
+                    ]
+                },
+                "huawei": {
+                    "diagnostic_commands": [
+                        "display interface <interface> | include line protocol",
+                        "display stp interface <interface>"
+                    ],
+                    "remediation_commands": [
+                        "system-view",
+                        "interface <interface>",
+                        "shutdown",
+                        "undo shutdown",
+                        "return"
+                    ]
+                }
+            }
+        },
+        "artifacts": [],
+        "keywords": [
+            "interface flap",
+            "line protocol flap",
+            "keepalive",
+            "STP"
+        ],
+        "retrieval_text": "Network Interface Flapping. Line protocol up/down but physical link up. Possible VLAN mismatch, STP, IP conflict, keepalive failure. Check VLAN, STP, IP conflicts.",
+        "reranker_text": "Interface flapping: line protocol down, physical up. VLAN, STP, IP conflict, keepalive.",
+        "metadata": {
+            "domain": "network",
+            "severity": "high",
+            "created_by": "netops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "net-interface-input-errors-001",
+        "category_path": [
+            "Network",
+            "Interface",
+            "Interface Input Errors"
+        ],
+        "intent_id": "interface.input.errors",
+        "title": "Interface Input Errors – Drops at Ingress",
+        "description": "Interface is up but showing input errors (overruns, ignored packets) indicating receive buffer overflows.",
+        "situation": {
+            "symptoms": [
+                "Input errors increase",
+                "No output errors",
+                "Possible packet loss / latency"
+            ],
+            "metrics": [
+                {
+                    "metric": "input_errors",
+                    "op": "gt",
+                    "value": 10,
+                    "weight": 0.6
+                }
+            ],
+            "log_patterns": []
+        },
+        "root_cause_analysis": "Typically caused by insufficient input buffers (hold-queue), bursty traffic exceeding interface capacity, or a microburst that overruns the hardware queue.",
+        "remedy": {
+            "generic_steps": [
+                "1. Verify interface bandwidth utilisation and input drops.",
+                "2. Increase input hold-queue size (if supported).",
+                "3. Enable flow control if the device supports it.",
+                "4. Tune CoS/QoS to prioritise critical traffic.",
+                "5. Consider upgrading the link speed."
+            ],
+            "vendors": {
+                "cisco": {
+                    "diagnostic_commands": [
+                        "show interface <interface> | include input error|overrun",
+                        "show interface <interface> switching"
+                    ],
+                    "remediation_commands": [
+                        "conf t",
+                        "interface <interface>",
+                        "hold-queue 4096 in",
+                        "end"
+                    ]
+                },
+                "fortinet": {
+                    "diagnostic_commands": [
+                        "get system interface physical <interface> | grep rx_errors",
+                        "diagnose hardware deviceinfo nic <interface> | grep rx_missed_errors"
+                    ],
+                    "remediation_commands": []
+                },
+                "huawei": {
+                    "diagnostic_commands": [
+                        "display interface <interface> | include input error|overrun"
+                    ],
+                    "remediation_commands": [
+                        "system-view",
+                        "interface <interface>",
+                        "qos queue-scheduler",
+                        "return"
+                    ]
+                }
+            }
+        },
+        "artifacts": [],
+        "keywords": [
+            "input errors",
+            "overruns",
+            "buffer overflow"
+        ],
+        "retrieval_text": "Network Interface Input Errors. Rising input errors due to buffer overflows. Increase hold-queue, enable flow control, or upgrade link.",
+        "reranker_text": "Input errors: overruns, buffer overflow. Increase queue, flow control, upgrade.",
+        "metadata": {
+            "domain": "network",
+            "severity": "medium",
+            "created_by": "netops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "net-routing-bgp-down-001",
+        "category_path": [
+            "Network",
+            "Routing",
+            "BGP Session Down"
+        ],
+        "intent_id": "bgp.session.down",
+        "title": "BGP Peer Session Down",
+        "description": "BGP state transitions from Established to Idle/Active/Connect. Neighbor not reachable or config mismatch.",
+        "situation": {
+            "symptoms": [
+                "BGP neighbor state not Established",
+                "Hold timer expired, connection refused",
+                "TCP 179 connectivity failed"
+            ],
+            "metrics": [
+                {
+                    "metric": "bgp_state",
+                    "op": "ne",
+                    "value": "Established",
+                    "weight": 0.8
+                }
+            ],
+            "log_patterns": [
+                "%BGP-5-ADJCHANGE: neighbor 192.168.1.1 Down",
+                "TCP connection to 192.168.1.1 port 179 failed"
+            ]
+        },
+        "root_cause_analysis": "BGP down due to Layer 3 unreachability, ACL/firewall blocking TCP 179, BGP AS mismatch, hold timer mismatch, or MD5 authentication failure.",
+        "remedy": {
+            "generic_steps": [
+                "1. Ping neighbor IP from source interface.",
+                "2. Check if TCP 179 is open (telnet / nc).",
+                "3. Verify BGP AS numbers match on both sides.",
+                "4. Ensure neighbor not shut administratively.",
+                "5. Check MD5 key if configured."
+            ],
+            "vendors": {
+                "cisco": {
+                    "diagnostic_commands": [
+                        "show ip bgp summary",
+                        "show ip bgp neighbors <neighbor>",
+                        "ping <neighbor> source <interface>"
+                    ],
+                    "remediation_commands": [
+                        "conf t",
+                        "router bgp <local_as>",
+                        "neighbor <neighbor> remote-as <remote_as>",
+                        "no neighbor <neighbor> shutdown",
+                        "end"
+                    ]
+                },
+                "fortinet": {
+                    "diagnostic_commands": [
+                        "get router info bgp summary",
+                        "get router info bgp neighbors <neighbor>",
+                        "exe ping-options source <interface>",
+                        "exe ping <neighbor>"
+                    ],
+                    "remediation_commands": [
+                        "config router bgp",
+                        "config neighbor",
+                        "edit <neighbor>",
+                        "set remote-as <remote_as>",
+                        "set passive disable",
+                        "next",
+                        "end",
+                        "end"
+                    ]
+                },
+                "huawei": {
+                    "diagnostic_commands": [
+                        "display bgp peer",
+                        "display bgp peer <neighbor> verbose",
+                        "ping -a <source_ip> <neighbor>"
+                    ],
+                    "remediation_commands": [
+                        "system-view",
+                        "bgp <local_as>",
+                        "peer <neighbor> as-number <remote_as>",
+                        "undo peer <neighbor> shutdown",
+                        "commit",
+                        "return"
+                    ]
+                }
+            }
+        },
+        "artifacts": [
+            {
+                "type": "log",
+                "sample": "%BGP-5-ADJCHANGE: neighbor 10.0.0.2 Down"
+            }
+        ],
+        "keywords": [
+            "BGP down",
+            "BGP neighbor",
+            "bgp flap"
+        ],
+        "retrieval_text": "Network Routing BGP Down. Neighbor not Established. Check L3 connectivity, TCP 179, AS numbers, authentication. Vendor-specific commands provided.",
+        "reranker_text": "BGP down: TCP 179 blocked, AS mismatch. Fix connectivity and configuration.",
+        "metadata": {
+            "domain": "network",
+            "severity": "critical",
+            "created_by": "netops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "net-routing-ospf-down-001",
+        "category_path": [
+            "Network",
+            "Routing",
+            "OSPF Neighbor Down"
+        ],
+        "intent_id": "ospf.neighbor.down",
+        "title": "OSPF Neighbor Down – Adjacency Lost",
+        "description": "OSPF neighbor state leaves FULL. Possible interface or hello parameter mismatch.",
+        "situation": {
+            "symptoms": [
+                "OSPF neighbor state not FULL/DR/BDR",
+                "Possible EXSTART/INIT state",
+                "OSPF hello/dead timers mismatch"
+            ],
+            "metrics": [
+                {
+                    "metric": "ospf_state",
+                    "op": "ne",
+                    "value": "FULL",
+                    "weight": 0.8
+                }
+            ],
+            "log_patterns": [
+                "%OSPF-5-ADJCHG: Process 1, Nbr 10.1.1.1 on Eth0 from FULL to DOWN"
+            ]
+        },
+        "root_cause_analysis": "Adjacency lost due to interface down, mismatched OSPF timers, mismatched MTU, network type mismatch (broadcast vs p2p), or authentication failure.",
+        "remedy": {
+            "generic_steps": [
+                "1. Check underlying interface status.",
+                "2. Verify OSPF hello/dead timers match.",
+                "3. Compare MTU settings (ip ospf mtu-ignore).",
+                "4. Confirm network type (point-to-point/broadcast).",
+                "5. Check OSPF authentication keys."
+            ],
+            "vendors": {
+                "cisco": {
+                    "diagnostic_commands": [
+                        "show ip ospf neighbor",
+                        "show ip ospf interface <interface>"
+                    ],
+                    "remediation_commands": [
+                        "conf t",
+                        "router ospf 1",
+                        "network ... area 0",
+                        "ip ospf mtu-ignore"
+                    ]
+                },
+                "fortinet": {
+                    "diagnostic_commands": [
+                        "get router info ospf neighbor",
+                        "get router info ospf interface <interface>"
+                    ],
+                    "remediation_commands": [
+                        "config router ospf",
+                        "config ospf-interface",
+                        "edit <interface>",
+                        "set mtu-ignore enable",
+                        "next",
+                        "end",
+                        "end"
+                    ]
+                },
+                "huawei": {
+                    "diagnostic_commands": [
+                        "display ospf peer",
+                        "display ospf interface <interface>"
+                    ],
+                    "remediation_commands": [
+                        "system-view",
+                        "ospf 1",
+                        "area 0",
+                        "network ...",
+                        "return"
+                    ]
+                }
+            }
+        },
+        "artifacts": [
+            {
+                "type": "log",
+                "sample": "%OSPF-5-ADJCHG: Process 1, Nbr 10.1.1.1 on Eth0 from FULL to DOWN"
+            }
+        ],
+        "keywords": [
+            "OSPF down",
+            "OSPF adjacency",
+            "OSPF neighbor"
+        ],
+        "retrieval_text": "Network Routing OSPF Down. Neighbor not FULL. Check interface, timers, MTU, authentication. Vendor commands for Cisco/Fortinet/Huawei.",
+        "reranker_text": "OSPF neighbor down: timer mismatch, MTU, authentication.",
+        "metadata": {
+            "domain": "network",
+            "severity": "high",
+            "created_by": "netops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "net-routing-route-flap-001",
+        "category_path": [
+            "Network",
+            "Routing",
+            "Route Flapping"
+        ],
+        "intent_id": "route.flap",
+        "title": "Route Flapping – Unstable Routing Table",
+        "description": "A specific route keeps appearing and disappearing from the routing table.",
+        "situation": {
+            "symptoms": [
+                "Route appears and withdraws frequently",
+                "Routing protocol instability",
+                "Packet loss for affected prefix"
+            ],
+            "metrics": [
+                {
+                    "metric": "route_changes",
+                    "op": "gt",
+                    "value": 10,
+                    "weight": 0.7
+                }
+            ],
+            "log_patterns": [
+                "%BGP-5-ADJCHANGE: ...",
+                "Route 192.168.2.0/24 removed"
+            ]
+        },
+        "root_cause_analysis": "Flapping route caused by unstable underlying link, frequent BGP/OSPF reconvergences, duplicate router ID, or route dampening settings too low.",
+        "remedy": {
+            "generic_steps": [
+                "1. Identify the flapping route.",
+                "2. Check if the next hop is reachable and stable.",
+                "3. Look for routing loops or duplicate router IDs.",
+                "4. Adjust route dampening parameters if using BGP.",
+                "5. Stabilise the underlying IGP."
+            ],
+            "vendors": {
+                "cisco": {
+                    "diagnostic_commands": [
+                        "show ip route <prefix>",
+                        "show ip bgp <prefix>",
+                        "debug ip routing (careful)"
+                    ],
+                    "remediation_commands": [
+                        "conf t",
+                        "router bgp <as>",
+                        "bgp dampening"
+                    ]
+                },
+                "fortinet": {
+                    "diagnostic_commands": [
+                        "get router info routing-table prefix <prefix>",
+                        "get router info bgp network <prefix>"
+                    ],
+                    "remediation_commands": [
+                        "config router bgp",
+                        "set dampening enable",
+                        "end"
+                    ]
+                },
+                "huawei": {
+                    "diagnostic_commands": [
+                        "display ip routing-table <prefix>",
+                        "display bgp routing-table <prefix>"
+                    ],
+                    "remediation_commands": [
+                        "system-view",
+                        "bgp <as>",
+                        "dampening",
+                        "commit",
+                        "return"
+                    ]
+                }
+            }
+        },
+        "artifacts": [],
+        "keywords": [
+            "route flapping",
+            "unstable route",
+            "dampening"
+        ],
+        "retrieval_text": "Network Route Flapping. Route appears/withdraws frequently. Check next-hop stability, duplicate router IDs, enable BGP dampening.",
+        "reranker_text": "Route flapping: next-hop unstable, router ID duplicate, enable dampening.",
+        "metadata": {
+            "domain": "network",
+            "severity": "high",
+            "created_by": "netops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "net-device-down-001",
+        "category_path": [
+            "Network",
+            "Device",
+            "Device Down"
+        ],
+        "intent_id": "device.down",
+        "title": "Network Device Unreachable – Switch/Router Down",
+        "description": "Device stops responding to SNMP/ping and all monitored interfaces show down.",
+        "situation": {
+            "symptoms": [
+                "All interfaces down in monitoring",
+                "Device unreachable via ping/SSH",
+                "No telemetry from device"
+            ],
+            "metrics": [
+                {
+                    "metric": "device_reachability",
+                    "op": "eq",
+                    "value": "down",
+                    "weight": 0.9
+                }
+            ],
+            "log_patterns": []
+        },
+        "root_cause_analysis": "Power failure, hardware crash, IOS/FortiOS crash (kernel panic), total fibre cut to management interface, or device in boot loop.",
+        "remedy": {
+            "generic_steps": [
+                "1. Check physical power (PSU, power strip).",
+                "2. Verify console access via out-of-band.",
+                "3. Inspect hardware alarms if reachable out-of-band.",
+                "4. Remote power cycle (if PDU available).",
+                "5. Check upstream device logs for link down on connected ports."
+            ],
+            "vendors": {
+                "cisco": {
+                    "diagnostic_commands": []
+                },
+                "fortinet": {
+                    "diagnostic_commands": []
+                },
+                "huawei": {
+                    "diagnostic_commands": []
+                }
+            }
+        },
+        "keywords": [
+            "device down",
+            "router down",
+            "switch down",
+            "unreachable"
+        ],
+        "retrieval_text": "Network Device Down. No response, all interfaces down. Check power, console, upstream links.",
+        "reranker_text": "Device down: power failure, crash, boot loop.",
+        "metadata": {
+            "domain": "network",
+            "severity": "critical",
+            "created_by": "netops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "net-device-highcpu-001",
+        "category_path": [
+            "Network",
+            "Device",
+            "Device High CPU"
+        ],
+        "intent_id": "device.highcpu",
+        "title": "High CPU Usage on Network Device",
+        "description": "Device CPU pegged at 100%, causing slow CLI, routing protocol flaps.",
+        "situation": {
+            "symptoms": [
+                "CPU utilisation > 90% sustained",
+                "CLI sluggish, SSH timeouts",
+                "Routing protocol adjacencies flap"
+            ],
+            "metrics": [
+                {
+                    "metric": "cpu_usage",
+                    "op": "gt",
+                    "value": 90,
+                    "weight": 0.8
+                }
+            ],
+            "log_patterns": [
+                "%SYS-3-CPUHOG"
+            ]
+        },
+        "root_cause_analysis": "High CPU can be due to process (e.g., BGP scanner, SNMP poller), control plane DDoS, or a loop/spanning-tree issue causing constant topology changes.",
+        "remedy": {
+            "generic_steps": [
+                "1. Identify top CPU-using process.",
+                "2. Check for spanning-tree topology changes.",
+                "3. Rate-limit management plane traffic (CoPP).",
+                "4. Optimise SNMP polling intervals.",
+                "5. Disable unused services."
+            ],
+            "vendors": {
+                "cisco": {
+                    "diagnostic_commands": [
+                        "show processes cpu sorted",
+                        "show spanning-tree detail | include topology change"
+                    ],
+                    "remediation_commands": [
+                        "conf t",
+                        "control-plane",
+                        "service-policy input COPP-POLICY"
+                    ]
+                },
+                "fortinet": {
+                    "diagnostic_commands": [
+                        "get system performance status",
+                        "diag sys top"
+                    ],
+                    "remediation_commands": [
+                        "config system global",
+                        "set cpu treshold 80"
+                    ]
+                },
+                "huawei": {
+                    "diagnostic_commands": [
+                        "display cpu-usage",
+                        "display process cpu"
+                    ],
+                    "remediation_commands": [
+                        "system-view",
+                        "cpu-defend policy ..."
+                    ]
+                }
+            }
+        },
+        "artifacts": [],
+        "keywords": [
+            "high cpu",
+            "device high cpu",
+            "cpu hog"
+        ],
+        "retrieval_text": "Network Device High CPU. Identify process, STP changes, apply CoPP. Commands for Cisco/Fortinet/Huawei.",
+        "reranker_text": "High CPU: process hog, STP loop, DDoS. Apply rate-limiting.",
+        "metadata": {
+            "domain": "network",
+            "severity": "high",
+            "created_by": "netops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "net-firewall-policy-drop-001",
+        "category_path": [
+            "Network",
+            "Firewall",
+            "Firewall Policy Drop"
+        ],
+        "intent_id": "firewall.policy.drop",
+        "title": "Traffic Dropped by Firewall Policy",
+        "description": "Legitimate traffic is being dropped by an implicit deny or misconfigured rule.",
+        "situation": {
+            "symptoms": [
+                "Users report application not reachable",
+                "Packet capture shows SYN sent, no SYN-ACK",
+                "Firewall logs show deny action for expected traffic"
+            ],
+            "metrics": [
+                {
+                    "metric": "firewall_drops",
+                    "op": "gt",
+                    "value": 0,
+                    "weight": 0.7
+                }
+            ],
+            "log_patterns": [
+                "Deny: src=10.10.10.1 dst=10.20.20.1 proto=TCP sport=443 dport=8443"
+            ]
+        },
+        "root_cause_analysis": "Missing firewall rule, incorrect policy ordering, or the traffic is matching an explicit deny before the allow rule.",
+        "remedy": {
+            "generic_steps": [
+                "1. Identify the dropped flow from firewall logs.",
+                "2. Verify the rule base order – explicit deny rules may come first.",
+                "3. Add a specific allow rule above the deny.",
+                "4. Test connectivity after change."
+            ],
+            "vendors": {
+                "cisco": {
+                    "platforms": [
+                        "ASA",
+                        "FTD"
+                    ],
+                    "diagnostic_commands": [
+                        "show access-list | include <src/dst>",
+                        "show asp drop",
+                        "packet-tracer input <intf> tcp <src> <sport> <dst> <dport>"
+                    ],
+                    "remediation_commands": [
+                        "conf t",
+                        "access-list OUTSIDE_IN extended permit tcp host <src> host <dst> eq <dport>",
+                        "access-group OUTSIDE_IN in interface outside"
+                    ]
+                },
+                "fortinet": {
+                    "platforms": [
+                        "FortiOS"
+                    ],
+                    "diagnostic_commands": [
+                        "diag sniffer packet any 'host <src> and host <dst>' 4",
+                        "diag firewall iprope list | grep <src>",
+                        "diag debug flow filter addr <src>",
+                        "diag debug flow show console enable",
+                        "diag debug enable"
+                    ],
+                    "remediation_commands": [
+                        "config firewall policy",
+                        "edit 0",
+                        "set srcintf <interface>",
+                        "set dstintf <interface>",
+                        "set srcaddr <src>",
+                        "set dstaddr <dst>",
+                        "set action accept",
+                        "set schedule always",
+                        "set service <service>",
+                        "next",
+                        "end"
+                    ]
+                },
+                "huawei": {
+                    "platforms": [
+                        "USG"
+                    ],
+                    "diagnostic_commands": [
+                        "display firewall session table | include <src>",
+                        "display firewall policy",
+                        "display firewall drop-record"
+                    ],
+                    "remediation_commands": [
+                        "system-view",
+                        "security-policy",
+                        "rule name allow-rule",
+                        "source-zone trust",
+                        "destination-zone untrust",
+                        "source-address <src>",
+                        "destination-address <dst>",
+                        "action permit",
+                        "commit",
+                        "return"
+                    ]
+                }
+            }
+        },
+        "artifacts": [
+            {
+                "type": "log",
+                "sample": "Deny: TCP 10.10.10.1:443 -> 10.20.20.1:8443"
+            }
+        ],
+        "keywords": [
+            "firewall drop",
+            "policy drop",
+            "deny",
+            "blocked"
+        ],
+        "retrieval_text": "Network Firewall Policy Drop. Traffic dropped by firewall rule. Check access lists, policy order. Add allow rule. Commands for ASA/FTD/FortiGate/Huawei USG.",
+        "reranker_text": "Firewall drop: missing rule, policy order. Add allow rule.",
+        "metadata": {
+            "domain": "network",
+            "severity": "high",
+            "created_by": "netops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "net-firewall-vpn-down-001",
+        "category_path": [
+            "Network",
+            "Firewall",
+            "VPN Tunnel Down"
+        ],
+        "intent_id": "vpn.tunnel.down",
+        "title": "IPsec VPN Tunnel Down – Phase 1 or Phase 2 Failure",
+        "description": "Site‑to‑site VPN tunnel is not established or drops frequently.",
+        "situation": {
+            "symptoms": [
+                "VPN status shows DOWN",
+                "Phase 1 proposal mismatch",
+                "NAT‑T or DPD issues"
+            ],
+            "metrics": [
+                {
+                    "metric": "vpn_status",
+                    "op": "eq",
+                    "value": "down",
+                    "weight": 0.8
+                }
+            ],
+            "log_patterns": [
+                "IKE phase-1 negotiation failed",
+                "No proposal chosen"
+            ]
+        },
+        "root_cause_analysis": "Common causes: IKE/IPsec proposal mismatch, pre‑shared key wrong, certificate expired, peer unreachable, or NAT traversal not configured.",
+        "remedy": {
+            "generic_steps": [
+                "1. Verify peer is reachable from the public IP.",
+                "2. Compare IKE and IPsec policies on both ends.",
+                "3. Confirm pre‑shared keys match.",
+                "4. Enable NAT‑T and DPD.",
+                "5. Check certificate validity if using PKI."
+            ],
+            "vendors": {
+                "cisco": {
+                    "platforms": [
+                        "ASA",
+                        "FTD"
+                    ],
+                    "diagnostic_commands": [
+                        "show crypto ikev2 sa",
+                        "show crypto ipsec sa",
+                        "debug crypto ikev2"
+                    ],
+                    "remediation_commands": [
+                        "conf t",
+                        "crypto ikev2 policy 1",
+                        "encryption aes-256",
+                        "integrity sha256",
+                        "group 14",
+                        "prf sha256",
+                        "lifetime 86400",
+                        "end"
+                    ]
+                },
+                "fortinet": {
+                    "platforms": [
+                        "FortiOS"
+                    ],
+                    "diagnostic_commands": [
+                        "diag vpn tunnel list",
+                        "get vpn ipsec tunnel details",
+                        "diag debug application ike -1"
+                    ],
+                    "remediation_commands": [
+                        "config vpn ipsec phase1-interface",
+                        "edit <tunnel-name>",
+                        "set ike-version 2",
+                        "set encryption aes-256-sha256",
+                        "set dhgrp 14",
+                        "set keylife 86400",
+                        "next",
+                        "end"
+                    ]
+                },
+                "huawei": {
+                    "platforms": [
+                        "USG"
+                    ],
+                    "diagnostic_commands": [
+                        "display ike sa",
+                        "display ipsec sa",
+                        "debugging ike all"
+                    ],
+                    "remediation_commands": [
+                        "system-view",
+                        "ike proposal 1",
+                        "encryption-algorithm aes-256",
+                        "authentication-algorithm sha2-256",
+                        "dh group14",
+                        "return"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "VPN down",
+            "IPsec tunnel",
+            "phase1 fail",
+            "proposal mismatch"
+        ],
+        "retrieval_text": "Network VPN Tunnel Down. Phase1/Phase2 negotiation failed. Check proposals, PSK, NAT-T. Cisco/FortiGate/Huawei USG commands included.",
+        "reranker_text": "VPN down: proposal mismatch, PSK wrong, peer unreachable.",
+        "metadata": {
+            "domain": "network",
+            "severity": "critical",
+            "created_by": "netops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "compute-cpu-high-001",
+        "category_path": [
+            "Compute",
+            "CPU",
+            "High CPU Usage"
+        ],
+        "intent_id": "compute.cpu.high",
+        "title": "High CPU Usage on Linux/Windows Server",
+        "description": "CPU utilisation consistently above 90%, causing application slowness.",
+        "situation": {
+            "symptoms": [
+                "CPU % user/system high",
+                "Load average > number of cores",
+                "Application response time degradation"
+            ],
+            "metrics": [
+                {
+                    "metric": "cpu_usage",
+                    "op": "gt",
+                    "value": 90,
+                    "weight": 0.8
+                }
+            ],
+            "log_patterns": [
+                "CPU overload warning"
+            ]
+        },
+        "root_cause_analysis": "Runaway process, insufficient resources for workload, CPU throttling in virtualized environment, or malware.",
+        "remedy": {
+            "generic_steps": [
+                "1. Top/htop to identify high CPU process.",
+                "2. Check for CPU steal time in VM.",
+                "3. Increase CPU resources or scale out.",
+                "4. Kill/restart runaway process if applicable."
+            ],
+            "vendors": {
+                "linux": {
+                    "diagnostic_commands": [
+                        "top -bn1",
+                        "ps aux --sort=-%cpu | head -10",
+                        "sar -u 1 5"
+                    ],
+                    "remediation_commands": [
+                        "kill -9 <pid>",
+                        "systemctl restart <service>"
+                    ]
+                },
+                "windows": {
+                    "diagnostic_commands": [
+                        "Get-Process | Sort-Object CPU -Descending",
+                        "wmic cpu get loadpercentage"
+                    ],
+                    "remediation_commands": [
+                        "Stop-Process -Id <pid> -Force",
+                        "Restart-Service <service>"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "high cpu",
+            "server cpu",
+            "overload"
+        ],
+        "retrieval_text": "Compute CPU High Usage. Runaway process, CPU steal, or undersized VM. Use top/ps to identify, kill or scale up.",
+        "reranker_text": "High CPU: process, CPU steal, scale.",
+        "metadata": {
+            "domain": "compute",
+            "severity": "high",
+            "created_by": "sysops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "compute-cpu-softlockup-001",
+        "category_path": [
+            "Compute",
+            "CPU",
+            "CPU Soft Lockup"
+        ],
+        "intent_id": "compute.cpu.softlockup",
+        "title": "CPU Soft Lockup – Kernel Hung Task",
+        "description": "Linux kernel reports soft lockup, server becomes unresponsive.",
+        "situation": {
+            "symptoms": [
+                "Kernel messages: 'BUG: soft lockup - CPU#X stuck'",
+                "Server hangs, high load",
+                "No SSH access possible"
+            ],
+            "metrics": [],
+            "log_patterns": [
+                "soft lockup - CPU#",
+                "rcu_sched detected stalls"
+            ]
+        },
+        "root_cause_analysis": "Kernel bug, driver issue (e.g., NVMe), or CPU overcommit/hypervisor problem causing vCPU starvation.",
+        "remedy": {
+            "generic_steps": [
+                "1. Check console (IPMI/iDRAC) for kernel dump.",
+                "2. Review hardware health (memory, CPU).",
+                "3. Update kernel or drivers.",
+                "4. Hard reboot if necessary."
+            ],
+            "vendors": {
+                "linux": {
+                    "diagnostic_commands": [
+                        "dmesg | tail -50",
+                        "cat /proc/interrupts"
+                    ],
+                    "remediation_commands": [
+                        "reboot -f",
+                        "apt upgrade kernel"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "soft lockup",
+            "CPU stuck",
+            "hung task"
+        ],
+        "retrieval_text": "Compute CPU Soft Lockup. Kernel bug, vCPU starvation. Check console, update kernel, reboot.",
+        "reranker_text": "Soft lockup: kernel bug, vCPU issue. Reboot, update.",
+        "metadata": {
+            "domain": "compute",
+            "severity": "critical",
+            "created_by": "sysops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "compute-memory-exhaust-001",
+        "category_path": [
+            "Compute",
+            "Memory",
+            "Memory Exhaustion"
+        ],
+        "intent_id": "compute.memory.exhaust",
+        "title": "Memory Exhaustion – OOM Killer Triggered",
+        "description": "System runs out of RAM, OOM killer terminates processes.",
+        "situation": {
+            "symptoms": [
+                "Free memory near zero, high swap usage",
+                "OOM Killer log entries",
+                "Applications crash"
+            ],
+            "metrics": [
+                {
+                    "metric": "memory_usage",
+                    "op": "gt",
+                    "value": 95,
+                    "weight": 0.9
+                }
+            ],
+            "log_patterns": [
+                "Out of memory: Kill process",
+                "oom-killer invoked"
+            ]
+        },
+        "root_cause_analysis": "Memory leak in application, insufficient RAM for workload, or system cache not released.",
+        "remedy": {
+            "generic_steps": [
+                "1. Identify process with highest memory (top/htop).",
+                "2. Check for memory leak (growing RSS).",
+                "3. Restart the leaking service.",
+                "4. Add more RAM or scale application instances."
+            ],
+            "vendors": {
+                "linux": {
+                    "diagnostic_commands": [
+                        "free -m",
+                        "ps aux --sort=-%mem | head -10",
+                        "dmesg | grep -i oom"
+                    ],
+                    "remediation_commands": [
+                        "systemctl restart <service>",
+                        "echo 1 > /proc/sys/vm/drop_caches"
+                    ]
+                },
+                "windows": {
+                    "diagnostic_commands": [
+                        "Get-Process | Sort-Object WS -Descending",
+                        "wmic OS get FreePhysicalMemory"
+                    ],
+                    "remediation_commands": [
+                        "Restart-Service <service>"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "OOM",
+            "out of memory",
+            "swap full"
+        ],
+        "retrieval_text": "Compute Memory Exhaustion. OOM killer active. Memory leak or high load. Restart service, increase RAM.",
+        "reranker_text": "Memory exhaustion: OOM, leak. Restart, add memory.",
+        "metadata": {
+            "domain": "compute",
+            "severity": "critical",
+            "created_by": "sysops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "compute-memory-leak-001",
+        "category_path": [
+            "Compute",
+            "Memory",
+            "Memory Leak"
+        ],
+        "intent_id": "compute.memory.leak",
+        "title": "Gradual Memory Leak in Application",
+        "description": "Process memory usage grows over time without releasing.",
+        "situation": {
+            "symptoms": [
+                "Steady increase in RSS of a process",
+                "System memory slowly fills up",
+                "No sudden spikes"
+            ],
+            "metrics": [
+                {
+                    "metric": "memory_rss_trend",
+                    "op": "increasing",
+                    "weight": 0.8
+                }
+            ],
+            "log_patterns": []
+        },
+        "root_cause_analysis": "Application bug causing memory not freed. Common in Java apps with heap leaks, or native code leaks.",
+        "remedy": {
+            "generic_steps": [
+                "1. Use pmap/memory profiler to identify leak source.",
+                "2. Restart the application periodically as workaround.",
+                "3. Apply application patch."
+            ],
+            "vendors": {
+                "linux": {
+                    "diagnostic_commands": [
+                        "ps aux --sort=-%mem | head",
+                        "pmap -x <pid> | tail -20",
+                        "valgrind --leak-check=full ./app"
+                    ],
+                    "remediation_commands": [
+                        "systemctl restart <service>"
+                    ]
+                },
+                "windows": {
+                    "diagnostic_commands": [
+                        "Get-Process -Id <pid> | Select PrivateMemorySize"
+                    ],
+                    "remediation_commands": [
+                        "Restart-Service"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "memory leak",
+            "RSS growing",
+            "application leak"
+        ],
+        "retrieval_text": "Compute Memory Leak. Application RSS grows over time. Profile, restart periodically, patch.",
+        "reranker_text": "Memory leak: RSS grows, restart, patch.",
+        "metadata": {
+            "domain": "compute",
+            "severity": "medium",
+            "created_by": "sysops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "compute-disk-full-001",
+        "category_path": [
+            "Compute",
+            "Disk",
+            "Disk Full"
+        ],
+        "intent_id": "compute.disk.full",
+        "title": "Disk Partition Full – No Space Left on Device",
+        "description": "File system utilisation reaches 100%, causing write errors.",
+        "situation": {
+            "symptoms": [
+                "df -h shows 100% use",
+                "Applications can't write logs/temp files",
+                "System alerts"
+            ],
+            "metrics": [
+                {
+                    "metric": "disk_usage",
+                    "op": "eq",
+                    "value": 100,
+                    "weight": 0.9
+                }
+            ],
+            "log_patterns": []
+        },
+        "root_cause_analysis": "Log rotation not working, large core dump, unattended file growth, or insufficient disk partitioning.",
+        "remedy": {
+            "generic_steps": [
+                "1. Identify largest files/directories with du.",
+                "2. Clean old logs, core dumps, temp files.",
+                "3. Rotate/compress logs.",
+                "4. Resize filesystem if possible."
+            ],
+            "vendors": {
+                "linux": {
+                    "diagnostic_commands": [
+                        "df -h",
+                        "du -sh /* | sort -rh | head -10",
+                        "lsof | grep deleted"
+                    ],
+                    "remediation_commands": [
+                        "rm -rf /tmp/*.log",
+                        "logrotate -f /etc/logrotate.conf",
+                        "resize2fs /dev/sda1"
+                    ]
+                },
+                "windows": {
+                    "diagnostic_commands": [
+                        "Get-PSDrive C | Select Used,Free",
+                        "Get-ChildItem C:\\ -Recurse -ErrorAction SilentlyContinue | Sort-Object Length -Descending | Select -First 10"
+                    ],
+                    "remediation_commands": [
+                        "cleanmgr.exe /verylowdisk",
+                        "Resize-Partition -DriveLetter C -Size <larger>"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "disk full",
+            "no space",
+            "partition full"
+        ],
+        "retrieval_text": "Compute Disk Full. 100% utilisation. Clean logs, core dumps, resize partition. Commands for Linux and Windows.",
+        "reranker_text": "Disk full: clean logs, resize.",
+        "metadata": {
+            "domain": "compute",
+            "severity": "critical",
+            "created_by": "sysops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "compute-disk-io-001",
+        "category_path": [
+            "Compute",
+            "Disk",
+            "Disk I/O Error"
+        ],
+        "intent_id": "compute.disk.ioerror",
+        "title": "Disk I/O Errors – Bad Sectors or Controller Fault",
+        "description": "Kernel reports I/O errors on a disk device, causing file system errors.",
+        "situation": {
+            "symptoms": [
+                "I/O error in kernel logs",
+                "Read/write failures",
+                "Filesystem switches to read-only"
+            ],
+            "metrics": [
+                {
+                    "metric": "disk_io_errors",
+                    "op": "gt",
+                    "value": 0,
+                    "weight": 0.9
+                }
+            ],
+            "log_patterns": [
+                "I/O error, dev sda",
+                "Buffer I/O error on device"
+            ]
+        },
+        "root_cause_analysis": "Failing hard disk (bad sectors), loose cable, faulty RAID controller, or NVMe media errors.",
+        "remedy": {
+            "generic_steps": [
+                "1. Check SMART attributes for the drive.",
+                "2. Inspect physical connections.",
+                "3. Replace failing disk if under warranty.",
+                "4. Restore from backup if filesystem is corrupted."
+            ],
+            "vendors": {
+                "linux": {
+                    "diagnostic_commands": [
+                        "smartctl -a /dev/sda",
+                        "dmesg | grep -i error",
+                        "fsck -y /dev/sda1"
+                    ],
+                    "remediation_commands": [
+                        "echo 1 > /sys/block/sda/device/delete (to isolate)",
+                        "mount -o remount,ro /"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "disk io error",
+            "bad sectors",
+            "smart failure"
+        ],
+        "retrieval_text": "Compute Disk I/O Errors. Failing disk or controller. Check SMART, replace disk.",
+        "reranker_text": "Disk IO error: bad sectors, hardware failure.",
+        "metadata": {
+            "domain": "compute",
+            "severity": "critical",
+            "created_by": "sysops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "compute-process-crash-001",
+        "category_path": [
+            "Compute",
+            "Process",
+            "Process Crash"
+        ],
+        "intent_id": "compute.process.crash",
+        "title": "Critical Process Crashed – Core Dump",
+        "description": "A monitored process terminated unexpectedly, leaving a core dump.",
+        "situation": {
+            "symptoms": [
+                "Process no longer running",
+                "Core dump file generated",
+                "Supervisor respawns it (if configured)"
+            ],
+            "metrics": [],
+            "log_patterns": [
+                "segfault at",
+                "SIGSEGV"
+            ]
+        },
+        "root_cause_analysis": "Segmentation fault, out-of-memory (but process killed), unhandled exception, or bug.",
+        "remedy": {
+            "generic_steps": [
+                "1. Examine core dump with gdb to find crash location.",
+                "2. Check system logs for OOM/segfault messages.",
+                "3. Restart the process and monitor.",
+                "4. Apply application patch or increase memory limits."
+            ],
+            "vendors": {
+                "linux": {
+                    "diagnostic_commands": [
+                        "coredumpctl list",
+                        "gdb /path/to/binary /var/lib/systemd/coredump/core.xxx"
+                    ],
+                    "remediation_commands": [
+                        "systemctl restart <service>"
+                    ]
+                },
+                "windows": {
+                    "diagnostic_commands": [
+                        "Get-EventLog -LogName Application -Source 'Application Error'"
+                    ],
+                    "remediation_commands": [
+                        "Start-Service <service>"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "process crash",
+            "segfault",
+            "core dump"
+        ],
+        "retrieval_text": "Compute Process Crash. Segfault or unhandled exception. Analyse core dump, restart service.",
+        "reranker_text": "Process crash: segfault, core dump. Restart, analyse.",
+        "metadata": {
+            "domain": "compute",
+            "severity": "high",
+            "created_by": "sysops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "compute-process-zombie-001",
+        "category_path": [
+            "Compute",
+            "Process",
+            "Process Zombie"
+        ],
+        "intent_id": "compute.process.zombie",
+        "title": "Zombie Processes Accumulation",
+        "description": "Defunct child processes not reaped, consuming process table slots.",
+        "situation": {
+            "symptoms": [
+                "ps aux shows [defunct] processes",
+                "System may have high load but low CPU",
+                "Unable to fork new processes when PID limit reached"
+            ],
+            "metrics": [
+                {
+                    "metric": "zombie_count",
+                    "op": "gt",
+                    "value": 10,
+                    "weight": 0.7
+                }
+            ],
+            "log_patterns": []
+        },
+        "root_cause_analysis": "Parent process not calling wait() on terminated children. Often a programming error or parent stuck in sleep.",
+        "remedy": {
+            "generic_steps": [
+                "1. Identify parent of zombie processes.",
+                "2. Restart the misbehaving parent process.",
+                "3. Apply fix to application to properly reap children."
+            ],
+            "vendors": {
+                "linux": {
+                    "diagnostic_commands": [
+                        "ps aux | awk '{ if ($8==\"Z\") print }'",
+                        "ps -o pid,ppid,stat,cmd -C <parent>"
+                    ],
+                    "remediation_commands": [
+                        "kill -s SIGCHLD <parent_pid>",
+                        "systemctl restart <service>"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "zombie process",
+            "defunct",
+            "process table full"
+        ],
+        "retrieval_text": "Compute Process Zombie. Defunct children. Restart parent process. Check application code.",
+        "reranker_text": "Zombie processes: parent not reaping. Restart parent.",
+        "metadata": {
+            "domain": "compute",
+            "severity": "medium",
+            "created_by": "sysops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "storage-volume-offline-001",
+        "category_path": [
+            "Storage",
+            "Volume",
+            "Volume Offline"
+        ],
+        "intent_id": "storage.volume.offline",
+        "title": "Storage Volume Goes Offline – LUN Not Accessible",
+        "description": "A storage volume/LUN is no longer visible to the host, causing I/O errors.",
+        "situation": {
+            "symptoms": [
+                "Multipath path down events",
+                "Volume not listed in /dev/mapper or disk management",
+                "Application database fails to start"
+            ],
+            "metrics": [
+                {
+                    "metric": "volume_online",
+                    "op": "eq",
+                    "value": false,
+                    "weight": 0.9
+                }
+            ],
+            "log_patterns": [
+                "scsi 0:0:1:0: reservation conflict"
+            ]
+        },
+        "root_cause_analysis": "SAN fabric zoning issue, storage controller failover not working, HBA/cable failure, or LUN unpresentation.",
+        "remedy": {
+            "generic_steps": [
+                "1. Check HBA link status.",
+                "2. Verify zoning on SAN switches (Cisco MDS, Brocade).",
+                "3. Rescan SCSI bus.",
+                "4. Check storage array for LUN mapping."
+            ],
+            "vendors": {
+                "linux": {
+                    "diagnostic_commands": [
+                        "multipath -ll",
+                        "dmesg | grep -i scsi",
+                        "echo '- - -' > /sys/class/scsi_host/host0/scan"
+                    ],
+                    "remediation_commands": [
+                        "rescan-scsi-bus.sh",
+                        "multipath -r"
+                    ]
+                },
+                "windows": {
+                    "diagnostic_commands": [
+                        "Get-Disk | Select Number,FriendlyName,OperationalStatus"
+                    ],
+                    "remediation_commands": [
+                        "Update-HostStorageCache"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "volume offline",
+            "LUN not visible",
+            "multipath down"
+        ],
+        "retrieval_text": "Storage Volume Offline. LUN not accessible, path failures. Rescan SCSI, check zoning, HBA.",
+        "reranker_text": "Volume offline: HBA, zoning, multipath failure.",
+        "metadata": {
+            "domain": "storage",
+            "severity": "critical",
+            "created_by": "storageops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "storage-volume-slow-001",
+        "category_path": [
+            "Storage",
+            "Volume",
+            "Volume Slow Performance"
+        ],
+        "intent_id": "storage.volume.slow",
+        "title": "Storage Volume High Latency – Very Slow I/O",
+        "description": "Read/write operations take seconds instead of milliseconds. Application timeouts.",
+        "situation": {
+            "symptoms": [
+                "iostat shows high await (service time)",
+                "Queue length increasing on device",
+                "Database slow"
+            ],
+            "metrics": [
+                {
+                    "metric": "disk_latency_ms",
+                    "op": "gt",
+                    "value": 100,
+                    "weight": 0.8
+                }
+            ],
+            "log_patterns": []
+        },
+        "root_cause_analysis": "Underlying storage array overloaded, network congestion (iSCSI/NFS), faulty drive in RAID group causing rebuild, or misaligned partitions.",
+        "remedy": {
+            "generic_steps": [
+                "1. Check iostat to identify the busy device.",
+                "2. On the storage array, check for disk failure/rebuild.",
+                "3. Verify network latency for iSCSI or FC errors.",
+                "4. Tune queue depth and I/O scheduler."
+            ],
+            "vendors": {
+                "linux": {
+                    "diagnostic_commands": [
+                        "iostat -x 1",
+                        "dmesg | grep -i bus reset"
+                    ],
+                    "remediation_commands": [
+                        "echo deadline > /sys/block/sda/queue/scheduler",
+                        "echo 512 > /sys/block/sda/queue/nr_requests"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "slow storage",
+            "high latency",
+            "i/o delay"
+        ],
+        "retrieval_text": "Storage Volume Slow Performance. High await, queue depth, possible array issue. Tune scheduler, check array for failure.",
+        "reranker_text": "Slow storage: high latency, array rebuild, network issues.",
+        "metadata": {
+            "domain": "storage",
+            "severity": "high",
+            "created_by": "storageops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "storage-raid-degraded-001",
+        "category_path": [
+            "Storage",
+            "RAID",
+            "RAID Degraded"
+        ],
+        "intent_id": "storage.raid.degraded",
+        "title": "RAID Array Degraded – One or More Member Disks Failed",
+        "description": "RAID controller reports array in degraded state, hot spare activated.",
+        "situation": {
+            "symptoms": [
+                "RAID status = Degraded",
+                "Disk fault LED on server",
+                "Write performance may drop (RAID 5/6)"
+            ],
+            "metrics": [
+                {
+                    "metric": "raid_state",
+                    "op": "eq",
+                    "value": "degraded",
+                    "weight": 0.9
+                }
+            ],
+            "log_patterns": [
+                "arrays degraded",
+                "disk failure"
+            ]
+        },
+        "root_cause_analysis": "Physical disk failure. SMART predictive failure often warns beforehand. Loose disk or backplane issue can also cause transient fault.",
+        "remedy": {
+            "generic_steps": [
+                "1. Identify the failed disk (e.g., /dev/sdb).",
+                "2. Confirm it is physically dead (LED, SMART).",
+                "3. Replace the disk and start rebuild.",
+                "4. Monitor rebuild progress."
+            ],
+            "vendors": {
+                "linux": {
+                    "diagnostic_commands": [
+                        "cat /proc/mdstat",
+                        "mdadm --detail /dev/md0",
+                        "smartctl -a /dev/sdb"
+                    ],
+                    "remediation_commands": [
+                        "mdadm --manage /dev/md0 --remove /dev/sdb",
+                        "mdadm --manage /dev/md0 --add /dev/newdisk"
+                    ]
+                },
+                "windows": {
+                    "diagnostic_commands": [
+                        "Get-Disk | Select Number,FriendlyName,HealthStatus"
+                    ],
+                    "remediation_commands": []
+                }
+            }
+        },
+        "keywords": [
+            "RAID degraded",
+            "disk failed",
+            "hot spare"
+        ],
+        "retrieval_text": "Storage RAID Degraded. Physical disk failure. Replace failed drive, start rebuild. mdadm or hardware RAID manager.",
+        "reranker_text": "RAID degraded: disk failure. Replace, rebuild.",
+        "metadata": {
+            "domain": "storage",
+            "severity": "high",
+            "created_by": "storageops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "storage-raid-rebuild-001",
+        "category_path": [
+            "Storage",
+            "RAID",
+            "RAID Rebuild Failure"
+        ],
+        "intent_id": "storage.raid.rebuild.fail",
+        "title": "RAID Rebuild Failed or Stuck",
+        "description": "After replacing a disk, rebuild either stops or fails, leaving array degraded.",
+        "situation": {
+            "symptoms": [
+                "Rebuild progress stuck at X%",
+                "mdadm reports rebuild error",
+                "Array may become inoperable"
+            ],
+            "metrics": [
+                {
+                    "metric": "rebuild_progress",
+                    "op": "not_changing",
+                    "weight": 0.8
+                }
+            ],
+            "log_patterns": [
+                "md/raid:md0: Disk failure on sdb, disabling device."
+            ]
+        },
+        "root_cause_analysis": "New disk is also faulty, backplane issue causing write errors, or incompatible firmware. Insufficient power causing second disk failure.",
+        "remedy": {
+            "generic_steps": [
+                "1. Check dmesg for new I/O errors on the replacement disk.",
+                "2. Verify the new disk is same size or larger and not faulty (SMART).",
+                "3. Try a different slot or cable.",
+                "4. If rebuild aborted, zero superblock and re-add."
+            ],
+            "vendors": {
+                "linux": {
+                    "diagnostic_commands": [
+                        "mdadm --detail /dev/md0",
+                        "smartctl -a /dev/sdb"
+                    ],
+                    "remediation_commands": [
+                        "mdadm --manage /dev/md0 --remove /dev/sdb",
+                        "mdadm --zero-superblock /dev/sdb",
+                        "mdadm --manage /dev/md0 --add /dev/sdb"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "RAID rebuild fail",
+            "rebuild stuck",
+            "mdadm error"
+        ],
+        "retrieval_text": "Storage RAID Rebuild Failure. Stuck rebuild due to bad replacement disk. Check SMART, zero superblock, re-add.",
+        "reranker_text": "RAID rebuild fail: bad disk, backplane. Zero superblock, re-add.",
+        "metadata": {
+            "domain": "storage",
+            "severity": "critical",
+            "created_by": "storageops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "storage-san-zoning-001",
+        "category_path": [
+            "Storage",
+            "SAN",
+            "Fabric Zoning Issue"
+        ],
+        "intent_id": "san.zoning.issue",
+        "title": "SAN Fabric Zoning Misconfiguration – Host Cannot See LUN",
+        "description": "Host lost connectivity to storage LUN after a zoning change or switch reboot.",
+        "situation": {
+            "symptoms": [
+                "Multipath shows paths not found",
+                "LUN not visible to host",
+                "Fabric switch logs: zone mismatch"
+            ],
+            "metrics": [],
+            "log_patterns": []
+        },
+        "root_cause_analysis": "Incorrect zone configuration, member port not added to zone, or zone set not activated. Caused by human error during maintenance.",
+        "remedy": {
+            "generic_steps": [
+                "1. Verify WWN of host HBA and storage port.",
+                "2. Check active zoneset on the fabric switch.",
+                "3. Add missing member and commit zoneset.",
+                "4. Rescan on host."
+            ],
+            "vendors": {
+                "cisco_mds": {
+                    "diagnostic_commands": [
+                        "show zone",
+                        "show zoneset active"
+                    ],
+                    "remediation_commands": [
+                        "configure terminal",
+                        "zone name Host_Storage vsan 1",
+                        "member pwwn 10:00:00:00:c9:xx:xx:xx",
+                        "member pwwn 50:06:01:60:...",
+                        "exit",
+                        "zoneset activate name Zoneset1 vsan 1",
+                        "end"
+                    ]
+                },
+                "brocade": {
+                    "diagnostic_commands": [
+                        "cfgshow",
+                        "zoneshow"
+                    ],
+                    "remediation_commands": [
+                        "conf t",
+                        "zonedelete <old>",
+                        "zonecreate <new_zone>, 10:00:...",
+                        "cfgsave",
+                        "cfgenable <cfg_name>"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "SAN zoning",
+            "zone mismatch",
+            "LUN not visible"
+        ],
+        "retrieval_text": "SAN Fabric Zoning Issue. LUN not visible after zoning change. Check active zoneset, add WWNs.",
+        "reranker_text": "Zoning issue: WWN missing from zone. Update zoneset.",
+        "metadata": {
+            "domain": "storage",
+            "severity": "critical",
+            "created_by": "storageops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "app-service-down-001",
+        "category_path": [
+            "Application",
+            "Service",
+            "Service Down"
+        ],
+        "intent_id": "app.service.down",
+        "title": "Application Service Not Running – Daemon Stopped",
+        "description": "Monitored service (e.g., nginx, apache) is not responding on its port.",
+        "situation": {
+            "symptoms": [
+                "Port not listening (netstat shows nothing)",
+                "systemd service status 'inactive'",
+                "Clients get connection refused"
+            ],
+            "metrics": [
+                {
+                    "metric": "service_status",
+                    "op": "eq",
+                    "value": "inactive",
+                    "weight": 0.9
+                }
+            ],
+            "log_patterns": []
+        },
+        "root_cause_analysis": "Service crashed, out-of-memory, configuration error preventing start, or manual stop.",
+        "remedy": {
+            "generic_steps": [
+                "1. Check service status with systemctl/init.d.",
+                "2. Look at service logs (journalctl) for crash reason.",
+                "3. Restart the service.",
+                "4. Investigate root cause (memory limit, config syntax)."
+            ],
+            "vendors": {
+                "linux": {
+                    "diagnostic_commands": [
+                        "systemctl status <service>",
+                        "journalctl -u <service> --since '10 min ago'"
+                    ],
+                    "remediation_commands": [
+                        "systemctl start <service>",
+                        "systemctl enable <service>"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "service down",
+            "process stopped",
+            "daemon not running"
+        ],
+        "retrieval_text": "Application Service Down. Service not listening. Check status, logs, restart. Usually due to crash or config error.",
+        "reranker_text": "Service down: crash, config. Restart.",
+        "metadata": {
+            "domain": "application",
+            "severity": "critical",
+            "created_by": "appops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "app-service-slow-001",
+        "category_path": [
+            "Application",
+            "Service",
+            "Service Slow Response"
+        ],
+        "intent_id": "app.service.slow",
+        "title": "Service Responding Slowly – High Latency",
+        "description": "Service is up but response time is significantly higher than baseline.",
+        "situation": {
+            "symptoms": [
+                "High response time percentiles (p99 > 2s)",
+                "No errors, just slow",
+                "Possible thread pool exhaustion"
+            ],
+            "metrics": [
+                {
+                    "metric": "response_time_p99",
+                    "op": "gt",
+                    "value": 2000,
+                    "weight": 0.8
+                }
+            ],
+            "log_patterns": []
+        },
+        "root_cause_analysis": "Database bottleneck, upstream service degradation, GC pauses (Java), or insufficient worker threads.",
+        "remedy": {
+            "generic_steps": [
+                "1. Identify slow internal component using APM/tracing.",
+                "2. Check database connection pool and query times.",
+                "3. Increase thread/worker count if pool exhausted.",
+                "4. Scale up/out application instances."
+            ],
+            "vendors": {
+                "generic": {
+                    "diagnostic_commands": [
+                        "curl -w 'Total: %{time_total}\n' http://localhost/health",
+                        "Strace slow threads"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "slow response",
+            "high latency",
+            "service degradation"
+        ],
+        "retrieval_text": "Application Service Slow. High response time. Check dependencies (DB, cache). Increase threads/scale.",
+        "reranker_text": "Service slow: DB, threads, scale.",
+        "metadata": {
+            "domain": "application",
+            "severity": "high",
+            "created_by": "appops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "app-db-connpool-001",
+        "category_path": [
+            "Application",
+            "Database",
+            "Connection Pool Exhausted"
+        ],
+        "intent_id": "db.connpool.exhaust",
+        "title": "Database Connection Pool Exhausted",
+        "description": "Application cannot obtain a DB connection from the pool, requests fail.",
+        "situation": {
+            "symptoms": [
+                "Logs: 'Cannot get JDBC connection' or 'pool exhausted'",
+                "Database has many idle connections",
+                "Requests failing with 500"
+            ],
+            "metrics": [
+                {
+                    "metric": "active_connections",
+                    "op": "eq",
+                    "value": "max_pool_size",
+                    "weight": 0.9
+                }
+            ],
+            "log_patterns": [
+                "HikariPool - Connection is not available",
+                "Timeout waiting for idle object"
+            ]
+        },
+        "root_cause_analysis": "Connection leak (not returning to pool), high concurrent requests, or long-running queries blocking connections.",
+        "remedy": {
+            "generic_steps": [
+                "1. Identify top queries causing long holds.",
+                "2. Kill stuck connections or restart pool.",
+                "3. Increase pool maximum size.",
+                "4. Fix connection leak in application code."
+            ],
+            "vendors": {
+                "postgresql": {
+                    "diagnostic_commands": [
+                        "SELECT * FROM pg_stat_activity WHERE state != 'idle';",
+                        "SELECT count(*) FROM pg_stat_activity;"
+                    ],
+                    "remediation_commands": [
+                        "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'idle' AND state_change < now() - interval '10 minutes';"
+                    ]
+                },
+                "mysql": {
+                    "diagnostic_commands": [
+                        "SHOW FULL PROCESSLIST;"
+                    ],
+                    "remediation_commands": [
+                        "KILL <connection_id>;"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "connection pool exhausted",
+            "JDBC",
+            "hikari"
+        ],
+        "retrieval_text": "Database Connection Pool Exhausted. No free connections. Long queries, leaks. Terminate idle connections, increase pool size.",
+        "reranker_text": "Conn pool exhausted: leak, long queries. Kill idle, increase pool.",
+        "metadata": {
+            "domain": "application",
+            "severity": "critical",
+            "created_by": "dba",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "app-db-deadlock-001",
+        "category_path": [
+            "Application",
+            "Database",
+            "Deadlock Detected"
+        ],
+        "intent_id": "db.deadlock",
+        "title": "Database Deadlock – Transactions Blocking Each Other",
+        "description": "Two or more transactions are stuck waiting for locks held by each other.",
+        "situation": {
+            "symptoms": [
+                "Database reports deadlock cycle",
+                "Some transactions automatically rolled back",
+                "Increased latency for certain operations"
+            ],
+            "metrics": [
+                {
+                    "metric": "deadlock_count",
+                    "op": "gt",
+                    "value": 0,
+                    "weight": 0.9
+                }
+            ],
+            "log_patterns": [
+                "ERROR: deadlock detected",
+                "Deadlock found when trying to get lock"
+            ]
+        },
+        "root_cause_analysis": "Conflicting lock ordering between concurrent transactions. Often caused by two updates touching the same rows in reverse order.",
+        "remedy": {
+            "generic_steps": [
+                "1. Identify the transactions involved using deadlock graph (SQL Server extended events, PostgreSQL log).",
+                "2. Tune application queries to always lock in same order.",
+                "3. Reduce transaction length.",
+                "4. Use lower isolation level (READ COMMITTED)."
+            ],
+            "vendors": {
+                "postgresql": {
+                    "diagnostic_commands": [
+                        "SELECT * FROM pg_stat_activity WHERE wait_event_type = 'Lock';"
+                    ]
+                },
+                "sqlserver": {
+                    "diagnostic_commands": [
+                        "EXEC sp_readerrorlog 0,1,'deadlock';"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "deadlock",
+            "locking",
+            "transaction conflict"
+        ],
+        "retrieval_text": "Database Deadlock. Conflicting locks. Analyse deadlock graph, fix lock order, reduce transaction length.",
+        "reranker_text": "Deadlock: lock order conflict. Fix query order.",
+        "metadata": {
+            "domain": "application",
+            "severity": "high",
+            "created_by": "dba",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "app-web-5xx-001",
+        "category_path": [
+            "Application",
+            "Web",
+            "5xx Error Spike"
+        ],
+        "intent_id": "web.5xx.spike",
+        "title": "5xx HTTP Error Rate Spike",
+        "description": "Web server returns 500/502/503 errors for a large percentage of requests.",
+        "situation": {
+            "symptoms": [
+                "HTTP 5xx error rate > 5%",
+                "502 Bad Gateway or 503 Service Unavailable"
+            ],
+            "metrics": [
+                {
+                    "metric": "http_5xx_rate",
+                    "op": "gt",
+                    "value": 5,
+                    "weight": 0.9
+                }
+            ],
+            "log_patterns": [
+                "upstream prematurely closed connection",
+                "no live upstreams"
+            ]
+        },
+        "root_cause_analysis": "Backend application down or overloaded (502), or web server out of workers (503). Could also be a misconfigured proxy timeout.",
+        "remedy": {
+            "generic_steps": [
+                "1. Check backend service health (is it responding?).",
+                "2. Tune proxy timeouts (nginx proxy_read_timeout).",
+                "3. Restart or scale up backend instances.",
+                "4. Check server resources (CPU/memory)."
+            ],
+            "vendors": {
+                "nginx": {
+                    "diagnostic_commands": [
+                        "tail -n 100 /var/log/nginx/error.log",
+                        "nginx -t"
+                    ],
+                    "remediation_commands": [
+                        "sudo nginx -s reload"
+                    ]
+                },
+                "apache": {
+                    "diagnostic_commands": [
+                        "tail -n 100 /var/log/httpd/error_log"
+                    ],
+                    "remediation_commands": [
+                        "sudo systemctl restart httpd"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "5xx error",
+            "502",
+            "503",
+            "web server spike"
+        ],
+        "retrieval_text": "Application Web 5xx Error Spike. High rate of 5xx errors. Backend issues or proxy misconfiguration. Check backend health, adjust timeouts.",
+        "reranker_text": "5xx spike: backend down, timeout. Check backend, adjust proxy.",
+        "metadata": {
+            "domain": "application",
+            "severity": "critical",
+            "created_by": "appops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "app-web-tls-001",
+        "category_path": [
+            "Application",
+            "Web",
+            "TLS Handshake Failure"
+        ],
+        "intent_id": "web.tls.fail",
+        "title": "TLS/SSL Handshake Failure – Certificate Issues",
+        "description": "Clients receiving SSL handshake errors, site unreachable via HTTPS.",
+        "situation": {
+            "symptoms": [
+                "Browser shows SSL_ERROR_HANDSHAKE_FAILURE",
+                "OpenSSL s_client returns alert certificate expired",
+                "Web server log: SSL handshake failed"
+            ],
+            "metrics": [
+                {
+                    "metric": "tls_handshake_fails",
+                    "op": "gt",
+                    "value": 0,
+                    "weight": 0.9
+                }
+            ],
+            "log_patterns": [
+                "alert certificate expired",
+                "no shared cipher"
+            ]
+        },
+        "root_cause_analysis": "Certificate expired, cipher suite mismatch (client doesn't support server's ciphers), or missing intermediate CA.",
+        "remedy": {
+            "generic_steps": [
+                "1. Check certificate expiry date.",
+                "2. Validate certificate chain using online tool.",
+                "3. Update cipher suites to include modern ones.",
+                "4. Reinstall certificate and restart web server."
+            ],
+            "vendors": {
+                "openssl": {
+                    "diagnostic_commands": [
+                        "openssl s_client -connect host:443 -servername host",
+                        "openssl x509 -enddate -noout -in cert.pem"
+                    ],
+                    "remediation_commands": [
+                        "cp new_cert.pem /etc/ssl/certs/",
+                        "systemctl restart nginx"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "TLS failure",
+            "SSL handshake",
+            "certificate expired"
+        ],
+        "retrieval_text": "Application Web TLS Handshake Failure. Certificate expiry, cipher mismatch. Check expiry, update ciphers.",
+        "reranker_text": "TLS fail: cert expired, cipher mismatch.",
+        "metadata": {
+            "domain": "application",
+            "severity": "critical",
+            "created_by": "appops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "security-ddos-001",
+        "category_path": [
+            "Security",
+            "Anomaly",
+            "DDoS Attack"
+        ],
+        "intent_id": "security.ddos",
+        "title": "DDoS Attack – High Inbound Traffic Spikes",
+        "description": "Sudden surge in traffic from multiple sources, saturating network bandwidth or connection tables.",
+        "situation": {
+            "symptoms": [
+                "Interface input rate jumps to near line rate",
+                "High number of half‑open connections",
+                "Firewall connection table near limit"
+            ],
+            "metrics": [
+                {
+                    "metric": "interface_bandwidth_in",
+                    "op": "gt",
+                    "value": "80%_of_capacity",
+                    "weight": 0.8
+                },
+                {
+                    "metric": "firewall_conn_count",
+                    "op": "gt",
+                    "value": "90%_of_max",
+                    "weight": 0.7
+                }
+            ],
+            "log_patterns": [
+                "syn flood",
+                "Suspicious traffic pattern"
+            ]
+        },
+        "root_cause_analysis": "Volumetric DDoS (UDP/ICMP flood), SYN flood, or application‑layer attack (HTTP flood). Often originates from botnets.",
+        "remedy": {
+            "generic_steps": [
+                "1. Enable rate limiting / traffic scrubbing if available.",
+                "2. Blackhole route the target IP via upstream ISP (RTBH).",
+                "3. Increase connection table limits on firewall.",
+                "4. Engage DDoS mitigation service (Cloudflare, AWS Shield)."
+            ],
+            "vendors": {
+                "fortinet": {
+                    "diagnostic_commands": [
+                        "get system performance firewall statistics",
+                        "diag ips anomaly list"
+                    ],
+                    "remediation_commands": [
+                        "config firewall DoS-policy",
+                        "edit 0",
+                        "set interface any",
+                        "set anomaly threshold 10000 per 1",
+                        "set action block",
+                        "next",
+                        "end"
+                    ]
+                },
+                "cisco": {
+                    "diagnostic_commands": [
+                        "show interface <intf> summary",
+                        "show ip traffic"
+                    ],
+                    "remediation_commands": [
+                        "conf t",
+                        "ip route <target_ip> 255.255.255.255 Null0"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "DDoS",
+            "flood",
+            "SYN attack",
+            "traffic spike"
+        ],
+        "retrieval_text": "Security DDoS Attack. Traffic surge. Enable DoS policies, blackhole routing, engage scrubbing service.",
+        "reranker_text": "DDoS: bandwidth saturation, SYN flood. Blackhole, rate limit.",
+        "metadata": {
+            "domain": "security",
+            "severity": "critical",
+            "created_by": "secops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "security-bruteforce-001",
+        "category_path": [
+            "Security",
+            "Anomaly",
+            "Brute Force Login"
+        ],
+        "intent_id": "security.bruteforce",
+        "title": "Brute Force Login Attack – Repeated Authentication Failures",
+        "description": "Multiple failed login attempts for SSH/RDP/web applications from a single or distributed sources.",
+        "situation": {
+            "symptoms": [
+                "Auth logs show many failed attempts for same user or admin user",
+                "Sudden increase in auth failure metrics",
+                "Possible account lockout"
+            ],
+            "metrics": [
+                {
+                    "metric": "auth_failures_rate",
+                    "op": "gt",
+                    "value": 10,
+                    "weight": 0.8
+                }
+            ],
+            "log_patterns": [
+                "Failed password for admin from 192.168.1.100 port 22",
+                "sshd: authentication failure"
+            ]
+        },
+        "root_cause_analysis": "An attacker is trying to guess credentials, often from a botnet or script.",
+        "remedy": {
+            "generic_steps": [
+                "1. Block attacker IP temporarily with iptables/fail2ban.",
+                "2. Disable root login over SSH, use key‑only auth.",
+                "3. Implement rate limiting (OpenSSH MaxStartups, fail2ban).",
+                "4. Monitor for further attempts."
+            ],
+            "vendors": {
+                "linux": {
+                    "diagnostic_commands": [
+                        "grep 'Failed password' /var/log/auth.log | awk '{print $(NF-3)}' | sort | uniq -c | sort -nr"
+                    ],
+                    "remediation_commands": [
+                        "sudo fail2ban-client set sshd banip <ip>",
+                        "sudo iptables -A INPUT -s <ip> -j DROP"
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "brute force",
+            "failed login",
+            "password guessing"
+        ],
+        "retrieval_text": "Security Brute Force Login. Many failed auth attempts. Block IPs with fail2ban/iptables. Disable password login.",
+        "reranker_text": "Brute force: auth failures. Block IPs, rate limit.",
+        "metadata": {
+            "domain": "security",
+            "severity": "high",
+            "created_by": "secops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    },
+    {
+        "_id": "security-policy-violation-001",
+        "category_path": [
+            "Security",
+            "Policy",
+            "Policy Violation"
+        ],
+        "intent_id": "security.policy.violation",
+        "title": "Security Policy Violation – Unauthorised Access Attempt",
+        "description": "An internal host attempted to connect to a blocked category or port, triggering a security alert.",
+        "situation": {
+            "symptoms": [
+                "Firewall alert: traffic denied by security policy",
+                "Infection or user trying to bypass policy",
+                "Reputation lookups flagged destination"
+            ],
+            "metrics": [],
+            "log_patterns": [
+                "url-filter: suspicious category detected",
+                "app-ctrl: blocked app"
+            ]
+        },
+        "root_cause_analysis": "User attempting to access prohibited resources (e.g., gambling, malware site) or a compromised internal host phoning home.",
+        "remedy": {
+            "generic_steps": [
+                "1. Investigate the source IP and user.",
+                "2. If user policy violation, warn or restrict further.",
+                "3. If malware indication, isolate the host and run antivirus scan."
+            ],
+            "vendors": {
+                "fortinet": {
+                    "diagnostic_commands": [
+                        "diag firewall webfilter list",
+                        "diag firewall auth list"
+                    ],
+                    "remediation_commands": [
+                        "config system quarantine",
+                        "..."
+                    ]
+                }
+            }
+        },
+        "keywords": [
+            "policy violation",
+            "blocked access",
+            "security alert"
+        ],
+        "retrieval_text": "Security Policy Violation. Unauthorised access attempt. Investigate user/host, enforce policy, isolate if malware.",
+        "reranker_text": "Policy violation: blocked site, malware. Investigate, isolate.",
+        "metadata": {
+            "domain": "security",
+            "severity": "medium",
+            "created_by": "secops",
+            "created_at": "2026-04-15T00:00:00Z",
+            "version": 1,
+            "is_latest": true,
+            "status": "active"
+        }
+    }
+]

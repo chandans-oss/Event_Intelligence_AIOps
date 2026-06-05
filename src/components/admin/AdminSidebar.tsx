@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Shield, Lightbulb, BookOpen, Zap, ChevronRight, ChevronLeft, TrendingUp, ToggleLeft, Copy, GitBranch, BrainCircuit } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Shield, Lightbulb, BookOpen, Zap, ChevronRight, ChevronLeft, TrendingUp, ToggleLeft, Copy, GitBranch, Database } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 
-export type AdminSection = 'Suppression' | 'Deduplication' | 'CorrelationTypes' | 'CorrelationPatterns' | 'Intents' | 'KB' | 'RAGKB' | 'RemedyKB' | 'AutoRemediation';
+export type AdminSection = 'Suppression' | 'Deduplication' | 'CorrelationTypes' | 'CorrelationPatterns' | 'Intents' | 'KB' | 'KBManager' | 'AutoRemediation';
 
 interface AdminSidebarProps {
   activeSection: AdminSection;
@@ -15,13 +16,21 @@ const menuItems = [
   { id: 'CorrelationTypes' as AdminSection, label: 'Correlation Types', icon: GitBranch },
   { id: 'Intents' as AdminSection, label: 'Intents Hypothesis', icon: Lightbulb },
   { id: 'KB' as AdminSection, label: 'Knowledge Base', icon: BookOpen },
-  { id: 'RAGKB' as AdminSection, label: 'RAG RCA KB', icon: BrainCircuit },
-  { id: 'RemedyKB' as AdminSection, label: 'Remedy KB', icon: Shield },
+  { id: 'KBManager' as AdminSection, label: 'KB Manager', icon: Database },
   { id: 'AutoRemediation' as AdminSection, label: 'Auto Remediation', icon: Zap },
 ];
 
 export function AdminSidebar({ activeSection, onSectionChange }: AdminSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const navigate = useNavigate();
+
+  const handleItemClick = (id: AdminSection) => {
+    if (id === 'KBManager') {
+      navigate('/admin/kb-manager');
+    } else {
+      onSectionChange(id);
+    }
+  };
 
   return (
     <div className={cn(
@@ -63,7 +72,7 @@ export function AdminSidebar({ activeSection, onSectionChange }: AdminSidebarPro
           return (
             <button
               key={item.id}
-              onClick={() => onSectionChange(item.id)}
+              onClick={() => handleItemClick(item.id)}
               title={isCollapsed ? item.label : undefined}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all group relative",

@@ -1,9 +1,14 @@
 import axios from 'axios';
 
 // Use environment variables for API base URL and endpoint to avoid hardcoding
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const RAG_API_ENDPOINT = import.meta.env.VITE_RAG_API_ENDPOINT;
-const RCA_API_ENDPOINT = import.meta.env.VITE_RCA_API_ENDPOINT;
+let API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+if (!API_BASE_URL || API_BASE_URL === 'undefined') API_BASE_URL = 'http://localhost:8001';
+
+let RAG_API_ENDPOINT = import.meta.env.VITE_RAG_API_ENDPOINT;
+if (!RAG_API_ENDPOINT || RAG_API_ENDPOINT === 'undefined') RAG_API_ENDPOINT = '/api/rag/analyze';
+
+let RCA_API_ENDPOINT = import.meta.env.VITE_RCA_API_ENDPOINT;
+if (!RCA_API_ENDPOINT || RCA_API_ENDPOINT === 'undefined') RCA_API_ENDPOINT = '/api/rca/run-flow';
 
 export const runRcaFlow = async (file: File) => {
     if (!API_BASE_URL || !RCA_API_ENDPOINT) {
@@ -91,7 +96,7 @@ export const runRagV6Analysis = async (payload: any, runConfig?: any) => {
                 confidence: matchingResult.confidence || d.confidence || 0,
                 cross_encoder_score: matchingResult.cross_encoder_score || 0,
                 hybrid_score: matchingResult.prerank_score || 0,
-                relevant_logs: matchingResult.log_features || d.relevant_logs || [],
+                relevant_logs: d.relevant_logs || matchingResult.log_features || [],
             };
         })
         : rcaResults.map((r: any, idx: number) => {
@@ -109,12 +114,22 @@ export const runRagV6Analysis = async (payload: any, runConfig?: any) => {
                 hypotheses: doc.hypotheses || [],
                 situation: doc.situation || {},
                 metadata: doc.metadata || {},
-                relevant_logs: r.log_features || [],   // ← actual field name from API
+                relevant_logs: r.relevant_logs || r.log_features || [],   // ← actual field name from API
                 remedies: r.remedies || [],
                 doc,
                 ...r,
             };
         });
+
+    const rawAnomalies = raw.anomalies || uiResponse.anomalies || raw.metric_facts || ragQuery.metric_facts || [];
+    const anomalies = rawAnomalies.map((a: any) => ({
+        metric: a.metric || '',
+        entity: a.entity || '',
+        direction: (a.direction || '').toLowerCase(),
+        change_pct: a.change_pct !== undefined ? a.change_pct : (a.value || 0),
+        z_score: a.z_score !== undefined ? a.z_score : (a.score || 0),
+        ...a
+    }));
 
     return {
         success: raw.success,
@@ -136,7 +151,7 @@ export const runRagV6Analysis = async (payload: any, runConfig?: any) => {
         entities: ragQuery.entities || {},
         // Other fields
         llm_usage: raw.llm_usage || uiResponse.llm_usage || {},
-        anomalies: raw.anomalies || uiResponse.anomalies || [],
+        anomalies,
         incident_summary: uiResponse.incident_summary || '',
         target_vendors: uiResponse.target_vendors || [],
         _raw: raw,
